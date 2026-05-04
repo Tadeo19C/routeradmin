@@ -6,10 +6,11 @@ from backup.views import view_backup_profile_list, view_manage_backup_profile, v
     view_debug_run_backups, view_compare_backups, view_backup_download, view_backup_delete
 from backup_data.views import view_cron_generate_backup_schedule, view_cron_create_backup_tasks, \
     view_cron_perform_backup_tasks, view_cron_housekeeping
-from dashboard.views import view_dashboard, view_status, backup_statistics_data, router_status_data
+from dashboard.views import view_dashboard, view_status, view_activity_logs, backup_statistics_data, router_status_data
 from fleet_commander.views import view_command_list, view_command_details, view_manage_command, \
     view_manage_command_variant, view_manage_command_schedule, view_job_list, view_job_details, view_task_details, \
-    view_cron_create_command_jobs, view_cron_perform_command_tasks, view_execute_command, view_run_command_multiple
+    view_cron_create_command_jobs, view_cron_perform_command_tasks, view_execute_command, view_run_command_multiple, \
+    view_broadcast_command
 from import_tool.views import view_import_tool_list, view_import_csv_file, view_import_details, run_import_task
 from integration_manager.views import view_wireguard_webadmin_launcher, view_manage_wireguard_integration, \
     view_launch_wireguard_webadmin
@@ -19,7 +20,7 @@ from message_center.views import view_message_channel_list, view_manage_message_
 from monitoring.views import view_export_router_list, view_update_router_status, view_router_config_timestamp, \
     view_router_last_status_change
 from router_manager.views import view_create_instant_backup_multiple_routers, view_router_list, view_manage_router, \
-    view_router_group_list, view_ssh_key_list, view_manage_router_group, view_manage_sshkey, view_router_details, \
+    view_router_group_list, view_manage_router_group, view_router_details, \
     view_create_instant_backup_task, view_router_availability, view_cron_update_router_information, \
     view_manage_router_groups_multiple
 from routerfleet_tools.views import view_cron_check_updates
@@ -29,8 +30,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('debug/run_backups/', view_debug_run_backups, name='debug_run_backups'),
     path('debug/test_messages/', view_debug_test_messages, name='debug_test_messages'),
-    path('', view_dashboard, name='dashboard'),
-    path('status/', view_status, name='status'),
+    path('', view_status, name='dashboard'),
     path('router_status_data/', router_status_data, name='router_status_data'),
     path('backup_statistics_data/', backup_statistics_data, name='backup_statistics_data'),
     path('user/list/', view_user_list, name='user_list'),
@@ -43,9 +43,7 @@ urlpatterns = [
     path('router/details/', view_router_details, name='router_details'),
     path('router/availability/', view_router_availability, name='router_availability'),
     path('router/group_list/', view_router_group_list, name='router_group_list'),
-    path('router/ssh_keys/', view_ssh_key_list, name='ssh_keys_list'),
     path('router/manage_group/', view_manage_router_group, name='manage_router_group'),
-    path('router/manage_sshkey/', view_manage_sshkey, name='manage_sshkey'),
     path('router/create_instant_backup/', view_create_instant_backup_task, name='create_instant_backup_task'),
     path('router/create_instant_backup/multiple/', view_create_instant_backup_multiple_routers, name='create_instant_backup_multiple'),
     path('router/manage_groups/multiple/', view_manage_router_groups_multiple, name='manage_router_groups_multiple'),
@@ -90,6 +88,8 @@ urlpatterns = [
     path('fleet_commander/job/details/', view_job_details, name='fleet_commander_job_details'),
     path('fleet_commander/task/details/', view_task_details, name='fleet_commander_task_details'),
     path('fleet_commander/command/execute_multiple/', view_run_command_multiple, name='fleet_commander_execute_multiple'),
+    path('fleet_commander/broadcast/', view_broadcast_command, name='fleet_commander_broadcast_command'),
     path('cron/create_command_jobs/', view_cron_create_command_jobs, name='cron_create_command_jobs'),
     path('cron/perform_command_tasks/', view_cron_perform_command_tasks, name='cron_perform_command_tasks'),
+    path('dashboard/logs/', view_activity_logs, name='activity_logs'),
 ]

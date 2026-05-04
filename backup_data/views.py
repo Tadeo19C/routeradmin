@@ -82,9 +82,11 @@ def view_cron_generate_backup_schedule(request):
         'daily_backup_schedule_created': 0,
         'weekly_backup_schedule_created': 0,
         'monthly_backup_schedule_created': 0,
+        'hourly_backup_schedule_created': 0,
         'daily_backup_schedule_removed': 0,
         'weekly_backup_schedule_removed': 0,
-        'monthly_backup_schedule_removed': 0
+        'monthly_backup_schedule_removed': 0,
+        'hourly_backup_schedule_removed': 0
     }
 
     for router in Router.objects.filter(backupschedule__isnull=True):
@@ -143,6 +145,19 @@ def view_cron_generate_backup_schedule(request):
                 schedule.next_monthly_backup = None
                 schedule.save()
                 data['monthly_backup_schedule_removed'] += 1
+
+        if backup_profile.hourly_backup:
+            hourly_schedule_list = backup_schedule_list.filter(next_hourly_backup__isnull=True)
+            for schedule in hourly_schedule_list:
+                schedule.next_hourly_backup = timezone.now() + timedelta(hours=backup_profile.hourly_interval)
+                schedule.save()
+                data['hourly_backup_schedule_created'] += 1
+        else:
+            hourly_schedule_list = backup_schedule_list.filter(next_hourly_backup__isnull=False)
+            for schedule in hourly_schedule_list:
+                schedule.next_hourly_backup = None
+                schedule.save()
+                data['hourly_backup_schedule_removed'] += 1
     return JsonResponse(data)
 
 
@@ -158,6 +173,9 @@ def create_backup_tasks_from_schedule_list(schedule_list, schedule_type):
         elif schedule_type == 'monthly':
             schedule_time = schedule.next_monthly_backup
             schedule.next_monthly_backup = None
+        elif schedule_type == 'hourly':
+            schedule_time = schedule.next_hourly_backup
+            schedule.next_hourly_backup = None
         else:
             return
         schedule.save()
@@ -177,9 +195,10 @@ def view_cron_create_backup_tasks(request):
     data = {
         'daily_backup_tasks_created': 0,
         'weekly_backup_tasks_created': 0,
-        'monthly_backup_tasks_created': 0
+        'monthly_backup_tasks_created': 0,
+        'hourly_backup_tasks_created': 0
     }
-    # Priorize monthly, then weekly, then daily.
+    # Priorize monthly, then weekly, then daily, then hourly.
     monthly_pending_schedule_list = BackupSchedule.objects.filter(
         next_monthly_backup__lte=timezone.now(), router__enabled=True, router__routerstatus__backup_lock__isnull=True
     ).filter(
@@ -205,6 +224,15 @@ def view_cron_create_backup_tasks(request):
     )
     data['daily_backup_tasks_created'] = create_backup_tasks_from_schedule_list(
         daily_pending_schedule_list, 'daily'
+    )
+
+    hourly_pending_schedule_list = BackupSchedule.objects.filter(
+        next_hourly_backup__lte=timezone.now(), router__enabled=True, router__routerstatus__backup_lock__isnull=True
+    ).filter(
+        Q(router__monitoring=False) | Q(router__monitoring=True, router__routerstatus__status_online=True)
+    )
+    data['hourly_backup_tasks_created'] = create_backup_tasks_from_schedule_list(
+        hourly_pending_schedule_list, 'hourly'
     )
 
     return JsonResponse(data)

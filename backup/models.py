@@ -16,6 +16,12 @@ class BackupProfile(models.Model):
     daily_backup = models.BooleanField(default=True)
     weekly_backup = models.BooleanField(default=False)
     monthly_backup = models.BooleanField(default=False)
+    hourly_backup = models.BooleanField(default=False)
+    hourly_interval = models.IntegerField(default=6, choices=(
+        (1, 'Every 1 hour'), (2, 'Every 2 hours'), (4, 'Every 4 hours'),
+        (6, 'Every 6 hours'), (8, 'Every 8 hours'), (12, 'Every 12 hours'),
+    ))
+    hourly_retention = models.IntegerField(default=3)
 
     daily_retention = models.IntegerField(default=7)
     weekly_retention = models.IntegerField(default=30)

@@ -1,31 +1,40 @@
 {% if messages %}
     <script>
-      {% for message in messages %}
-        var fullMessage = "{{ message.message|escapejs }}";
-        var parts = fullMessage.split("|");
-        if (parts.length > 1) {
-            $(document).Toasts('create', {
-                {% if message.tags %}
-                class: 'bg-{{ message.tags }}',
-                {% endif %}
-                title: parts[0],
-                subtitle: '{{ message.tags }}',
-                body: parts[1],
-                delay: 10000, 
-                autohide: true, 
-            });
-        } else {
-            $(document).Toasts('create', {
-                {% if message.tags %}
-                class: 'bg-{{ message.tags }}',
-                {% endif %}
-                subtitle: '{{ message.tags }}',
-                body: parts[0],
-                delay: 10000, 
-                autohide: true, 
-            });
-        }
-      {% endfor %}
+      $(document).ready(function() {
+          {% for message in messages %}
+            var fullMessage = "{{ message.message|escapejs }}";
+            var parts = fullMessage.split("|");
+            var iconClass = "fas fa-info-circle";
+            var tag = "{{ message.tags }}";
+            
+            if (tag.includes("success")) iconClass = "fas fa-check-circle";
+            if (tag.includes("warning")) iconClass = "fas fa-exclamation-triangle";
+            if (tag.includes("danger") || tag.includes("error")) iconClass = "fas fa-ban";
+
+            if (parts.length > 1) {
+                $(document).Toasts('create', {
+                    {% if message.tags %}
+                    class: 'bg-{{ message.tags }}',
+                    {% endif %}
+                    title: parts[0],
+                    icon: iconClass,
+                    body: parts[1],
+                    delay: 6000, 
+                    autohide: true, 
+                });
+            } else {
+                $(document).Toasts('create', {
+                    {% if message.tags %}
+                    class: 'bg-{{ message.tags }}',
+                    {% endif %}
+                    icon: iconClass,
+                    body: parts[0],
+                    delay: 6000, 
+                    autohide: true, 
+                });
+            }
+          {% endfor %}
+      });
     </script>
 {% endif %}
 

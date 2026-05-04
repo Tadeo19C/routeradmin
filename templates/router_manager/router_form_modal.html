@@ -1,0 +1,144 @@
+{% load crispy_forms_tags %}
+<div class="modal-header">
+    <h5 class="modal-title">{% if instance %}Editar Router: {{ instance.name }}{% else %}Nuevo Router{% endif %}</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<form id="router-manage-form" method="post" action="/router/manage/{% if instance %}?uuid={{ instance.uuid }}{% endif %}">
+    <div class="modal-body">
+        {% csrf_token %}
+        {% crispy form %}
+    </div>
+</form>
+
+<script>
+$(document).ready(function() {
+    $('#router-manage-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        // Manual validation check before submitting
+        var addressField = $('#id_address');
+        var ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+        if (addressField.length > 0 && !ipRegex.test(addressField.val())) {
+            addressField.addClass('is-invalid');
+            if ($('#address-error-msg').length === 0) {
+                addressField.after('<div id="address-error-msg" class="invalid-feedback">Debe ingresar una IP numérica válida.</div>');
+            }
+            return false;
+        }
+
+        var form = $(this);
+        var url = form.attr('action');
+        
+        // Add ajax flag
+        var formData = form.serialize() + '&ajax=1';
+        
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.status === 'success') {
+                    $('#routerManageModal').modal('hide');
+                    $(document).Toasts('create', {
+                        class: 'bg-success',
+                        title: 'Éxito',
+                        body: response.message,
+                        delay: 5000,
+                        autohide: true
+                    });
+                    // Refresh the page or update the table
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1000);
+                }
+            },
+            error: function(xhr) {
+                // If it's a validation error, we might get the form back
+                if (xhr.status === 400 || xhr.status === 200) {
+                    // This is tricky because Django might return the full HTML if not careful
+                    // But we'll try to update the modal body
+                    $('#routerManageModal .modal-content').html(xhr.responseText);
+                } else {
+                    alert('Ocurrió un error al guardar el router.');
+                }
+            }
+        });
+    });
+
+    // Real-time as-you-type validation
+    $('#id_address').on('input blur', function() {
+        var val = $(this).val();
+        var ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+        if (val.length > 0 && !ipRegex.test(val)) {
+            $(this).addClass('is-invalid');
+            if ($('#address-error-msg').length === 0) {
+                $(this).after('<div id="address-error-msg" class="invalid-feedback">Debe ingresar una IP numérica válida (ej. 192.168.1.1).</div>');
+            }
+        } else {
+            $(this).removeClass('is-invalid');
+            $('#address-error-msg').remove();
+        }
+    });
+
+    // Physically block letters from being typed
+    $('#id_address').on('keypress', function(e) {
+        // Allow only numbers and dots
+        var charCode = (e.which) ? e.which : e.keyCode;
+        if (charCode != 46 && charCode > 31 && (charCode < 48 || charCode > 57)) {
+            e.preventDefault();
+        }
+    });
+
+    // Auto-fill port based on connection protocol
+    $('#id_connection_protocol').on('change', function() {
+        var protocol = $(this).val().toLowerCase();
+        if (protocol === 'ssh') {
+            $('#id_port').val('22');
+        } else if (protocol === 'telnet') {
+            $('#id_port').val('23');
+        }
+    });
+
+    // Custom Inline Backup Profile UI Logic
+    var $useCustomBackup = $('#id_use_custom_backup');
+    var $customBackupFields = $('.custom-backup-fields');
+    var $backupProfileContainer = $('#id_backup_profile').closest('.form-group');
+
+    function toggleSubFields() {
+        $('#id_custom_hourly').is(':checked') ? $('#div_id_custom_hourly_interval').slideDown(150) : $('#div_id_custom_hourly_interval').slideUp(150);
+        $('#id_custom_daily').is(':checked') ? $('#div_id_custom_daily_hour').slideDown(150) : $('#div_id_custom_daily_hour').slideUp(150);
+        if ($('#id_custom_weekly').is(':checked')) {
+            $('#div_id_custom_weekly_day, #div_id_custom_weekly_hour').slideDown(150);
+        } else {
+            $('#div_id_custom_weekly_day, #div_id_custom_weekly_hour').slideUp(150);
+        }
+    }
+
+    function toggleCustomBackup() {
+        if ($useCustomBackup.is(':checked')) {
+            $customBackupFields.slideDown();
+            $backupProfileContainer.hide();
+            $('#id_backup_profile').val(''); // clear profile
+            toggleSubFields(); // trigger sub-field check
+        } else {
+            $customBackupFields.hide();
+            $backupProfileContainer.slideDown();
+            $('#id_custom_hourly, #id_custom_daily, #id_custom_weekly').prop('checked', false);
+            toggleSubFields(); // hide sub-fields instantly
+        }
+    }
+
+    if ($useCustomBackup.length > 0) {
+        $useCustomBackup.on('change', toggleCustomBackup);
+        $('#id_custom_hourly, #id_custom_daily, #id_custom_weekly').on('change', toggleSubFields);
+        
+        // Hide sub-fields by default on load without animation
+        $('#div_id_custom_hourly_interval, #div_id_custom_daily_hour, #div_id_custom_weekly_day, #div_id_custom_weekly_hour').hide();
+        
+        toggleCustomBackup(); // init
+    }
+
+});
+</script>

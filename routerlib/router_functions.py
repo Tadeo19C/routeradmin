@@ -38,7 +38,7 @@ def get_router_information(router_information: RouterInformation):
         ssh = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)
         json_data = {}
 
-        if router.router_type in ('routeros', 'routeros-branded'):
+        if router.router_type in ('mikrotik', 'mikrotik-branded'):
             for cmd in ['/system resource print', '/system routerboard print']:
                 stdin, stdout, stderr = ssh.exec_command(cmd)
                 raw = stdout.read().decode('utf-8', errors='ignore')

@@ -12,30 +12,6 @@
                 {% endif %}
                 <div class="card-body">
                     {% include 'router_manager/router_nav_tabs.html' %}
-
-                    <!-- Column Visibility Modal -->
-                    <div class="modal fade" id="columnVisibilityModal" tabindex="-1" role="dialog" aria-labelledby="columnVisibilityModalLabel" aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="columnVisibilityModalLabel">Show/Hide Columns</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body">
-                                    <div id="columnCheckboxes">
-                                        <!-- Checkboxes will be added here dynamically -->
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                                    <button type="button" class="btn btn-danger" id="resetColumnVisibility">Reset</button>
-                                    <button type="button" class="btn btn-primary" id="applyColumnVisibility">Apply</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     <div class="row">
                         <div class="col-lg-12">
                             <table class="table table-hover datatables-no-export">
@@ -43,38 +19,38 @@
                                 <tr>
                                     <th></th>
                                     {% if "name" in visible_columns %}
-                                    <th data-column="name">Name</th>
+                                    <th data-column="name">Nombre</th>
                                     {% endif %}
                                     {% if "type" in visible_columns %}
-                                    <th data-column="type">Type</th>
+                                    <th data-column="type">Tipo</th>
                                     {% endif %}
                                     {% if "address" in visible_columns %}
-                                    <th data-column="address">Address</th>
+                                    <th style="width: 15%">IP / Hostname</th>
                                     {% endif %}
                                     {% if "status" in visible_columns %}
-                                    <th data-column="status">Status</th>
+                                    <th data-column="status">Estado</th>
                                     {% endif %}
                                     {% if "backup" in visible_columns %}
-                                    <th data-column="backup">Backup</th>
+                                    <th data-column="backup">Respaldo</th>
                                     {% endif %}
                                     {% if "last_backup" in visible_columns %}
-                                    <th data-column="last_backup">Last Backup</th>
+                                    <th data-column="last_backup">Último Respaldo</th>
                                     {% endif %}
                                     {% if "next_daily_backup" in visible_columns %}
-                                    <th data-column="next_daily_backup">Next Daily Backup</th>
+                                    <th data-column="next_daily_backup">Próx. Diario</th>
                                     {% endif %}
                                     {% if "next_weekly_backup" in visible_columns %}
-                                    <th data-column="next_weekly_backup">Next Weekly Backup</th>
+                                    <th data-column="next_weekly_backup">Próx. Semanal</th>
                                     {% endif %}
                                     {% if "next_monthly_backup" in visible_columns %}
-                                    <th data-column="next_monthly_backup">Next Monthly Backup</th>
+                                    <th data-column="next_monthly_backup">Próx. Mensual</th>
                                     {% endif %}
                                     {% if "lock_information" in visible_columns %}
-                                        <th data-column="lock_information">Backup Lock</th>
-                                        <th data-column="lock_information">Command Lock</th>
+                                        <th data-column="lock_information">Bloqueo Respaldo</th>
+                                        <th data-column="lock_information">Bloqueo Comando</th>
                                     {% endif %}
                                     {% if "groups" in visible_columns %}
-                                    <th data-column="groups">Groups</th>
+                                    <th data-column="groups">Nodos</th>
                                     {% endif %}
                                     {% if "auth" in visible_columns %}
                                     <th data-column="auth">Auth</th>
@@ -83,23 +59,24 @@
                                     <th data-column="os_version">OS Version</th>
                                     {% endif %}
                                     {% if "model_name" in visible_columns %}
-                                    <th data-column="model_name">Model Name</th>
+                                    <th data-column="model_name">Modelo</th>
                                     {% endif %}
                                     {% if "model_version" in visible_columns %}
-                                    <th data-column="model_version">Model Version</th>
+                                    <th data-column="model_version">Versión Modelo</th>
                                     {% endif %}
                                     {% if "serial_number" in visible_columns %}
-                                    <th data-column="serial_number">Serial Number</th>
+                                    <th data-column="serial_number">No. Serie</th>
                                     {% endif %}
                                     {% if "firmware_version" in visible_columns %}
-                                    <th data-column="firmware_version">Firmware Version</th>
+                                    <th data-column="firmware_version">Firmware</th>
                                     {% endif %}
                                     {% if "architecture" in visible_columns %}
-                                    <th data-column="architecture">Architecture</th>
+                                    <th data-column="architecture">Arquitectura</th>
                                     {% endif %}
                                     {% if "cpu" in visible_columns %}
                                     <th data-column="cpu">CPU</th>
                                     {% endif %}
+                                    <th>Reportes</th>
                                     <th></th>
                                 </tr>
                                 </thead>
@@ -194,9 +171,7 @@
                                         {% if "auth" in visible_columns %}
                                         <td data-column="auth" class="min-width">
                                             {% if router.router_type != 'monitoring' %}
-                                                {% if router.ssh_key %}
-                                                    <span style="display: none">sshkey</span><i class="fas fa-key" title="SSH Key: {{ router.ssh_key }}"></i>
-                                                {% elif router.password %}
+                                                {% if router.password %}
                                                     <span style="display: none">password</span><i class="fas fa-keyboard" title="Password Authentication"></i>
                                                 {% else %}
                                                     <i class="fas fa-exclamation-triangle text-warning" title="Missing authentication"></i>
@@ -254,8 +229,20 @@
                                         </td>
                                         {% endif %}
                                         <td class="min-width">
-                                            <a href="/router/manage/?uuid={{ router.uuid }}"><i class="fas fa-edit"></i></a>
+                                            {% if router.router_type != 'monitoring' %}
+                                                <div class="btn-group">
+                                                    <a href="/router/details/?uuid={{ router.uuid }}" class="btn btn-sm btn-outline-info" title="View Logs">
+                                                        <i class="fas fa-list"></i> Logs
+                                                    </a>
+                                                    <a href="/backup/backup_list/?router={{ router.uuid }}" class="btn btn-sm btn-outline-success" title="Backup History & Download">
+                                                        <i class="fas fa-download"></i> Historial
+                                                    </a>
+                                                </div>
+                                            {% endif %}
                                         </td>
+                                         <td class="min-width">
+                                             <a href="javascript:void(0)" class="manage-router-btn" data-uuid="{{ router.uuid }}"><i class="fas fa-edit" title="Edit Router"></i></a>
+                                         </td>
                                     </tr>
                                 {% endfor %}
                                 </tbody>
@@ -263,16 +250,53 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-lg-12 text-right">
-                                <a href="/router/manage/" class="btn btn-primary">Add Router</a>
+                                <a href="javascript:void(0)" class="btn btn-primary" id="add-router-btn">Add Router</a>
                                 <a href="/router/import_tool/" class="btn btn-primary">Import Tool</a>
                                 <button id="select-all" class="btn btn-outline-primary" title="Select All"><i class="fas fa-check-square"></i></button>
                                 <button id="select-none" class="btn btn-outline-primary" title="Select None"><i class="fas fa-square"></i></button>
                                 <button id="create-backup" class="btn btn-warning" style="display: none;">Create Backup Task</button>
                                 <button id="run-command" class="btn btn-info" style="display: none;">Run Command</button>
-                                <button id="manage-groups" class="btn btn-primary" style="display: none;">Groups</button>
+                                <button id="manage-groups" class="btn btn-primary" style="display: none;">Nodos</button>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Router Manage Modal -->
+    <div class="modal fade" id="routerManageModal" tabindex="-1" role="dialog" aria-labelledby="routerManageModalLabel" aria-hidden="true" style="z-index: 2050;">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <!-- Content will be loaded via AJAX -->
+                <div class="text-center p-4">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p>Cargando formulario...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Column Visibility Modal -->
+    <div class="modal fade" id="columnVisibilityModal" tabindex="-1" role="dialog" aria-labelledby="columnVisibilityModalLabel" aria-hidden="true" style="z-index: 2050;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="columnVisibilityModalLabel">Show/Hide Columns</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="columnCheckboxes">
+                        <!-- Checkboxes will be added here dynamically -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="resetColumnVisibility">Reset</button>
+                    <button type="button" class="btn btn-primary" id="applyColumnVisibility">Apply</button>
                 </div>
             </div>
         </div>
@@ -290,7 +314,7 @@
         var columnDefinitions = [
             { name: "name", label: "Name", default: true },
             { name: "type", label: "Type", default: true },
-            { name: "address", label: "Address", default: false },
+            { name: "address", label: "IP / Hostname", default: true },
             { name: "status", label: "Status", default: true },
             { name: "backup", label: "Backup", default: true },
             { name: "last_backup", label: "Last Backup", default: false },
@@ -298,7 +322,7 @@
             { name: "next_weekly_backup", label: "Next Weekly Backup", default: false },
             { name: "next_monthly_backup", label: "Next Monthly Backup", default: false },
             { name: "lock_information", label: "Router Lock Information", default: false },
-            { name: "groups", label: "Groups", default: true },
+            { name: "groups", label: "Nodos", default: true },
             { name: "auth", label: "Auth", default: false },
             { name: "os_version", label: "OS Version", default: false },
             { name: "model_name", label: "Model Name", default: false },
@@ -437,7 +461,9 @@ $(document).ready(function() {
     $('#showHideColumnsBtn').on('click', function(e) {
         e.preventDefault();
         populateColumnModal();
-        $('#columnVisibilityModal').modal('show');
+        var modal = $('#columnVisibilityModal');
+        modal.appendTo("body");
+        modal.modal('show');
     });
 
     // Apply button click handler
@@ -575,6 +601,23 @@ $(document).ready(function() {
         }).get();
 
         window.location.href = '/fleet_commander/command/execute_multiple/?routers[]=' + selectedRouters.join('&routers[]=');
+    });
+
+    // Router Modal Logic
+    function openRouterModal(uuid) {
+        var url = uuid ? '/router/manage/?uuid=' + uuid + '&ajax=1' : '/router/manage/?ajax=1';
+        $('#routerManageModal .modal-content').load(url, function() {
+            $('#routerManageModal').appendTo("body").modal('show');
+        });
+    }
+
+    $('#add-router-btn').on('click', function() {
+        openRouterModal(null);
+    });
+
+    $(document).on('click', '.manage-router-btn', function() {
+        var uuid = $(this).data('uuid');
+        openRouterModal(uuid);
     });
 });
 </script>

@@ -22,7 +22,7 @@ class MessageSettingsForm(forms.ModelForm):
         self.helper = FormHelper()
         self.helper.layout = Layout(
             Fieldset(
-                'Message Settings',
+                'Ajustes de Mensajería',
             ),
             Div(
                 Div(Field('max_length'), css_class='col-md-6'),
@@ -48,8 +48,8 @@ class MessageSettingsForm(forms.ModelForm):
                 css_class='row'),
             Div(
                 Div(
-                    Submit('submit', 'Save', css_class='btn btn-success'),
-                    HTML(' <a class="btn btn-secondary" href="/message_center/channel_list/">Back</a> '),
+                    Submit('submit', 'Guardar', css_class='btn btn-success'),
+                    HTML(' <a class="btn btn-secondary" href="/message_center/channel_list/">Volver</a> '),
                     css_class='col-md-12'
                 ),
             css_class='row')
@@ -60,30 +60,30 @@ class MessageSettingsForm(forms.ModelForm):
 
         max_length = cleaned_data.get('max_length')
         if max_length is not None and (max_length < 500 or max_length > 2000):
-            self.add_error('max_length', 'Max length must be between 500 and 2000.')
+            self.add_error('max_length', 'La longitud máxima debe estar entre 500 y 2000.')
 
         daily_report_time = cleaned_data.get('daily_report_time')
         if daily_report_time is not None:
             try:
                 datetime.strptime(daily_report_time, '%H:%M')
             except ValueError:
-                self.add_error('daily_report_time', 'Invalid time format. Use HH:MM.')
+                self.add_error('daily_report_time', 'Formato de hora inválido. Use HH:MM.')
 
         max_retry = cleaned_data.get('max_retry')
         if max_retry is not None and (max_retry < 0 or max_retry > 5):
-            self.add_error('max_retry', 'Max retry must be between 0 and 5.')
+            self.add_error('max_retry', 'El máximo de reintentos debe estar entre 0 y 5.')
 
         retry_interval = cleaned_data.get('retry_interval')
         if retry_interval is not None and (retry_interval < 30 or retry_interval > 600):
-            self.add_error('retry_interval', 'Retry interval must be between 30 and 600 seconds.')
+            self.add_error('retry_interval', 'El intervalo de reintento debe estar entre 30 y 600 segundos.')
 
         status_change_delay = cleaned_data.get('status_change_delay')
         if status_change_delay is not None and (status_change_delay < 60 or status_change_delay > 600):
-            self.add_error('status_change_delay', 'Status change delay must be between 60 and 600 seconds.')
+            self.add_error('status_change_delay', 'El retraso de cambio de estado debe estar entre 60 y 600 segundos.')
 
         backup_fails_delay = cleaned_data.get('backup_fails_delay')
         if backup_fails_delay is not None and (backup_fails_delay < 60 or backup_fails_delay > 3600):
-            self.add_error('backup_fails_delay', 'Backup fails delay must be between 60 and 3600 seconds.')
+            self.add_error('backup_fails_delay', 'El retraso de fallas de respaldo debe estar entre 60 y 3600 segundos.')
         return cleaned_data
 
 
@@ -98,10 +98,19 @@ class MessageChannelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(MessageChannelForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper()
-        self.fields['enabled'].label = 'Channel Enabled'
+        self.fields['name'].label = 'NOMBRE'
+        self.fields['channel_type'].label = 'TIPO DE CANAL'
+        self.fields['destination'].label = 'DESTINO'
+        self.fields['token'].label = 'TOKEN'
+        self.fields['status_change_offline'].label = 'CAMBIO ESTADO OFFLINE'
+        self.fields['status_change_online'].label = 'CAMBIO ESTADO ONLINE'
+        self.fields['daily_status_report'].label = 'REPORTE ESTADO DIARIO'
+        self.fields['daily_backup_report'].label = 'REPORTE RESPALDO DIARIO'
+        self.fields['backup_fail'].label = 'FALLA DE RESPALDO'
+        self.fields['enabled'].label = 'CANAL HABILITADO'
         self.helper.layout = Layout(
             Fieldset(
-                'Message Channel',
+                'Canal de Notificación',
             ),
             Div(
                 Div(Field('name'), css_class='col-md-6'),
@@ -114,7 +123,7 @@ class MessageChannelForm(forms.ModelForm):
 
             Div(
                 Div(
-                    Div(HTML('<h4>Notification Settings</h4>'), css_class='col-md-12'),
+                    Div(HTML('<h4 class="mb-3">Ajustes de Notificación</h4>'), css_class='col-md-12'),
 
                     Div(Field('status_change_offline'), css_class='col-md-6'),
                     Div(Field('status_change_online'), css_class='col-md-6'),
@@ -124,8 +133,8 @@ class MessageChannelForm(forms.ModelForm):
                     Div(Field('enabled'), css_class='col-md-6'),
                     css_class='row'),
                 Div(
-                    Submit('submit', 'Save', css_class='btn btn-success'),
-                    HTML(' <a class="btn btn-secondary" href="/message_center/channel_list/">Back</a> '),
+                    Submit('submit', 'Guardar', css_class='btn btn-success'),
+                    HTML(' <a class="btn btn-secondary" href="/message_center/channel_list/">Volver</a> '),
                     css_class='col-md-12'
                 ),
             css_class='row')
@@ -138,53 +147,44 @@ class MessageChannelForm(forms.ModelForm):
 
         destination = cleaned_data.get('destination')
         if destination is not None and len(destination) > 100:
-            self.add_error('destination', 'Destination must be less than 100 characters.')
+            self.add_error('destination', 'El destino debe tener menos de 100 caracteres.')
 
         token = cleaned_data.get('token')
         if token is not None and len(token) > 100:
-            self.add_error('token', 'Token must be less than 100 characters.')
+            self.add_error('token', 'El token debe tener menos de 100 caracteres.')
 
         channel_type = cleaned_data.get('channel_type')
         if channel_type == 'ntfy':
             if not destination:
-                 self.add_error('destination', 'ntfy.sh requires a destination (topic name).')
+                 self.add_error('destination', 'ntfy.sh requiere un destino (topic name).')
             
             if token:
                  self.cleaned_data['token'] = ''
 
-        test_message = 'Test message from RouterFleet'
-        remote_error = 'No error message received'
+        test_message = 'Mensaje de prueba de MEGACOM'
+        remote_error = 'No se recibió mensaje de error'
 
         if channel_type == 'callmebot' and enabled:
             if not token or not destination:
-                raise forms.ValidationError('CallMeBot requires a token and destination.')
+                raise forms.ValidationError('CallMeBot requiere un token y un destino.')
 
             message = requests.get(f'https://api.callmebot.com/whatsapp.php?phone={destination}&text={test_message}&apikey={token}')
             if message.status_code != 200:
                 if message.text:
                     remote_error = message.text[:200]
-                raise forms.ValidationError(f'Test message failed. CallMeBot API status code {message.status_code}. Error: {remote_error}')
-
-        elif channel_type == 'telegram' and enabled:
-            if not token or not destination:
-                raise forms.ValidationError('Telegram requires a token and destination.')
-            message = requests.get(f'https://api.telegram.org/bot{token}/sendMessage?chat_id={destination}&text={test_message}')
-            if message.status_code != 200:
-                if message.text:
-                    remote_error = message.text[:200]
-                raise forms.ValidationError(f'Test message failed. Telegram API status code {message.status_code}. Error: {remote_error}')
+                raise forms.ValidationError(f'Falla en mensaje de prueba. Código API CallMeBot {message.status_code}. Error: {remote_error}')
 
         elif channel_type == 'ntfy' and enabled:
             if not destination:
-                raise forms.ValidationError('ntfy.sh requires a destination.')
+                raise forms.ValidationError('ntfy.sh requiere un destino.')
 
             try:
                 message = requests.post(f'https://ntfy.sh/{destination}', data=test_message.encode('utf-8'))
                 if message.status_code != 200:
                    if message.text:
                        remote_error = message.text[:200]
-                   raise forms.ValidationError(f'Test message failed. ntfy.sh API status code {message.status_code}. Error: {remote_error}')
+                   raise forms.ValidationError(f'Falla en mensaje de prueba. Código API ntfy.sh {message.status_code}. Error: {remote_error}')
             except requests.exceptions.RequestException as e:
-                raise forms.ValidationError(f'Test message failed. Network error: {str(e)}')
+                raise forms.ValidationError(f'Falla en mensaje de prueba. Error de red: {str(e)}')
 
         return cleaned_data

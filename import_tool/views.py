@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 
 from backup.models import BackupProfile
-from router_manager.models import Router, SSHKey, SUPPORTED_ROUTER_TYPES, RouterGroup, RouterStatus
+from router_manager.models import Router, SUPPORTED_ROUTER_TYPES, RouterGroup, RouterStatus
 from routerlib.functions import test_authentication
 from user_manager.models import UserAcl
 from .models import CsvData, ImportTask
@@ -33,14 +33,6 @@ def run_import_task(request):
         import_task.save()
         return JsonResponse({'status': 'error', 'error_message': error_message})
 
-    if import_task.ssh_key_name:
-        ssh_key = SSHKey.objects.filter(name=import_task.ssh_key_name).first()
-        if not ssh_key:
-            error_message = f'SSH Key with name "{import_task.ssh_key_name}" not found.'
-            import_task.import_error = True
-            import_task.import_error_message = error_message
-            import_task.save()
-            return JsonResponse({'status': 'error', 'error_message': error_message})
 
     address = import_task.address.lower()
     try:
@@ -108,7 +100,7 @@ def run_import_task(request):
         return JsonResponse({'status': 'error', 'error_message': error_message})
 
     new_router = Router.objects.create(
-        name=import_task.name, username=import_task.username, password=import_task.password, ssh_key=ssh_key,
+        name=import_task.name, username=import_task.username, password=import_task.password,
         address=address, port=import_task.port, router_type=import_task.router_type, backup_profile=backup_profile,
         monitoring=import_task.monitoring
     )
@@ -120,7 +112,6 @@ def run_import_task(request):
 
     import_task.router = new_router
     import_task.import_success = True
-    import_task.ssh_key = ssh_key
     import_task.backup_profile = backup_profile
     import_task.router_group = router_group
     import_task.save()
@@ -244,8 +235,8 @@ def view_import_csv_file(request):
     <strong>Example</strong>
     <pre>
     "name","username","password","ssh_key","address","port","router_type","backup_profile","router_group","monitoring"
-    "example host A","admin","","ssh key name","192.168.2.17","22","routeros","default","","true"
-    "example host B","admin","mysecret","","192.168.2.18","22","routeros","default","group a","false"
+    "example host A","admin","","ssh key name","192.168.2.17","22","mikrotik","default","","true"
+    "example host B","admin","mysecret","","192.168.2.18","22","mikrotik","default","group a","false"
     </pre>
     
     <strong>After importing</strong>

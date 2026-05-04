@@ -39,8 +39,7 @@
     
 <script>
     function openCommandDialog(element) {
-        var command = element.getAttribute('data-command');
-        var confirmation = prompt("{% if delete_confirmation_message %}{{ delete_confirmation_message }}{% else %}Please type 'delete' to proceed.{% endif %}");
+        var confirmation = prompt("{% if delete_confirmation_message %}{{ delete_confirmation_message }}{% else %}Por favor escriba 'delete' para continuar.{% endif %}");
         if (confirmation) {
             var url = "?uuid={{ instance.uuid }}&action=delete&confirmation=" + encodeURIComponent(confirmation);
             window.location.href = url;

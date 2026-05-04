@@ -4,6 +4,8 @@ from router_manager.models import Router
 from .models import MessageChannel, Notification, MessageSettings, Message
 from backup_data.models import RouterBackup
 import requests
+from django.core.mail import send_mail
+from django.conf import settings
 from django.utils import timezone
 
 
@@ -142,14 +144,26 @@ def send_notification_message(message: Message):
 
     if message.channel.channel_type == 'callmebot':
         url = f'https://api.callmebot.com/whatsapp.php?phone={message.channel.destination}&text={message.message}&apikey={message.channel.token}'
-    elif message.channel.channel_type == 'telegram':
-        url = f'https://api.telegram.org/bot{message.channel.token}/sendMessage?chat_id={message.channel.destination}&text={message.message}'
     elif message.channel.channel_type == 'ntfy':
         url = f'https://ntfy.sh/{message.channel.destination}'
         method = 'POST'
         data = message.message.encode('utf-8')
         if message.subject:
              headers = {'Title': message.subject}
+    elif message.channel.channel_type == 'email':
+        try:
+            send_mail(
+                subject=message.subject or 'Routerfleet Notification',
+                message=message.message,
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@routerfleet.local'),
+                recipient_list=[message.channel.destination],
+                fail_silently=False,
+            )
+            message_response['status'] = 'sent'
+        except Exception as e:
+            message_response['status'] = 'failed'
+            message_response['error_message'] = str(e)
+            message_response['error_status_code'] = 0
     else:
         message_response['status'] = 'failed'
         message_response['error_message'] = 'Failed to send message: Invalid channel type'

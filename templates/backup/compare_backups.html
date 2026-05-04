@@ -54,6 +54,15 @@
         var diffString = `{{ diff_str|safe }}`;
         function renderDiff(viewType) {
             var targetElement = document.getElementById('diff-container');
+            
+            if (!diffString || diffString.trim() === "") {
+                targetElement.innerHTML = `
+                    <div class="alert alert-info mt-4 text-center">
+                        <i class="fas fa-info-circle"></i> No differences found between these two backups. The configurations are identical.
+                    </div>`;
+                return;
+            }
+
             var processedDiffString = diffString.split('\n').filter(line => {
                 return !line.startsWith('--- a/') && !line.startsWith('+++ b/');
             }).join('\n');

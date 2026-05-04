@@ -2,6 +2,7 @@ import datetime
 from django.utils import timezone
 from backup_data.models import RouterBackup
 import os
+import tempfile
 from scp import SCPClient
 from django.core.files.base import ContentFile
 
@@ -147,7 +148,7 @@ def execute_backup(router_backup: RouterBackup):
     ssh_client = None
     additional_parameters = ""
     try:
-        if router_backup.router.router_type == 'routeros' or router_backup.router.router_type == 'routeros-branded':
+        if router_backup.router.router_type == 'mikrotik' or router_backup.router.router_type == 'mikrotik-branded':
             if router.backup_profile:
                 if router.backup_profile.parameter_sensitive:
                     additional_parameters += ' show-sensitive'
@@ -201,9 +202,9 @@ def retrieve_backup(router_backup: RouterBackup):
     ssh_client = None
 
     try:
-        if router_backup.router.router_type == 'routeros' or router_backup.router.router_type == 'routeros-branded':
-            rsc_file_path = f'/tmp/{backup_name}.{file_extension["text"]}'
-            backup_file_path = f'/tmp/{backup_name}.{file_extension["binary"]}'
+        if router_backup.router.router_type == 'mikrotik' or router_backup.router.router_type == 'mikrotik-branded':
+            rsc_file_path = os.path.join(tempfile.gettempdir(), f'{backup_name}.{file_extension["text"]}')
+            backup_file_path = os.path.join(tempfile.gettempdir(), f'{backup_name}.{file_extension["binary"]}')
             ssh_client = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)
             scp_client = SCPClient(ssh_client.get_transport(), socket_timeout=300)
             run_scp_get(scp_client, f'/{backup_name}.{file_extension["text"]}', rsc_file_path, router_backup)
@@ -213,6 +214,13 @@ def retrieve_backup(router_backup: RouterBackup):
                 rsc_content = rsc_file.read()
                 rsc_content_cleaned = '\n'.join(
                     line for line in rsc_content.split('\n') if not line.strip().startswith('#'))
+                
+                # Check for duplicate
+                previous_backup = RouterBackup.objects.filter(router=router, success=True).order_by('-created').first()
+                if previous_backup and previous_backup.backup_text == rsc_content_cleaned:
+                    router_backup.identical_to_previous = True
+                    append_task_console_output(router_backup, '[Deduplication] Configuration matches previous backup exactly.')
+
                 router_backup.backup_text = rsc_content_cleaned
                 router_backup.backup_text_filename = f'{backup_name}.{file_extension["text"]}'
 
@@ -230,7 +238,7 @@ def retrieve_backup(router_backup: RouterBackup):
 
         elif router_backup.router.router_type == 'openwrt':
             remote_backup_file_path = f'/tmp/{backup_name}.{file_extension["binary"]}'
-            local_backup_file_path = f'/tmp/{backup_name}.{file_extension["binary"]}'
+            local_backup_file_path = os.path.join(tempfile.gettempdir(), f'{backup_name}.{file_extension["binary"]}')
             ssh_client = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)
             scp_client = SCPClient(ssh_client.get_transport(), socket_timeout=300)
             run_scp_get(scp_client, remote_backup_file_path, local_backup_file_path, router_backup)
@@ -244,7 +252,7 @@ def retrieve_backup(router_backup: RouterBackup):
 
         elif router_backup.router.router_type == 'ubiquiti-airos':
             remote_path = '/tmp/system.cfg'
-            local_path = f'/tmp/{backup_name}.{file_extension["text"]}'
+            local_path = os.path.join(tempfile.gettempdir(), f'{backup_name}.{file_extension["text"]}')
             ssh_client = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)
             scp_client = SCPClient(ssh_client.get_transport(), socket_timeout=300)
             run_scp_get(scp_client, remote_path, local_path, router_backup)
@@ -257,6 +265,12 @@ def retrieve_backup(router_backup: RouterBackup):
             except UnicodeDecodeError:
                 text = raw_bytes.decode('latin-1', errors='replace')
                 append_task_console_output(router_backup, '[decode=latin-1 fallback]')
+
+            # Check for duplicate
+            previous_backup = RouterBackup.objects.filter(router=router, success=True).order_by('-created').first()
+            if previous_backup and previous_backup.backup_text == text:
+                router_backup.identical_to_previous = True
+                append_task_console_output(router_backup, '[Deduplication] Configuration matches previous backup exactly.')
 
             router_backup.backup_text = text
             router_backup.backup_text_filename = f'{backup_name}.{file_extension["text"]}'
@@ -282,7 +296,7 @@ def clean_up_backup_files(router_backup: RouterBackup):
     router = router_backup.router
     ssh_client = None
     try:
-        if router_backup.router.router_type == 'routeros' or router_backup.router.router_type == 'routeros-branded':
+        if router_backup.router.router_type == 'mikrotik' or router_backup.router.router_type == 'mikrotik-branded':
             ssh_client = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)
             command = 'file remove [find where name~"routerfleet-backup-"]'
             run_ssh_command(ssh_client, command, router_backup)

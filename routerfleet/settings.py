@@ -49,7 +49,8 @@ INSTALLED_APPS = [
     'routerfleet_tools',
     'message_center',
     'import_tool',
-    'fleet_commander'
+    'fleet_commander',
+    'dashboard'
 ]
 
 MIDDLEWARE = [
@@ -119,7 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es'
 
 TIME_ZONE = 'America/Sao_Paulo'
 

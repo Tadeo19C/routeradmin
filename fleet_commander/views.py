@@ -7,10 +7,14 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
-from router_manager.models import Router
+from router_manager.models import Router, RouterGroup
+from dashboard.models import ActivityLog
 from user_manager.models import UserAcl
 from .command_functions import create_jobs_from_schedules, execute_command_task, create_manual_job
-from .forms import CommandForm, CommandVariantForm, CommandScheduleForm, CommandExecuteForm
+from .forms import (
+    CommandForm, CommandVariantForm, CommandScheduleForm, CommandExecuteForm,
+    BroadcastCommandForm
+)
 from .models import Command, CommandVariant, CommandSchedule, CommandJob, CommandTask
 
 
@@ -23,7 +27,7 @@ def create_default_commands():
         max_retry=3,
         retry_interval=30,
     )
-    for router_type in ['routeros', 'routeros-branded']:
+    for router_type in ['mikrotik', 'mikrotik-branded']:
         CommandVariant.objects.create(
             command=new_command, router_type=router_type, enabled=True,
             payload='/system resource print\n/system package print'
@@ -45,7 +49,7 @@ def create_default_commands():
         max_retry=3,
         retry_interval=30,
     )
-    for router_type in ['routeros', 'routeros-branded']:
+    for router_type in ['mikrotik', 'mikrotik-branded']:
         CommandVariant.objects.create(
             command=new_command, router_type=router_type, enabled=True,
             payload='/system/package/update/set channel=long-term\n/system/package/update/install'
@@ -377,3 +381,66 @@ def view_cron_perform_command_tasks(request):
             break
 
     return JsonResponse(data)
+
+
+@login_required()
+def view_broadcast_command(request):
+    if not UserAcl.objects.filter(user=request.user, user_level__gte=40).exists():
+        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+
+    form = BroadcastCommandForm(request.POST or None)
+
+    if form.is_valid():
+        groups = form.cleaned_data['router_groups']
+        command_text = form.cleaned_data['command_text']
+        capture_output = form.cleaned_data['capture_output']
+
+        # Create ad-hoc command
+        timestamp = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+        cmd_snippet = (command_text[:20] + '...') if len(command_text) > 20 else command_text
+        command_name = f"Broadcast: {cmd_snippet} ({timestamp})"
+
+        command = Command.objects.create(
+            name=command_name,
+            description=f"Auto-generated broadcast command launched on {timestamp}",
+            capture_output=capture_output,
+            enabled=True
+        )
+
+        # Identify all router types in the selected groups
+        all_routers = Router.objects.filter(routergroup__in=groups, enabled=True).distinct()
+        router_types = all_routers.values_list('router_type', flat=True).distinct()
+
+        if not all_routers.exists():
+            command.delete()
+            messages.warning(request, 'No se encontraron routers activos en los grupos seleccionados.')
+            return redirect('fleet_commander_broadcast_command')
+
+        # Create variants for each router type
+        for r_type in router_types:
+            CommandVariant.objects.create(
+                command=command,
+                router_type=r_type,
+                payload=command_text,
+                enabled=True
+            )
+
+        # Create the job
+        job = create_manual_job(
+            command=command,
+            routers=all_routers,
+            user=request.user
+        )
+
+        if job:
+            messages.success(request, f'Broadcast iniciado para {job.tasks.count()} targets.')
+            return redirect(f'/fleet_commander/job/details/?uuid={job.uuid}')
+        else:
+            command.delete()
+            messages.warning(request, 'Error al crear el trabajo de broadcast.')
+
+    context = {
+        'form': form,
+        'page_title': 'Comandos en Bloque (Broadcast)',
+    }
+    return render(request, 'fleet_commander/broadcast_command.html', context)

@@ -267,12 +267,50 @@ class CommandScheduleForm(forms.ModelForm):
             raise forms.ValidationError("You must select at least one router or one router group.")
         return cleaned_data
 
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        instance.repeat_interval = self.cleaned_data.get('repeat_interval', 0)
-        if self.command:
-            instance.command = self.command
-        if commit:
-            instance.save()
-            self.save_m2m()
-        return instance
+class BroadcastCommandForm(forms.Form):
+    router_groups = forms.ModelMultipleChoiceField(
+        queryset=forms.Field().initial,  # Placeholder, will be set in __init__
+        label="Nodos",
+        required=True,
+        widget=forms.SelectMultiple(attrs={'class': 'selectmultiple'})
+    )
+    command_text = forms.CharField(
+        label="Comando",
+        widget=forms.Textarea(attrs={'rows': 5, 'placeholder': 'Ej: /ip dns set servers=8.8.8.8'}),
+        required=True
+    )
+    capture_output = forms.BooleanField(
+        label="Capturar Salida",
+        initial=True,
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        from router_manager.models import RouterGroup
+        super(BroadcastCommandForm, self).__init__(*args, **kwargs)
+        self.fields['router_groups'].queryset = RouterGroup.objects.all().order_by('name')
+
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+
+        self.helper.layout = Layout(
+            Div(
+                Div(Field('router_groups'), css_class='col-md-12'),
+                css_class='row',
+            ),
+            Div(
+                Div(Field('command_text'), css_class='col-md-12'),
+                css_class='row',
+            ),
+            Div(
+                Div(Field('capture_output'), css_class='col-md-12'),
+                css_class='row',
+            ),
+            Row(
+                Column(
+                    Submit('submit', 'Ejecutar Broadcast', css_class='btn btn-success btn-lg btn-block'),
+                    HTML(' <a class="btn btn-secondary btn-block" href="/fleet_commander/">Cancelar</a> '),
+                    css_class='col-md-12'
+                )
+            ),
+        )

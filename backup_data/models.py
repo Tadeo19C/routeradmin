@@ -24,6 +24,7 @@ class RouterBackup(models.Model):
     backup_binary = models.FileField(upload_to='backups/', blank=True, null=True)
     task_console_output = models.TextField(blank=True, null=True, default='')
     task_lock = models.DateTimeField(blank=True, null=True)
+    identical_to_previous = models.BooleanField(default=False)
 
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)

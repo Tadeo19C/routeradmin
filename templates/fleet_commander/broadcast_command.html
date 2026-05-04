@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-broadcast-tower mr-2"></i> {{ page_title }}</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Esta herramienta permite enviar un comando de configuración masiva a todos los routers dentro de los Nodos seleccionados.
+                </p>
+                
+                <form method="post" id="broadcastForm">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-12">
+                            {% crispy form %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card card-info card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-info-circle mr-2"></i> Información</h3>
+            </div>
+            <div class="card-body">
+                <h5>¿Cómo funciona?</h5>
+                <ol class="pl-3">
+                    <li>Selecciona uno o más <strong>Nodos</strong> de la lista.</li>
+                    <li>Escribe el comando que deseas ejecutar (ej: cambiar DNS, agregar un firewall rule).</li>
+                    <li>Presiona <strong>Ejecutar Broadcast</strong>.</li>
+                </ol>
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle mr-2"></i> <strong>Importante:</strong> 
+                    Asegúrate de que el comando sea compatible con todos los tipos de routers en los grupos seleccionados.
+                </div>
+                
+                <div id="targetSummary" class="mt-4" style="display:none;">
+                    <h5>Resumen del Objetivo</h5>
+                    <ul id="typeList" class="list-unstyled">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_page_scripts %}
+<script>
+    $(document).ready(function() {
+        // We could add AJAX here to update targetSummary based on selected groups
+    });
+</script>
+{% endblock %}

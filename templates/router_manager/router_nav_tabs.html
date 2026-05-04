@@ -6,12 +6,7 @@
     </li>
     <li class="nav-item">
         <a class="nav-link {% if request.path == '/router/group_list/' %}active{% endif %}" href="/router/group_list/" role="tab">
-            Router Groups
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {% if request.path == '/router/ssh_keys/' %}active{% endif %}" href="/router/ssh_keys/" role="tab">
-            SSH Keys
+            Nodos
         </a>
     </li>
     {% if request.path == '/router/list/' %}
@@ -25,10 +20,10 @@
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
                    aria-haspopup="true" aria-expanded="false">
-                    {% if filter_group %}{{ filter_group }}{% else %}All Routers{% endif %}
+                    {% if filter_group %}{{ filter_group }}{% else %}Todos los Routers{% endif %}
                 </a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <a class="dropdown-item" href="?filter_group=all">All Routers</a>
+                    <a class="dropdown-item" href="?filter_group=all">Todos los Routers</a>
                     {% for group_temp in filter_group_list %}
                         <a class="dropdown-item" href="?filter_group={{ group_temp.uuid }}">{{ group_temp.name }}</a>
                     {% endfor %}

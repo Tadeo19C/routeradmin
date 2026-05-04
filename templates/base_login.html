@@ -3,18 +3,53 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>routerfleet</title>
+  <title>MEGACOM</title>
 
-  <!-- Google Font: Source Sans Pro -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <!-- Google Font: Outfit -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="/static/AdminLTE-3.2.0/plugins/fontawesome-free/css/all.min.css">
-  <!-- icheck bootstrap -->
-  <link rel="stylesheet" href="/static/AdminLTE-3.2.0/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
   <!-- Theme style -->
   <link rel="stylesheet" href="/static/AdminLTE-3.2.0/dist/css/adminlte.min.css">
+  <!-- Modern UI -->
+  <link rel="stylesheet" href="/static/modern_ui.css">
+  <style>
+    body {
+        background: radial-gradient(circle at top left, #1a367c 0%, #0c142c 100%) !important;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .register-box, .login-box {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .register-card-body, .login-card-body {
+        background: transparent !important;
+        color: white !important;
+    }
+    .register-logo a, .login-logo a {
+        color: white !important;
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+    .form-control {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        border-radius: 10px !important;
+    }
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.4) !important;
+    }
+  </style>
 </head>
-<body class="hold-transition register-page">
+<body class="hold-transition">
 {% block content %}
 {% endblock %}
 

@@ -12,24 +12,32 @@
                 {% endif %}
                 <div class="card-body">
                     {% include 'backup/backup_nav_tabs.html' %}
+                    <div class="row mb-2">
+                        <div class="col-lg-12 d-flex justify-content-end align-items-center">
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="toggleDuplicates" checked>
+                                <label class="custom-control-label" for="toggleDuplicates">Ocultar Backups sin Cambios</label>
+                            </div>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-lg-12">
                             <table class="table table-hover datatables-no-export">
                                 <thead>
                                 <tr>
                                     <th class="min-width">ID</th>
-                                    <th>Router</th>
-                                    <th>Address</th>
-                                    <th>Schedule Type</th>
-                                    <th>Task Created</th>
-                                    <th>Finish Time</th>
-                                    <th class="min-width" title="Backup hash"><i class="fas fa-code-branch" title="Configuration has changed"></i></th>
-                                    <th class="min-width">Status</th>
+                                    <th>Nodo</th>
+                                    <th>Dirección</th>
+                                    <th>Frecuencia</th>
+                                    <th>Tarea Creada</th>
+                                    <th>Finalizado</th>
+                                    <th class="min-width" title="Hash del Respaldo"><i class="fas fa-code-branch" title="Cambios en configuración"></i></th>
+                                    <th class="min-width">Estado</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {% for backup in backup_list %}
-                                    <tr>
+                                    <tr class="{% if backup.identical_to_previous %}duplicate-backup{% endif %}">
                                         <td class="min-width">
                                             <a href="/backup/backup_details/?uuid={{ backup.uuid }}">
                                             {{ backup.id }}
@@ -54,7 +62,11 @@
                                     
                                     <td class="min-width" style="text-align: center;">
                                         {% if backup.success %}
-                                            <i class="far fa-check-circle text-success"></i>
+                                            {% if backup.identical_to_previous %}
+                                                <span class="badge badge-secondary" title="Idéntico al anterior">Sin Cambios</span>
+                                            {% else %}
+                                                <i class="far fa-check-circle text-success"></i>
+                                            {% endif %}
                                         {% elif backup.error %}
                                             <i class="far fa-times-circle text-danger"
                                                title="{{ backup.error_message }}"></i>

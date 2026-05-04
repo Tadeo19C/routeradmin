@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Router, SSHKey, RouterStatus, BackupSchedule, RouterInformation
+from .models import Router, RouterStatus, BackupSchedule, RouterInformation
 
 
 class RouterInformationAdmin(admin.ModelAdmin):
@@ -17,14 +17,6 @@ class RouterAdmin(admin.ModelAdmin):
 
 admin.site.register(Router, RouterAdmin)
 
-
-class SSHKeyAdmin(admin.ModelAdmin):
-    list_display = ('name', 'updated', 'created')
-    search_fields = ('name',)
-    list_filter = ('updated', 'created')
-
-
-admin.site.register(SSHKey, SSHKeyAdmin)
 
 
 class RouterStatusAdmin(admin.ModelAdmin):

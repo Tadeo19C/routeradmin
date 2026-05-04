@@ -1,5 +1,5 @@
 from backup.models import BackupProfile
-from router_manager.models import SUPPORTED_ROUTER_TYPES, SSHKey, RouterGroup
+from router_manager.models import SUPPORTED_ROUTER_TYPES, RouterGroup
 from django import forms
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Row, Column, HTML
@@ -40,7 +40,7 @@ class CsvDataForm(forms.ModelForm):
         raw_csv_data = cleaned_data.get('raw_csv_data')
 
         expected_fields = [
-            'name', 'username', 'password', 'ssh_key', 'address', 'port', 'router_type',
+            'name', 'username', 'password', 'address', 'port', 'router_type',
             'backup_profile', 'router_group', 'monitoring'
         ]
 
@@ -56,7 +56,7 @@ class CsvDataForm(forms.ModelForm):
 
             required_fields = {'name', 'username', 'address', 'port', 'router_type', 'monitoring'}
             optional_fields = {'backup_profile', 'router_group'}
-            valid_fields = required_fields | optional_fields | {'password', 'ssh_key'}
+            valid_fields = required_fields | optional_fields | {'password'}
             seen_names = set()
 
             import_data = []
@@ -77,10 +77,8 @@ class CsvDataForm(forms.ModelForm):
                 if extra_fields:
                     raise ValidationError(f"Unexpected fields: {extra_fields} on line {line_number}")
 
-                if not (row.get('password') or row.get('ssh_key')):
-                    raise ValidationError(f"Either 'password' or 'ssh_key' must be provided on line {line_number}")
-                if row.get('password') and row.get('ssh_key'):
-                    raise ValidationError(f"Both 'password' and 'ssh_key' cannot be provided together on line {line_number}")
+                if not row.get('password'):
+                    raise ValidationError(f"Password must be provided on line {line_number}")
 
                 if row['name'] in seen_names:
                     raise ValidationError(f"Duplicate name '{row['name']}' found on line {line_number}")
@@ -98,9 +96,6 @@ class CsvDataForm(forms.ModelForm):
                 if not row['port'].isdigit() or not (1 <= int(row['port']) <= 65535):
                     raise ValidationError(f"Invalid port '{row['port']}' on line {line_number}")
 
-                if row['ssh_key']:
-                    if row['ssh_key'] not in ssh_key_list:
-                        ssh_key_list.append(row['ssh_key'])
                 if row['router_group']:
                     if row['router_group'] not in router_group_list:
                         router_group_list.append(row['router_group'])
@@ -112,9 +107,6 @@ class CsvDataForm(forms.ModelForm):
                 row['import_id'] = import_id
                 import_data.append(row)
 
-            for ssh_key in ssh_key_list:
-                if not SSHKey.objects.filter(name=ssh_key).exists():
-                    raise ValidationError(f"SSH Key '{ssh_key}' does not exist")
             for router_group in router_group_list:
                 if not RouterGroup.objects.filter(name=router_group).exists():
                     raise ValidationError(f"Router Group '{router_group}' does not exist")

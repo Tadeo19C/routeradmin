@@ -180,10 +180,11 @@ def view_cron_concatenate_notifications(request):
 @login_required()
 def view_message_channel_list(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=20).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     message_settings, _ = MessageSettings.objects.get_or_create(name='message_settings')
     message_channels = MessageChannel.objects.all()
     context = {
+        'page_title': 'Canales de Notificación',
         'message_settings': message_settings,
         'message_channels': message_channels,
     }
@@ -193,10 +194,11 @@ def view_message_channel_list(request):
 @login_required()
 def view_message_history(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=20).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     message_settings, _ = MessageSettings.objects.get_or_create(name='message_settings')
     message_list = Message.objects.all().order_by('-created')
     context = {
+        'page_title': 'Historial de Mensajes',
         'message_settings': message_settings,
         'message_list': message_list,
     }
@@ -206,32 +208,33 @@ def view_message_history(request):
 @login_required()
 def view_manage_message_settings(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=40).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     message_settings, _ = MessageSettings.objects.get_or_create(name='message_settings')
     form = MessageSettingsForm(request.POST or None, instance=message_settings)
     if form.is_valid():
         form.save()
-        messages.success(request, 'Message Settings saved successfully')
+        messages.success(request, 'Ajustes de Mensajes guardados correctamente')
         return redirect('/message_center/channel_list/')
     form_description_content = '''
-    <strong>Max Length</strong>
-    <p>Maximum length of a message in characters. Longer messages will be truncated.</p>
-    <strong>Daily Report Time</strong>
-    <p>Time of day to send daily status and backup reports. Format: HH:MM (24-hour clock)</p>
-    <strong>Max Retry and Retry Interval</strong>
-    <p>Maximum number of retries for a failed message and the interval between retries in seconds.</p>
-    <strong>Concatenate Status Change</strong>
+    <strong>Longitud Máxima</strong>
+    <p>Longitud máxima de un mensaje en caracteres. Los mensajes más largos serán truncados.</p>
+    <strong>Hora de Reporte Diario</strong>
+    <p>Hora del día para enviar los reportes diarios de estado y respaldo. Formato: HH:MM (reloj de 24 horas)</p>
+    <strong>Máximo de Reintentos e Intervalo</strong>
+    <p>Número máximo de reintentos para un mensaje fallido y el intervalo entre reintentos en segundos.</p>
+    <strong>Concatenar Cambios de Estado</strong>
     <p>
-    When enabled, the system will concatenate status change notifications for multiple routers into a single message.
-    If a router goes offline and then online again within the status change delay, the system will not send any message.
+    Cuando está habilitado, el sistema agrupará notificaciones de cambio de estado de múltiples routers en un solo mensaje.
+    Si un router se desconecta y vuelve a conectarse dentro del retraso de cambio de estado, el sistema no enviará ningún mensaje.
     </p>
-    <strong>Concatenate Backup Fails</strong>
-    <p>Instead of sending a single message for each backup failure, the system will concatenate multiple failures into a single message.</p>
-    <strong>Status Change and Backup fail Delay</strong>
-    <p>Time in seconds to wait for additional notifications before sending a concatenated message.</p>
+    <strong>Concatenar Fallas de Respaldo</strong>
+    <p>En lugar de enviar un mensaje por cada falla de respaldo, el sistema agrupará múltiples fallas en un solo mensaje.</p>
+    <strong>Retraso de Cambio de Estado y Falla de Respaldo</strong>
+    <p>Tiempo en segundos para esperar notificaciones adicionales antes de enviar un mensaje concatenado.</p>
     '''
 
     context = {
+        'page_title': 'Ajustes de Notificaciones',
         'message_settings': message_settings,
         'form': form,
         'form_description': {
@@ -245,17 +248,17 @@ def view_manage_message_settings(request):
 @login_required()
 def view_manage_message_channel(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=40).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     message_settings, _ = MessageSettings.objects.get_or_create(name='message_settings')
     if request.GET.get('uuid'):
         message_channel = MessageChannel.objects.get(uuid=request.GET.get('uuid'))
         if request.GET.get('action') == 'delete':
             if request.GET.get('confirmation') == 'delete':
                 message_channel.delete()
-                messages.success(request, 'Message Channel deleted successfully')
+                messages.success(request, 'Canal de Notificación eliminado correctamente')
                 return redirect('/message_center/channel_list/')
             else:
-                messages.warning(request, 'Message Channel not deleted|Invalid confirmation')
+                messages.warning(request, 'Canal de Notificación no eliminado|Confirmación inválida')
                 return redirect('/message_center/channel_list/')
     else:
         message_channel = None
@@ -263,27 +266,27 @@ def view_manage_message_channel(request):
     form = MessageChannelForm(request.POST or None, instance=message_channel)
     if form.is_valid():
         form.save()
-        messages.success(request, 'Message Channel saved successfully')
+        messages.success(request, 'Canal de Notificación guardado correctamente')
         return redirect('/message_center/channel_list/')
     form_description_content = f'''
-    <strong>Destination</strong>
-    <p>Destination address for the message channel. 
+    <strong>Destino</strong>
+    <p>Dirección de destino para el canal de mensajes. 
     <ul>
-    <li>For CallMeBot, this is the phone number.</li>
-    <li>For Telegram, this is the chat ID.</li>
-    <li>For ntfy.sh, this is the topic name. Consider using something <strong>very</strong> unique, like: routerfleet-{uuid.uuid4()}</li>
+    <li>Para CallMeBot, este es el número de teléfono.</li>
+    <li>Para ntfy.sh, este es el nombre del tema. Considere usar algo <strong>muy</strong> único, como: routerfleet-{uuid.uuid4()}</li>
     </ul>
     </p>
     <strong>Token</strong>
-    <p>For CallMeBot, this is the API token. For Telegram, this is the bot token. For ntfy.sh, leave this blank.</p>
-    <strong>Status Change and Backup Fail</strong>
-    <p>Enable or disable notifications for status changes and backup failures.</p>
-    <strong>Daily Status and Backup Report</strong>
-    <p>Enable or disable daily status and backup reports. This is a quick summary of online/offline status and backup success/failure.</p>
+    <p>Para CallMeBot, este es el token API. Para ntfy.sh, deje esto en blanco.</p>
+    <strong>Cambio de Estado y Falla de Respaldo</strong>
+    <p>Habilitar o deshabilitar notificaciones para cambios de estado y fallas de respaldo.</p>
+    <strong>Reporte Diario de Estado y Respaldo</strong>
+    <p>Habilitar o deshabilitar reportes diarios. Este es un resumen rápido del estado online/offline y el éxito/falla de los respaldos.</p>
     
     '''
 
     context = {
+        'page_title': 'Gestionar Canal de Notificación',
         'message_settings': message_settings,
         'form': form,
         'form_description': {

@@ -1,7 +1,7 @@
 from django.db import models
 
 from backup.models import BackupProfile
-from router_manager.models import Router, SSHKey, SUPPORTED_ROUTER_TYPES, RouterGroup
+from router_manager.models import Router, SUPPORTED_ROUTER_TYPES, RouterGroup
 import uuid
 
 
@@ -22,8 +22,6 @@ class ImportTask(models.Model):
     import_id = models.IntegerField(default=0)
     router = models.ForeignKey(Router, on_delete=models.SET_NULL, blank=True, null=True)
     name = models.CharField(max_length=100)
-    ssh_key = models.ForeignKey(SSHKey, on_delete=models.SET_NULL, blank=True, null=True)
-    ssh_key_name = models.CharField(max_length=100, blank=True, null=True)
     username = models.CharField(max_length=100)
     password = models.CharField(max_length=100, blank=True, null=True)
     router_group = models.ForeignKey(RouterGroup, on_delete=models.SET_NULL, blank=True, null=True)

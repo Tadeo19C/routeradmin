@@ -5,35 +5,26 @@ from django.db import models
 from backup.models import BackupProfile
 
 SUPPORTED_ROUTER_TYPES = (
-    ('monitoring', 'Monitoring Only'),
-    ('routeros', 'Mikrotik (RouterOS)'),
-    ('routeros-branded', 'Mikrotik (Branded)'),
+    ('cisco-ios', 'Cisco (IOS)'),
+    ('cisco-xe', 'Cisco (IOS-XE)'),
+    ('mikrotik', 'Mikrotik (RouterOS)'),
+    ('mikrotik-branded', 'Mikrotik (Branded)'),
     ('openwrt', 'OpenWRT'),
-    ('ubiquiti-airos', 'Ubiquiti airOS')
+    ('ubiquiti-airos', 'Ubiquiti airOS'),
+    ('monitoring', 'Monitoring Only'),
 )
 
-
-class SSHKey(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    public_key = models.TextField()
-    private_key = models.TextField()
-
-    updated = models.DateTimeField(auto_now=True)
-    created = models.DateTimeField(auto_now_add=True)
-    uuid = models.UUIDField(unique=True, editable=False, default=uuid.uuid4)
-
-    def __str__(self):
-        return self.name
 
 
 class Router(models.Model):
     name = models.CharField(max_length=100, unique=True)
     internal_notes = models.TextField(null=True, blank=True)
     address = models.CharField(max_length=100)
+    connection_protocol = models.CharField(max_length=10, choices=(('ssh', 'SSH'), ('telnet', 'Telnet')), default='ssh')
     port = models.IntegerField(default=22)
     username = models.CharField(max_length=100, default='admin')
     password = models.CharField(max_length=100, null=True, blank=True)
-    ssh_key = models.ForeignKey(SSHKey, on_delete=models.SET_NULL, null=True, blank=True)
+    ssh_key = models.TextField(null=True, blank=True)
     monitoring = models.BooleanField(default=True)
     backup_profile = models.ForeignKey(BackupProfile, on_delete=models.SET_NULL, null=True, blank=True)
     router_type = models.CharField(max_length=100, choices=SUPPORTED_ROUTER_TYPES)
@@ -61,6 +52,10 @@ class RouterStatus(models.Model):
 
 
 class RouterGroup(models.Model):
+    class Meta:
+        verbose_name = "Nodo"
+        verbose_name_plural = "Nodos"
+
     name = models.CharField(max_length=100, unique=True)
     default_group = models.BooleanField(default=False)
     internal_notes = models.TextField(null=True, blank=True)
@@ -79,6 +74,7 @@ class BackupSchedule(models.Model):
     next_daily_backup = models.DateTimeField(null=True, blank=True)
     next_weekly_backup = models.DateTimeField(null=True, blank=True)
     next_monthly_backup = models.DateTimeField(null=True, blank=True)
+    next_hourly_backup = models.DateTimeField(null=True, blank=True)
 
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)

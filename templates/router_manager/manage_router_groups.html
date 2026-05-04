@@ -5,7 +5,7 @@
     <div class='col-lg-6'>
         <div class="card card-primary card-outline">
             <div class="card-header">
-                <h3 class="card-title">Manage Router Groups</h3>
+                <h3 class="card-title">Administrar Nodos</h3>
             </div>
             <div class="card-body">
                 <form method="post">
@@ -24,9 +24,9 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="add_group">Add to Group:</label>
+                                <label for="add_group">Añadir a Nodo:</label>
                                 <select class="form-control" id="add_group" name="add_group">
-                                    <option value="">-- Select Group --</option>
+                                    <option value="">-- Seleccionar Nodo --</option>
                                     {% for group in groups %}
                                         <option value="{{ group.uuid }}">{{ group.name }}</option>
                                     {% endfor %}
@@ -35,9 +35,9 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="remove_group">Remove from Group:</label>
+                                <label for="remove_group">Eliminar de Nodo:</label>
                                 <select class="form-control" id="remove_group" name="remove_group">
-                                    <option value="">-- Select Group --</option>
+                                    <option value="">-- Seleccionar Nodo --</option>
                                     {% for group in groups %}
                                         <option value="{{ group.uuid }}">{{ group.name }}</option>
                                     {% endfor %}
@@ -67,7 +67,7 @@ $(document).ready(function() {
         var removeGroup = $('#remove_group').val();
 
         if (addGroup && removeGroup && addGroup === removeGroup) {
-            alert("You cannot select the same group for both adding and removing.");
+            alert("No puedes seleccionar el mismo nodo para añadir y eliminar a la vez.");
             $(this).val('');
         }
     });

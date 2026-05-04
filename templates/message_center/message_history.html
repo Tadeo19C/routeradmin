@@ -5,7 +5,7 @@
         <div class='col-lg-12'>
             <div class="card card-primary card-outline">
                 <div class="card-header">
-                    <h3 class="card-title">Message History</h3>
+                    <h3 class="card-title">Historial de Mensajes</h3>
                 </div>
                 <div class="card-body">
                     {% include 'message_center/message_center_nav_tabs.html' %}
@@ -14,11 +14,11 @@
                             <table class="table table-hover datatables-no-export">
                                 <thead>
                                 <tr>
-                                    <th>Channel</th>
-                                    <th>Status</th>
-                                    <th>Subject</th>
+                                    <th>Canal</th>
+                                    <th>Estado</th>
+                                    <th>Asunto</th>
                                     <th>Error</th>
-                                    <th>Created</th>
+                                    <th>Creado</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -41,7 +41,7 @@
                     </div>
                 </div>
             </div>
-            <p class="small" style="text-align: right; font-style: italic">Showing messages sent in the last 30 days. Older messages are automatically removed.</p>
+            <p class="small" style="text-align: right; font-style: italic">Mostrando mensajes enviados en los últimos 30 días. Los mensajes más antiguos se eliminan automáticamente.</p>
         </div>
     </div>
 {% endblock %}

@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from backup_data.models import RouterBackup
 from router_manager.models import Router, RouterStatus
+from .models import ActivityLog
 
 ALLOWED_DAYS = [3,5,7,10, 15, 30]  # Define allowed values
 
@@ -64,7 +65,7 @@ def get_directory_statistics(directory_path):
 
 @login_required
 def view_dashboard(request):
-    context = {'page_title': 'Welcome to routerfleet'}
+    context = {'page_title': 'Bienvenido'}
     return render(request, 'dashboard/welcome.html', context=context)
 
 
@@ -72,7 +73,7 @@ def view_dashboard(request):
 def view_status(request):
     settings.MEDIA_ROOT
     context = {
-        'page_title': 'Welcome to routerfleet',
+        'page_title': 'Bienvenido',
         'media_root_stats': get_directory_statistics(settings.MEDIA_ROOT),
         'queue': RouterBackup.objects.filter(success=False, error=False).count(),
         'success_backup_last_24h': RouterBackup.objects.filter(success=True, created__gte=timezone.now() - timedelta(days=1)).count(),
@@ -117,6 +118,21 @@ def backup_statistics_data(request):
         'error_data': error_data,
     }
     return JsonResponse(data)
+
+@login_required
+def view_activity_logs(request):
+    logs = ActivityLog.objects.all()
+    
+    # Optional filtering
+    router_uuid = request.GET.get('router_uuid')
+    if router_uuid:
+        logs = logs.filter(router__uuid=router_uuid)
+    
+    context = {
+        'page_title': 'Historial de Actividad',
+        'logs': logs[:500], # Limit to last 500 for performance
+    }
+    return render(request, 'dashboard/logs.html', context=context)
 
 @login_required
 def router_status_data(request):

@@ -3,7 +3,7 @@ from urllib.parse import unquote
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
@@ -13,12 +13,39 @@ from backup_data.models import RouterBackup
 from routerfleet_tools.models import WebadminSettings
 from routerlib.router_functions import update_router_information
 from user_manager.models import UserAcl
-from .forms import RouterForm, RouterGroupForm, SSHKeyForm
-from .models import Router, RouterGroup, RouterInformation, RouterStatus, SSHKey, BackupSchedule
+from .forms import RouterForm, RouterGroupForm
+from .models import Router, RouterGroup, RouterInformation, RouterStatus, BackupSchedule
+from dashboard.models import ActivityLog
+import threading
+from routerlib.backup_functions import perform_backup
+
+
+def trigger_soft_cron():
+    # Helper to run cron tasks in local dev without real crontab
+    try:
+        from backup_data.views import (
+            view_cron_generate_backup_schedule, 
+            view_cron_create_backup_tasks, 
+            view_cron_perform_backup_tasks
+        )
+        # Mock request object for the views
+        class MockRequest:
+            GET = {}
+        mock_req = MockRequest()
+        
+        view_cron_generate_backup_schedule(mock_req)
+        view_cron_create_backup_tasks(mock_req)
+        view_cron_perform_backup_tasks(mock_req)
+    except Exception as e:
+        print(f"Soft-cron error: {e}")
+
+def run_soft_cron_thread():
+    threading.Thread(target=trigger_soft_cron, daemon=True).start()
 
 
 @login_required
 def view_router_list(request):
+    run_soft_cron_thread()
     router_list = Router.objects.all().prefetch_related(
         'routerstatus', 
         'routerinformation', 
@@ -41,6 +68,18 @@ def view_router_list(request):
             filter_group = get_object_or_404(RouterGroup, uuid=request.GET.get('filter_group'))
             router_list = router_list.filter(routergroup=filter_group)
 
+    if request.GET.get('q'):
+        q = request.GET.get('q')
+        router_list = router_list.filter(
+            Q(name__icontains=q) | 
+            Q(address__icontains=q) | 
+            Q(internal_notes__icontains=q) |
+            Q(router_type__icontains=q) |
+            Q(routerinformation__os_version__icontains=q) |
+            Q(routerinformation__model_name__icontains=q) |
+            Q(routerinformation__serial_number__icontains=q)
+        ).distinct()
+
     if not filter_group and request.GET.get('filter_group') != 'all':
         filter_group = RouterGroup.objects.filter(default_group=True).first()
     # Parse the router_visible_columns cookie
@@ -50,14 +89,14 @@ def view_router_list(request):
             visible_columns = json.loads(unquote(request.COOKIES['router_visible_columns']))
         except json.JSONDecodeError:
             # If the cookie is invalid, use default columns
-            visible_columns = ["name", "type", "status", "backup", "groups"]
+            visible_columns = ["name", "type", "address", "status", "backup", "groups"]
     else:
         # Default columns if cookie doesn't exist
-        visible_columns = ["name", "type", "status", "backup", "groups"]
+        visible_columns = ["name", "type", "address", "status", "backup", "groups"]
 
     context = {
         'router_list': router_list,
-        'page_title': 'Router List',
+        'page_title': 'Directorio de Nodos',
         'filter_group_list': RouterGroup.objects.all().order_by('name'),
         'filter_group': filter_group,
         'last_status_change_timestamp': last_status_change_timestamp,
@@ -81,7 +120,10 @@ def view_router_details(request):
     router = get_object_or_404(Router, uuid=request.GET.get('uuid'))
     router_status, router_status_created = RouterStatus.objects.get_or_create(router=router)
     router_backup_list = router.routerbackup_set.all().order_by('-created')
-    router_information = RouterInformation.objects.filter(router=router).first()
+    if router.router_type != 'monitoring':
+        router_information, _ = RouterInformation.objects.get_or_create(router=router)
+    else:
+        router_information = None
     downtime_last_week = router.routerdowntime_set.filter(start_time__gte=timezone.now() - timezone.timedelta(days=7)).aggregate(total=Sum('total_down_time'))['total']
     if downtime_last_week is None:
         downtime_last_week = 0
@@ -101,7 +143,7 @@ def view_router_details(request):
         'router_information': router_information,
         'router_status': router_status,
         'router_backup_list': router_backup_list,
-        'page_title': 'Router Details',
+        'page_title': 'Detalles del Nodo',
         'offline_time_last_week': downtime_last_week,
         'last_week_availability': last_week_availability,
         'command_task_list': router.commandtask_set.all().order_by('-created')[:25],
@@ -117,8 +159,9 @@ def view_manage_router(request):
         return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
     webadmin_settings, webadmin_settings_created = WebadminSettings.objects.get_or_create(name='webadmin_settings')
 
-    if request.GET.get('uuid'):
-        router = get_object_or_404(Router, uuid=request.GET.get('uuid'))
+    uuid = request.GET.get('uuid')
+    if uuid:
+        router = get_object_or_404(Router, uuid=uuid)
         if request.GET.get('action') == 'delete':
             if request.GET.get('confirmation') == 'delete':
                 router.delete()
@@ -137,28 +180,54 @@ def view_manage_router(request):
             router_information.error = False
             router_information.error_message = ''
             router_information.save()
-            messages.success(request, 'Router information will be updated shortly')
+            success, error_msg = update_router_information(router_information)
+            if success:
+                messages.success(request, 'Router information updated successfully')
+            else:
+                messages.warning(request, f'Router information failed to update: {error_msg}')
             return redirect('/router/details/?uuid=' + str(router.uuid))
     else:
         router = None
 
     form = RouterForm(request.POST or None, instance=router)
     if form.is_valid():
-        form.save()
+        saved_router = form.save()
+        
+        # Log the activity
+        action = "Router Editado" if uuid else "Router Creado"
+        ActivityLog.objects.create(
+            user=request.user,
+            action=action,
+            details=f"Router '{saved_router.name}' ({saved_router.address})",
+            router=saved_router
+        )
+
+        # Handle group assignment (M2M)
+        selected_group = form.cleaned_data.get('router_group')
+        # Remove router from all current groups
+        for group in RouterGroup.objects.filter(routers=saved_router):
+            group.routers.remove(saved_router)
+        # Add to selected group if one was chosen
+        if selected_group:
+            selected_group.routers.add(saved_router)
         messages.success(request, 'Router saved successfully|It may take a few minutes until monitoring starts for this router.')
-        router_status, router_status_created = RouterStatus.objects.get_or_create(router=form.instance)
-        BackupSchedule.objects.filter(router=form.instance).delete()
-        if form.instance.router_type == 'monitoring':
-            RouterInformation.objects.filter(router=form.instance).delete()
+        router_status, router_status_created = RouterStatus.objects.get_or_create(router=saved_router)
+        BackupSchedule.objects.filter(router=saved_router).delete()
+        if saved_router.router_type == 'monitoring':
+            RouterInformation.objects.filter(router=saved_router).delete()
         webadmin_settings.router_config_last_updated = timezone.now()
         webadmin_settings.save()
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax'):
+            return JsonResponse({'status': 'success', 'message': 'Router saved successfully'})
         return redirect('router_list')
 
     context = {
         'form': form,
-        'page_title': 'Manage Router',
+        'page_title': 'Gestionar Nodo',
         'instance': router
     }
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax'):
+        return render(request, 'router_manager/router_form_modal.html', context=context)
     return render(request, 'generic_form.html', context=context)
 
 
@@ -166,7 +235,7 @@ def view_manage_router(request):
 def view_router_group_list(request):
     context = {
         'router_group_list': RouterGroup.objects.all().order_by('name'),
-        'page_title': 'Router Group List',
+        'page_title': 'Grupos de Nodos',
     }
     return render(request, 'router_manager/router_group_list.html', context=context)
 
@@ -196,53 +265,42 @@ def view_manage_router_group(request):
 
     context = {
         'form': form,
-        'page_title': 'Manage Router Group',
+        'page_title': 'Gestionar Grupo de Nodos',
         'instance': router_group
     }
     return render(request, 'generic_form.html', context=context)
 
 
-@login_required()
-def view_ssh_key_list(request):
-    context = {
-        'sshkey_list': SSHKey.objects.all().order_by('name'),
-        'page_title': 'SSH Key List',
-    }
-    return render(request, 'router_manager/sshkey_list.html', context=context)
 
 
-@login_required()
-def view_manage_sshkey(request):
-    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=40).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
-    if request.GET.get('uuid'):
-        sshkey = get_object_or_404(SSHKey, uuid=request.GET.get('uuid'))
-        if request.GET.get('action') == 'delete':
-            if request.GET.get('confirmation') == 'delete':
-                sshkey.delete()
-                messages.success(request, 'SSH Key deleted successfully')
-                return redirect('ssh_keys_list')
+
+import time
+
+def process_backup_fully(backup_uuid):
+    # Process all steps of a backup (usually Execute -> Retrieve)
+    for _ in range(3): # Max 3 attempts/steps
+        try:
+            backup = RouterBackup.objects.get(uuid=backup_uuid)
+            if backup.success or backup.error:
+                break
+            perform_backup(backup)
+            # If it's waiting for retrieval, wait a few seconds instead of the profile's long interval
+            if backup.backup_pending_retrieval and not backup.success:
+                time.sleep(5)
             else:
-                messages.warning(request, 'SSH Key not deleted|Invalid confirmation')
-                return redirect('ssh_keys_list')
-    else:
-        sshkey = None
-
-    form = SSHKeyForm(request.POST or None, instance=sshkey)
-    if form.is_valid():
-        form.save()
-        messages.success(request, 'SSH Key saved successfully')
-        return redirect('ssh_keys_list')
-
-    context = {
-        'form': form,
-        'page_title': 'Manage SSH Key',
-        'instance': sshkey
-    }
-    return render(request, 'generic_form.html', context=context)
-
+                break
+        except Exception:
+            break
 
 def create_instant_backup(router):
+    # Auto-cleanup stuck tasks older than 5 minutes
+    stuck_tasks = RouterBackup.objects.filter(router=router, success=False, error=False, created__lt=timezone.now() - timezone.timedelta(minutes=5))
+    if stuck_tasks.exists():
+        stuck_tasks.update(error=True, error_message='Backup task timed out/stuck (autocleaned after 5m)')
+        # Also clear the backup lock if it matches the stuck task
+        router.routerstatus.backup_lock = None
+        router.routerstatus.save()
+
     if RouterBackup.objects.filter(router=router, success=False, error=False).exists():
         return 'Active router backup task already exists'
 
@@ -260,6 +318,9 @@ def create_instant_backup(router):
 
     router.routerstatus.backup_lock = router_backup.schedule_time
     router.routerstatus.save()
+
+    # Process the backup in the background immediately
+    threading.Thread(target=process_backup_fully, args=(router_backup.uuid,)).start()
 
     return None
 
