@@ -78,12 +78,12 @@ def view_backup_list(request):
         backup_list = backup_list.filter(error=True).order_by('-created')
         view_type = 'errors'
     else:
-        backup_list = backup_list.filter(success=True).order_by('-created')
+        backup_list = backup_list.filter(success=True, identical_to_previous=False).order_by('-created')
         view_type = 'success'
 
     context = {
         'backup_list': backup_list,
-        'page_title': 'Backup List',
+        'page_title': 'Lista de Respaldos',
         'view_type': view_type
     }
     return render(request, 'backup/backup_list.html', context)
@@ -115,10 +115,21 @@ def view_backup_details(request):
             hash_list.append(backup_item.backup_text_hash)
             backup_list.append(backup_item)
     webadmin_settings, _ = WebadminSettings.objects.get_or_create(name='webadmin_settings')
+    
+    # Safety Layer: Truncate very large backups for display
+    display_text = backup.backup_text or ""
+    backup_truncated = False
+    SIZE_LIMIT = 512000 # 500KB
+    if len(display_text) > SIZE_LIMIT:
+        display_text = display_text[:SIZE_LIMIT] + "\n\n[... TEXTO TRUNCADO POR SEGURIDAD. DESCARGUE EL ARCHIVO PARA VER EL CONTENIDO COMPLETO ...]"
+        backup_truncated = True
+
     context = {
         'backup': backup,
+        'display_text': display_text,
+        'backup_truncated': backup_truncated,
         'backup_list': backup_list,
-        'page_title': 'Backup Details',
+        'page_title': 'Detalles del Respaldo',
         'webadmin_settings': webadmin_settings,
         'now': timezone.now(),
         '5_minutes_ago': timezone.now() - timezone.timedelta(minutes=5),
@@ -208,7 +219,7 @@ def view_backup_delete(request):
     backup = get_object_or_404(RouterBackup, uuid=request.GET.get('uuid'))
     router = backup.router
     redirect_url = f'/router/details/?uuid={backup.router.uuid}'
-    if request.GET.get('confirmation') == f'delete{backup.id}':
+    if request.GET.get('confirmation') in [f'delete{backup.id}', f'borrar{backup.id}']:
         backup.delete()
         messages.success(request, 'Backup deleted successfully')
         if router.routerstatus.backup_lock:
@@ -219,3 +230,22 @@ def view_backup_delete(request):
     else:
         messages.warning(request, 'Backup not deleted|Invalid confirmation')
         return redirect(f'/backup/backup_details/?uuid={backup.uuid}')
+@login_required()
+def view_get_backup_profile_details(request):
+    profile_uuid = request.GET.get('uuid')
+    if not profile_uuid:
+        return JsonResponse({'error': 'Missing UUID'}, status=400)
+    
+    profile = get_object_or_404(BackupProfile, uuid=profile_uuid)
+    data = {
+        'name': profile.name,
+        'hourly_backup': profile.hourly_backup,
+        'daily_backup': profile.daily_backup,
+        'weekly_backup': profile.weekly_backup,
+        'hourly_interval': profile.hourly_interval,
+        'daily_hour': profile.daily_hour,
+        'weekly_day': profile.weekly_day,
+        'weekly_hour': profile.weekly_hour,
+        # Add other fields if needed for the UI
+    }
+    return JsonResponse(data)

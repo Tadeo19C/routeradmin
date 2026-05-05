@@ -12,32 +12,34 @@
                 {% endif %}
                 <div class="card-body">
                     {% include 'backup/backup_nav_tabs.html' %}
-                    <div class="row mb-2">
-                        <div class="col-lg-12 d-flex justify-content-end align-items-center">
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" id="toggleDuplicates" checked>
-                                <label class="custom-control-label" for="toggleDuplicates">Ocultar Backups sin Cambios</label>
+                            <div class="mb-3 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <button id="compare-backups-btn" class="btn btn-primary btn-sm" disabled title="Selecciona exactamente 2 respaldos para comparar">
+                                        <i class="fas fa-columns mr-1"></i> Comparar Seleccionados
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <table class="table table-hover datatables-no-export">
+                            <table class="table table-hover datatables-no-export" id="backup-list-table">
                                 <thead>
                                 <tr>
+                                    <th class="min-width text-center"><i class="fas fa-check-square"></i></th>
                                     <th class="min-width">ID</th>
                                     <th>Nodo</th>
-                                    <th>Dirección</th>
+                                    <th>Dirección IP</th>
                                     <th>Frecuencia</th>
                                     <th>Tarea Creada</th>
                                     <th>Finalizado</th>
-                                    <th class="min-width" title="Hash del Respaldo"><i class="fas fa-code-branch" title="Cambios en configuración"></i></th>
                                     <th class="min-width">Estado</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {% for backup in backup_list %}
                                     <tr class="{% if backup.identical_to_previous %}duplicate-backup{% endif %}">
+                                        <td class="text-center">
+                                            {% if backup.success %}
+                                            <input type="checkbox" class="backup-select" data-uuid="{{ backup.uuid }}">
+                                            {% endif %}
+                                        </td>
                                         <td class="min-width">
                                             <a href="/backup/backup_details/?uuid={{ backup.uuid }}">
                                             {{ backup.id }}
@@ -54,11 +56,6 @@
                                     <td>{% if backup.finish_time %}{{ backup.finish_time }}{% else %}
                                         <i class="far fa-clock text-warning"></i>{% endif %}</td>
 
-                                    <td class="min-width">
-                                        {% if backup.backup_text_hash %}
-                                        <a href="#" title="{{ backup.backup_text_hash }}">{{ backup.backup_text_hash|slice:":12" }}...</a>
-                                        {% endif %}
-                                    </td>
                                     
                                     <td class="min-width" style="text-align: center;">
                                         {% if backup.success %}
@@ -72,7 +69,7 @@
                                                title="{{ backup.error_message }}"></i>
                                         {% elif backup.backup_pending_retrieval %}
                                             <i class="fas fa-cloud-download-alt text-info"
-                                               title="Backup pending Retrieval"></i>
+                                               title="Respaldo pendiente de recuperación"></i>
                                         {% else %}
                                             <i class="far fa-clock text-warning"></i>
                                         {% endif %}
@@ -84,6 +81,29 @@
                         </div>
 
                     </div>
+                    
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const checkboxes = document.querySelectorAll('.backup-select');
+                            const compareBtn = document.getElementById('compare-backups-btn');
+
+                            checkboxes.forEach(cb => {
+                                cb.addEventListener('change', function() {
+                                    const selected = document.querySelectorAll('.backup-select:checked');
+                                    compareBtn.disabled = selected.length !== 2;
+                                });
+                            });
+
+                            compareBtn.addEventListener('click', function() {
+                                const selected = document.querySelectorAll('.backup-select:checked');
+                                if (selected.length === 2) {
+                                    const uuid1 = selected[0].getAttribute('data-uuid');
+                                    const uuid2 = selected[1].getAttribute('data-uuid');
+                                    window.location.href = `/backup/compare/?uuid=${uuid1}&compare_uuid=${uuid2}`;
+                                }
+                            });
+                        });
+                    </script>
                     
 
                 </div>

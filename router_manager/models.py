@@ -17,6 +17,10 @@ SUPPORTED_ROUTER_TYPES = (
 
 
 class Router(models.Model):
+    class Meta:
+        verbose_name = "Equipo"
+        verbose_name_plural = "Equipos"
+
     name = models.CharField(max_length=100, unique=True)
     internal_notes = models.TextField(null=True, blank=True)
     address = models.CharField(max_length=100)

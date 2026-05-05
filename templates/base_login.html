@@ -29,9 +29,16 @@
         padding: 2rem;
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     }
+    .register-box .card, .login-box .card {
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        margin-bottom: 0;
+    }
     .register-card-body, .login-card-body {
         background: transparent !important;
         color: white !important;
+        padding: 0 !important;
     }
     .register-logo a, .login-logo a {
         color: white !important;
@@ -41,11 +48,34 @@
     .form-control {
         background: rgba(255, 255, 255, 0.05) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-right: none !important;
         color: white !important;
-        border-radius: 10px !important;
+        border-top-left-radius: 10px !important;
+        border-bottom-left-radius: 10px !important;
     }
     .form-control::placeholder {
         color: rgba(255, 255, 255, 0.4) !important;
+    }
+    .input-group-text {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-left: none !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+        border-top-right-radius: 10px !important;
+        border-bottom-right-radius: 10px !important;
+    }
+    .btn-primary {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        color: white !important;
+        border-radius: 10px !important;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+        box-shadow: none !important;
+    }
+    .btn-primary:hover {
+        background: rgba(255, 255, 255, 0.2) !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
     }
   </style>
 </head>

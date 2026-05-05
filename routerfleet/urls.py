@@ -3,7 +3,8 @@ from django.urls import path
 
 from accounts.views import view_login, view_logout, view_create_first_user
 from backup.views import view_backup_profile_list, view_manage_backup_profile, view_backup_list, view_backup_details, \
-    view_debug_run_backups, view_compare_backups, view_backup_download, view_backup_delete
+    view_debug_run_backups, view_compare_backups, view_backup_download, view_backup_delete, \
+    view_get_backup_profile_details
 from backup_data.views import view_cron_generate_backup_schedule, view_cron_create_backup_tasks, \
     view_cron_perform_backup_tasks, view_cron_housekeeping
 from dashboard.views import view_dashboard, view_status, view_activity_logs, backup_statistics_data, router_status_data
@@ -58,6 +59,7 @@ urlpatterns = [
     path('backup/compare/', view_compare_backups, name='compare_backups'),
     path('backup/download/', view_backup_download, name='download_backup'),
     path('backup/delete/', view_backup_delete, name='delete_backup'),
+    path('backup/get_profile_details/', view_get_backup_profile_details, name='get_backup_profile_details'),
     path('monitoring/export_router_list/', view_export_router_list, name='export_router_list'),
     path('monitoring/update_router_status/', view_update_router_status, name='update_router_status'),
     path('monitoring/router_config_timestamp/', view_router_config_timestamp, name='router_config_timestamp'),

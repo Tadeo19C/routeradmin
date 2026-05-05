@@ -1,47 +1,47 @@
-# MEGACOM Deployment Guide
+# Guía de Despliegue de MEGACOM
 
-This guide describes how to deploy MEGACOM for your clients using Docker. This ensures a consistent environment and easy installation.
+Esta guía describe cómo desplegar **MEGACOM** para tus clientes usando Docker. Esto asegura un entorno consistente y una instalación sencilla.
 
-## Prerequisites
-- Docker and Docker Compose installed on the host machine.
-- 1GB RAM minimum.
+## Requisitos Previos
+- Docker y Docker Compose instalados en la máquina host.
+- Mínimo 1GB de RAM.
 
-## Installation via MEGACOM Setup Script (Recommended for Clients)
+## Instalación vía Script de Configuración Automática (Recomendado)
 
-We have provided an automated script to handle the containerized installation:
+Hemos proporcionado un script automatizado para manejar la instalación en contenedores:
 
-1.  **Prepare the host**: Ensure Docker and Docker Compose are installed.
-2.  **Download the package**: Extract the MEGACOM files into a folder.
-3.  **Run the setup**:
+1.  **Preparar el host**: Asegúrate de que Docker y Docker Compose estén instalados.
+2.  **Descargar el paquete**: Extrae los archivos de MEGACOM en una carpeta.
+3.  **Ejecutar la configuración**:
     ```bash
     chmod +x setup.sh
     ./setup.sh
     ```
-4.  **Initial Configuration**:
-    - The script will build the MEGACOM branded images and start the services.
-    - Open your browser at `http://your-server-ip`.
+4.  **Configuración Inicial**:
+    - El script construirá las imágenes personalizadas de MEGACOM e iniciará los servicios.
+    - Abre tu navegador en `http://tu-ip-servidor`.
 
-## Manual Installation (Docker)
+## Instalación Manual (Docker)
 
-If you prefer to run it manually, use the following command:
+Si prefieres ejecutarlo manualmente, usa el siguiente comando:
 ```bash
 docker-compose -f docker-compose.megacom.yml up -d --build
 ```
 
-4.  **Initial Setup**:
-    - Access the application at `http://your-server-ip:8000`.
-    - Create the first administrator user as prompted.
+4.  **Configuración Inicial**:
+    - Accede a la aplicación en `http://tu-ip-servidor:8000`.
+    - Crea el primer usuario administrador cuando se te solicite.
 
-## Updating MEGACOM
+## Actualización de MEGACOM
 
-To update to the latest version:
+Para actualizar a la versión más reciente:
 ```bash
 docker-compose down
 git pull
 docker-compose up -d --build
 ```
 
-## Security Recommendations
-- Always use a strong password for the admin account.
-- If exposing to the internet, we recommend using a Reverse Proxy with HTTPS (like Nginx or Traefik).
-- Use SSH Keys instead of passwords for Mikrotik/Cisco devices whenever possible.
+## Recomendaciones de Seguridad
+- Usa siempre una contraseña fuerte para la cuenta de administrador.
+- Si vas a exponer el sistema a internet, recomendamos usar un Proxy Inverso con HTTPS (como Nginx o Traefik).
+- Usa llaves SSH en lugar de contraseñas para los dispositivos MikroTik siempre que sea posible.

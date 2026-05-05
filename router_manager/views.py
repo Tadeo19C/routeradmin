@@ -17,8 +17,8 @@ from .forms import RouterForm, RouterGroupForm
 from .models import Router, RouterGroup, RouterInformation, RouterStatus, BackupSchedule
 from dashboard.models import ActivityLog
 import threading
+import time
 from routerlib.backup_functions import perform_backup
-
 
 def trigger_soft_cron():
     # Helper to run cron tasks in local dev without real crontab
@@ -39,8 +39,15 @@ def trigger_soft_cron():
     except Exception as e:
         print(f"Soft-cron error: {e}")
 
+LAST_CRON_RUN = 0
+
 def run_soft_cron_thread():
-    threading.Thread(target=trigger_soft_cron, daemon=True).start()
+    global LAST_CRON_RUN
+    current_time = time.time()
+    # Only run once every 60 seconds
+    if current_time - LAST_CRON_RUN > 60:
+        LAST_CRON_RUN = current_time
+        threading.Thread(target=trigger_soft_cron, daemon=True).start()
 
 
 @login_required
@@ -96,7 +103,7 @@ def view_router_list(request):
 
     context = {
         'router_list': router_list,
-        'page_title': 'Directorio de Nodos',
+        'page_title': 'Directorio de Equipos',
         'filter_group_list': RouterGroup.objects.all().order_by('name'),
         'filter_group': filter_group,
         'last_status_change_timestamp': last_status_change_timestamp,
@@ -136,7 +143,7 @@ def view_router_details(request):
         if not router_backup_list.filter(success=False, error=False).exists():
             router_status.backup_lock = None
             router_status.save()
-            messages.warning(request, 'Backup lock removed|Backup lock was removed as there are no active backup tasks')
+            messages.warning(request, 'Bloqueo de respaldo eliminado|Se eliminó el bloqueo de respaldo porque no hay tareas de respaldo activas.')
 
     context = {
         'router': router,
@@ -163,14 +170,14 @@ def view_manage_router(request):
     if uuid:
         router = get_object_or_404(Router, uuid=uuid)
         if request.GET.get('action') == 'delete':
-            if request.GET.get('confirmation') == 'delete':
+            if request.GET.get('confirmation') in ['delete', 'borrar']:
                 router.delete()
-                messages.success(request, 'Router deleted successfully')
+                messages.success(request, 'Equipo eliminado correctamente')
                 webadmin_settings.router_config_last_updated = timezone.now()
                 webadmin_settings.save()
                 return redirect('router_list')
             else:
-                messages.warning(request, 'Router not deleted|Invalid confirmation')
+                messages.warning(request, 'Equipo no eliminado|Confirmación inválida')
                 return redirect('router_list')
         elif request.GET.get('action') == 'refresh_information':
             router_information, created = RouterInformation.objects.get_or_create(router=router)
@@ -182,9 +189,9 @@ def view_manage_router(request):
             router_information.save()
             success, error_msg = update_router_information(router_information)
             if success:
-                messages.success(request, 'Router information updated successfully')
+                messages.success(request, 'Información del equipo actualizada correctamente')
             else:
-                messages.warning(request, f'Router information failed to update: {error_msg}')
+                messages.warning(request, f'Error al actualizar información del equipo: {error_msg}')
             return redirect('/router/details/?uuid=' + str(router.uuid))
     else:
         router = None
@@ -194,11 +201,11 @@ def view_manage_router(request):
         saved_router = form.save()
         
         # Log the activity
-        action = "Router Editado" if uuid else "Router Creado"
+        action = "Equipo Editado" if uuid else "Equipo Creado"
         ActivityLog.objects.create(
             user=request.user,
             action=action,
-            details=f"Router '{saved_router.name}' ({saved_router.address})",
+            details=f"Equipo '{saved_router.name}' ({saved_router.address})",
             router=saved_router
         )
 
@@ -210,7 +217,7 @@ def view_manage_router(request):
         # Add to selected group if one was chosen
         if selected_group:
             selected_group.routers.add(saved_router)
-        messages.success(request, 'Router saved successfully|It may take a few minutes until monitoring starts for this router.')
+        messages.success(request, 'Equipo guardado correctamente|Puede tomar unos minutos hasta que inicie el monitoreo para este equipo.')
         router_status, router_status_created = RouterStatus.objects.get_or_create(router=saved_router)
         BackupSchedule.objects.filter(router=saved_router).delete()
         if saved_router.router_type == 'monitoring':
@@ -218,7 +225,7 @@ def view_manage_router(request):
         webadmin_settings.router_config_last_updated = timezone.now()
         webadmin_settings.save()
         if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax'):
-            return JsonResponse({'status': 'success', 'message': 'Router saved successfully'})
+            return JsonResponse({'status': 'success', 'message': 'Equipo guardado correctamente'})
         return redirect('router_list')
 
     context = {
@@ -227,7 +234,7 @@ def view_manage_router(request):
         'instance': router
     }
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax'):
-        return render(request, 'router_manager/router_form_modal.html', context=context)
+        return render(request, 'router_manager/router_form_modal.html', context=context, status=400 if form.errors else 200)
     return render(request, 'generic_form.html', context=context)
 
 
@@ -243,16 +250,16 @@ def view_router_group_list(request):
 @login_required()
 def view_manage_router_group(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=40).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     if request.GET.get('uuid'):
         router_group = get_object_or_404(RouterGroup, uuid=request.GET.get('uuid'))
         if request.GET.get('action') == 'delete':
             if request.GET.get('confirmation') == 'delete':
                 router_group.delete()
-                messages.success(request, 'Router Group deleted successfully')
+                messages.success(request, 'Grupo de Nodos eliminado correctamente')
                 return redirect('router_group_list')
             else:
-                messages.warning(request, 'Router Group not deleted|Invalid confirmation')
+                messages.warning(request, 'Grupo de Nodos no eliminado|Confirmación inválida')
                 return redirect('router_group_list')
     else:
         router_group = None
@@ -260,7 +267,7 @@ def view_manage_router_group(request):
     form = RouterGroupForm(request.POST or None, instance=router_group)
     if form.is_valid():
         form.save()
-        messages.success(request, 'Router Group saved successfully')
+        messages.success(request, 'Grupo de Nodos guardado correctamente')
         return redirect('router_group_list')
 
     context = {
@@ -328,16 +335,16 @@ def create_instant_backup(router):
 @login_required()
 def view_create_instant_backup_task(request):
     if not UserAcl.objects.filter(user=request.user, user_level__gte=20).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     router = get_object_or_404(Router, uuid=request.GET.get('uuid'))
     router_details_url = f'/router/details/?uuid={router.uuid}'
 
     error = create_instant_backup(router)
     if error:
-        messages.warning(request, f'Backup task not created | {error}')
+        messages.warning(request, f'Tarea de respaldo no creada | {error}')
     else:
-        messages.success(request, 'Backup task created successfully')
+        messages.success(request, 'Tarea de respaldo creada correctamente')
 
     return redirect(router_details_url)
 
@@ -346,11 +353,11 @@ def view_create_instant_backup_task(request):
 def view_create_instant_backup_multiple_routers(request):
     if request.method == 'POST':
         if not UserAcl.objects.filter(user=request.user, user_level__gte=20).exists():
-            return JsonResponse({'error': 'Permission denied.'}, status=403)
+            return JsonResponse({'error': 'Permiso denegado.'}, status=403)
 
         uuids = request.POST.getlist('routers[]')
         if not uuids:
-            return JsonResponse({'error': 'No routers selected.'}, status=400)
+            return JsonResponse({'error': 'No se seleccionaron equipos.'}, status=400)
 
         results = []
         for uuid in uuids:
@@ -360,13 +367,13 @@ def view_create_instant_backup_multiple_routers(request):
 
         return JsonResponse({'results': results})
 
-    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+    return JsonResponse({'error': 'Método de solicitud no válido.'}, status=405)
 
 
 @login_required
 def view_manage_router_groups_multiple(request):
     if not UserAcl.objects.filter(user=request.user, user_level__gte=20).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     if request.method == 'POST':
         router_uuids = request.POST.getlist('router_uuids')
@@ -374,12 +381,12 @@ def view_manage_router_groups_multiple(request):
         remove_group_uuid = request.POST.get('remove_group')
 
         if not router_uuids:
-            messages.warning(request, 'No routers selected')
+            messages.warning(request, 'No se seleccionaron equipos')
             return redirect('router_list')
 
         # Validate that the same group is not selected for both add and remove
         if add_group_uuid and remove_group_uuid and add_group_uuid == remove_group_uuid:
-            messages.warning(request, 'Cannot add and remove from the same group')
+            messages.warning(request, 'No se puede añadir y eliminar del mismo grupo')
             return redirect('router_list')
 
         routers = Router.objects.filter(uuid__in=router_uuids)
@@ -390,9 +397,9 @@ def view_manage_router_groups_multiple(request):
                 group = RouterGroup.objects.get(uuid=add_group_uuid)
                 for router in routers:
                     group.routers.add(router)
-                messages.success(request, f'Added {routers.count()} router(s) to group {group.name}')
+                messages.success(request, f'Se añadieron {routers.count()} equipo(s) al grupo {group.name}')
             except RouterGroup.DoesNotExist:
-                messages.error(request, 'Group not found')
+                messages.error(request, 'Grupo no encontrado')
 
         # Process remove from group
         if remove_group_uuid:
@@ -400,16 +407,16 @@ def view_manage_router_groups_multiple(request):
                 group = RouterGroup.objects.get(uuid=remove_group_uuid)
                 for router in routers:
                     group.routers.remove(router)
-                messages.success(request, f'Removed {routers.count()} router(s) from group {group.name}')
+                messages.success(request, f'Se eliminaron {routers.count()} equipo(s) del grupo {group.name}')
             except RouterGroup.DoesNotExist:
-                messages.error(request, 'Group not found')
+                messages.error(request, 'Grupo no encontrado')
 
         return redirect('router_list')
 
     # GET request - display form
     router_uuids = request.GET.getlist('routers[]')
     if not router_uuids:
-        messages.warning(request, 'No routers selected')
+        messages.warning(request, 'No se seleccionaron equipos')
         return redirect('router_list')
 
     routers = Router.objects.filter(uuid__in=router_uuids)
@@ -418,7 +425,7 @@ def view_manage_router_groups_multiple(request):
     context = {
         'routers': routers,
         'groups': groups,
-        'page_title': 'Manage Router Groups',
+        'page_title': 'Gestionar Grupos de Nodos',
     }
 
     return render(request, 'router_manager/manage_router_groups.html', context)

@@ -6,22 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% if page_title %}{{ page_title }} | {% endif %}routerfleet</title>
 
-    <!-- Google Font: Source Sans Pro -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <!-- Preconnect to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/static/AdminLTE-3.2.0/plugins/fontawesome-free/css/all.min.css">
     <!-- DataTables -->
     <link rel="stylesheet" href="/static/AdminLTE-3.2.0/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
-    <link rel="stylesheet" href="/static/AdminLTE-3.2.0/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+    <link rel="stylesheet"
+        href="/static/AdminLTE-3.2.0/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
     <link rel="stylesheet" href="/static/AdminLTE-3.2.0/plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
-    <!-- Ionicons -->
-    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <!-- Ionicons removed - unused -->
     <!-- Tempusdominus Bootstrap 4 -->
-    <link rel="stylesheet" href="/static/AdminLTE-3.2.0/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css">
+    <link rel="stylesheet"
+        href="/static/AdminLTE-3.2.0/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css">
     <!-- iCheck -->
     <link rel="stylesheet" href="/static/AdminLTE-3.2.0/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
-    <!-- JQVMap -->
-    <link rel="stylesheet" href="/static/AdminLTE-3.2.0/plugins/jqvmap/jqvmap.min.css">
     <!-- Theme style -->
     <link rel="stylesheet" href="/static/AdminLTE-3.2.0/dist/css/adminlte.min.css">
     <!-- overlayScrollbars -->
@@ -31,21 +33,27 @@
     <!-- Chosen -->
     <link rel="stylesheet" href="/static/plugins/chosen/bootstrap-chosen.css">
     <!-- Modern UI Styles -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="/static/modern_ui.css">
 
     <style>
-        .dataTables_filter, .dataTables_length{
+        .dataTables_filter,
+        .dataTables_length {
             padding-top: 10px;
         }
-        .datatables-with-export, .datatables-no-export{
+
+        .datatables-with-export,
+        .datatables-no-export {
             display: none;
         }
+
         .min-width {
             width: 1%;
             white-space: nowrap;
         }
-        .preloader{
+
+        .preloader {
             display: none;
         }
     </style>
@@ -56,265 +64,255 @@
 {% tag_webadmin_version as webadmin_version %}
 
 <body class="hold-transition layout-top-nav">
-<div class="wrapper">
+    <div class="wrapper">
 
-    <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand-lg">
-        <div class="container-fluid">
-            <!-- Brand -->
-            <a href="/" class="brand-wrapper">
-                <span class="brand-text">MEGACOM</span>
-            </a>
-
-            <!-- Mobile Toggle -->
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarLinks" aria-controls="navbarLinks" aria-expanded="false" aria-label="Toggle navigation">
-                <i class="fas fa-bars text-primary"></i>
-            </button>
-
-            <!-- Navigation Links -->
-            <div class="collapse navbar-collapse" id="navbarLinks">
-                <div class="nav-links ml-lg-4">
-                    <a href="/" class="nav-link-item {% if request.path == '/' %}active{% endif %}">
-                        <i class="fas fa-home"></i> Home
-                    </a>
-                    <a href="/router/list/" class="nav-link-item {% if '/router/' in request.path %}active{% endif %}">
-                        <i class="fas fa-network-wired"></i> Routers
-                    </a>
-                    <a href="/fleet_commander/broadcast/" class="nav-link-item {% if '/fleet_commander/broadcast/' in request.path %}active{% endif %}">
-                        <i class="fas fa-broadcast-tower"></i> Broadcast
-                    </a>
-                    <a href="/backup/profile_list/" class="nav-link-item {% if '/backup/' in request.path %}active{% endif %}">
-                        <i class="fas fa-box-open"></i> Backups
-                    </a>
-                    <a href="/user/list/" class="nav-link-item {% if '/user/' in request.path %}active{% endif %}">
-                        <i class="fas fa-users"></i> Users
-                    </a>
-                    <a href="/message_center/channel_list/" class="nav-link-item {% if '/message_center/' in request.path %}active{% endif %}">
-                        <i class="far fa-envelope"></i> Notifications
-                    </a>
-                </div>
-
-                <!-- Right Side -->
-                <ul class="navbar-nav ml-auto">
-                    <!-- Global Search -->
-                    <!-- Activity Logs -->
-                    <li class="nav-item">
-                        <a href="/dashboard/logs/" class="nav-link-item nav-item-historial {% if '/dashboard/logs/' in request.path %}active{% endif %}" 
-                           title="Historial de Actividad Global">
-                            <i class="fas fa-history"></i> <span class="d-none d-md-inline" style="font-weight: 800;">Historial de Cambios</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/accounts/logout/" class="nav-link-item">
-                            <i class="fas fa-sign-out-alt"></i> Salir
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    <!-- /.navbar -->
-
-    <!-- Content Wrapper -->
-    <div class="content-wrapper">
-        <section class="content">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand-lg">
             <div class="container-fluid">
-                {% block content %}{% endblock %}
+                <!-- Brand -->
+                <a href="/" class="brand-wrapper">
+                    <span class="brand-text">MEGACOM</span>
+                </a>
+
+                <!-- Mobile Toggle -->
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarLinks"
+                    aria-controls="navbarLinks" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="fas fa-bars text-primary"></i>
+                </button>
+
+                <!-- Navigation Links -->
+                <div class="collapse navbar-collapse" id="navbarLinks">
+                    <div class="nav-links ml-lg-4">
+                        <a href="/" class="nav-link-item {% if request.path == '/' %}active{% endif %}">
+                            <i class="fas fa-home"></i> Inicio
+                        </a>
+                        <a href="/router/list/"
+                            class="nav-link-item {% if '/router/' in request.path %}active{% endif %}">
+                            <i class="fas fa-network-wired"></i> Equipos
+                        </a>
+                        <a href="/backup/profile_list/"
+                            class="nav-link-item {% if '/backup/' in request.path %}active{% endif %}">
+                            <i class="fas fa-box-open"></i> Respaldos
+                        </a>
+                        <a href="/user/list/" class="nav-link-item {% if '/user/' in request.path %}active{% endif %}">
+                            <i class="fas fa-users"></i> Usuarios
+                        </a>
+                        <a href="/message_center/channel_list/"
+                            class="nav-link-item {% if '/message_center/' in request.path %}active{% endif %}">
+                            <i class="far fa-envelope"></i> Notificaciones
+                        </a>
+                    </div>
+
+                    <!-- Right Side -->
+                    <ul class="navbar-nav ml-auto">
+                        <!-- Global Search -->
+                        <!-- Activity Logs -->
+                        <li class="nav-item">
+                            <a href="/dashboard/logs/"
+                                class="nav-link-item nav-item-historial {% if '/dashboard/logs/' in request.path %}active{% endif %}"
+                                title="Historial de Actividad Global">
+                                <i class="fas fa-history"></i> <span class="d-none d-md-inline"
+                                    style="font-weight: 800;">Historial de Cambios</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/accounts/logout/" class="nav-link-item">
+                                <i class="fas fa-sign-out-alt"></i> Salir
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
-        </section>
-    </div>
+        </nav>
+        <!-- /.navbar -->
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <section class="content">
+                <div class="container-fluid">
+                    {% block content %}{% endblock %}
+                </div>
+            </section>
+        </div>
         <!-- /.content -->
     </div>
     <!-- /.content-wrapper -->
-    <footer class="main-footer">
-        {% if webadmin_version.update_available %}<a class='btn btn-sm btn-danger' id="btn_update_changelog">Update Available</a>{% else %}routerfleet {% endif %}
-        <div class="float-right d-none d-sm-inline-block">
-            <b>Version</b> {{ webadmin_version.current_version }}
-        </div>
-    </footer>
 
     <!-- Control Sidebar -->
     <aside class="control-sidebar control-sidebar-dark">
         <!-- Control sidebar content goes here -->
     </aside>
     <!-- /.control-sidebar -->
-</div>
-<!-- ./wrapper -->
+    </div>
+    <!-- ./wrapper -->
 
-<!-- jQuery -->
-<script src="/static/AdminLTE-3.2.0/plugins/jquery/jquery.min.js"></script>
-<!-- jQuery UI 1.11.4 -->
-<script src="/static/AdminLTE-3.2.0/plugins/jquery-ui/jquery-ui.min.js"></script>
-<!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
-<script>
-    $.widget.bridge('uibutton', $.ui.button)
-</script>
-<!-- Bootstrap 4 -->
-<script src="/static/AdminLTE-3.2.0/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<!-- ChartJS -->
-<script src="/static/AdminLTE-3.2.0/plugins/chart.js/Chart.min.js"></script>
-<!-- Sparkline -->
-<script src="/static/AdminLTE-3.2.0/plugins/sparklines/sparkline.js"></script>
-<!-- JQVMap -->
-<script src="/static/AdminLTE-3.2.0/plugins/jqvmap/jquery.vmap.min.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/jqvmap/maps/jquery.vmap.usa.js"></script>
-<!-- jQuery Knob Chart -->
-<script src="/static/AdminLTE-3.2.0/plugins/jquery-knob/jquery.knob.min.js"></script>
-<!-- daterangepicker -->
-<script src="/static/AdminLTE-3.2.0/plugins/moment/moment.min.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/daterangepicker/daterangepicker.js"></script>
-<!-- Tempusdominus Bootstrap 4 -->
-<script src="/static/AdminLTE-3.2.0/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js"></script>
-{% comment %}<!-- Summernote -->
-<script src="/static/AdminLTE-3.2.0/plugins/summernote/summernote-bs4.min.js"></script>
-{% endcomment %}
-<!-- overlayScrollbars -->
-<script src="/static/AdminLTE-3.2.0/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
-<!-- DataTables  & Plugins -->
-<script src="/static/AdminLTE-3.2.0/plugins/datatables/jquery.dataTables.min.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/datatables-buttons/js/dataTables.buttons.min.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/datatables-buttons/js/buttons.bootstrap4.min.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/jszip/jszip.min.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/pdfmake/pdfmake.min.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/pdfmake/vfs_fonts.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/datatables-buttons/js/buttons.html5.min.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/datatables-buttons/js/buttons.print.min.js"></script>
-<script src="/static/AdminLTE-3.2.0/plugins/datatables-buttons/js/buttons.colVis.min.js"></script>
-<!-- AdminLTE App -->
-<script src="/static/AdminLTE-3.2.0/dist/js/adminlte.js"></script>
-<!-- chosen -->
-<script src="/static/plugins/chosen/chosen.jquery.min.js"></script>
-{% comment %}<script src="/static/AdminLTE-3.2.0/dist/js/pages/dashboard.js"></script>{% endcomment %}
-<script>
-    $('.selectmultiple').chosen();
-    $('.select').chosen();
-</script>
-<script>
-    var dataTable;
-    $(function () {
-        $(".datatables-with-export").DataTable({
-            "responsive": true, "lengthChange": false, "autoWidth": false,
-            "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"]
-        }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
-        dataTable = $('.datatables-no-export').DataTable({
-            "paging": true,
-            "lengthChange": true,
-            "searching": true,
-            "ordering": true,
-            "order": [],
-            "info": true,
-            "autoWidth": false,
-            "responsive": true,
-            "columnDefs": [
-                { "orderable": false, "targets": [ 0, -1 ] }
-            ]
+    <!-- jQuery -->
+    <script src="/static/AdminLTE-3.2.0/plugins/jquery/jquery.min.js"></script>
+    <!-- jQuery UI 1.11.4 -->
+    <script src="/static/AdminLTE-3.2.0/plugins/jquery-ui/jquery-ui.min.js"></script>
+    <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
+    <script>
+        $.widget.bridge('uibutton', $.ui.button)
+    </script>
+    <!-- Bootstrap 4 -->
+    <script src="/static/AdminLTE-3.2.0/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- daterangepicker -->
+    <script src="/static/AdminLTE-3.2.0/plugins/moment/moment.min.js"></script>
+    <script src="/static/AdminLTE-3.2.0/plugins/daterangepicker/daterangepicker.js"></script>
+    <!-- Tempusdominus Bootstrap 4 -->
+    <script src="/static/AdminLTE-3.2.0/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js"></script>
+    {% comment %}<!-- Summernote -->
+    <script src="/static/AdminLTE-3.2.0/plugins/summernote/summernote-bs4.min.js"></script>
+    {% endcomment %}
+    <!-- overlayScrollbars -->
+    <script src="/static/AdminLTE-3.2.0/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+    <!-- DataTables  & Plugins -->
+    <script src="/static/AdminLTE-3.2.0/plugins/datatables/jquery.dataTables.min.js"></script>
+    <script src="/static/AdminLTE-3.2.0/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script src="/static/AdminLTE-3.2.0/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
+    <script src="/static/AdminLTE-3.2.0/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
+    <script src="/static/AdminLTE-3.2.0/plugins/datatables-buttons/js/dataTables.buttons.min.js"></script>
+    <script src="/static/AdminLTE-3.2.0/plugins/datatables-buttons/js/buttons.bootstrap4.min.js"></script>
+    <!-- Heavy export plugins: only load when needed -->
+    {% block table_export_scripts %}
+    {% endblock %}
+    <!-- AdminLTE App -->
+    <script src="/static/AdminLTE-3.2.0/dist/js/adminlte.js"></script>
+    <!-- chosen -->
+    <script src="/static/plugins/chosen/chosen.jquery.min.js"></script>
+    {% comment %}
+    <script src="/static/AdminLTE-3.2.0/dist/js/pages/dashboard.js"></script>{% endcomment %}
+    <script>
+        $('.selectmultiple').chosen();
+        $('.select').chosen();
+    </script>
+    <script>
+        var dataTable;
+        $(function () {
+            $(".datatables-with-export").DataTable({
+                "responsive": true, "lengthChange": false, "autoWidth": false,
+                "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"]
+            }).buttons().container().appendTo('#example1_wrapper .col-md-6:eq(0)');
+            dataTable = $('.datatables-no-export').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Spanish.json"
+                },
+                "paging": true,
+                "lengthChange": false,
+                "searching": true,
+                "ordering": true,
+                "order": [],
+                "info": true,
+                "autoWidth": false,
+                "responsive": true,
+                "columnDefs": [
+                    { "orderable": false, "targets": [0, -1] }
+                ]
+            });
         });
-    });
-    $('.datatables-with-export').show();
-    $('.datatables-no-export').show();
-</script>
-<script>
-    $(document).ready(function() {
-        const webadminVersion = '{{ webadmin_version.current_version }}';
-        $('#btn_update_changelog').on('click', function() {
-            $.ajax({
-                url: `https://updates.eth0.com.br/api/application_changelog/?app=routerfleet&version=${webadminVersion}`,
-                type: 'GET',
-                success: function(response) {
-                    const updates = response.updates.sort((a, b) => new Date(b.release_date) - new Date(a.release_date));
-                    let updatesHtml = '';
-                    updates.forEach(update => {
-                        updatesHtml += `<div class="update">
+        $('.datatables-with-export').show();
+        $('.datatables-no-export').show();
+    </script>
+    <script>
+        $(document).ready(function () {
+            const webadminVersion = '{{ webadmin_version.current_version }}';
+            $('#btn_update_changelog').on('click', function () {
+                $.ajax({
+                    url: `https://updates.eth0.com.br/api/application_changelog/?app=routerfleet&version=${webadminVersion}`,
+                    type: 'GET',
+                    success: function (response) {
+                        const updates = response.updates.sort((a, b) => new Date(b.release_date) - new Date(a.release_date));
+                        let updatesHtml = '';
+                        updates.forEach(update => {
+                            updatesHtml += `<div class="update">
                                         <h5>Version ${update.version}</h5>
                                         <p>${update.release_notes.replace(/\r\n/g, "<br>")}</p>
                                     </div>`;
-                    });
+                        });
 
-                    // Update modal content
-                    $('#genericModalLabel').text('routerfleet Updates');
-                    $('#genericModalBody').html(updatesHtml);
-                    $('#genericModalCloseButton').text('Close');
-                    $('#genericModalActionButton').text('Update Instructions').attr('href', 'https://github.com/eduardogsilva/routerfleet').attr('target', '_blank');
+                        // Update modal content
+                        $('#genericModalLabel').text('routerfleet Updates');
+                        $('#genericModalBody').html(updatesHtml);
+                        $('#genericModalCloseButton').text('Close');
+                        $('#genericModalActionButton').text('Update Instructions').attr('href', 'https://github.com/eduardogsilva/routerfleet').attr('target', '_blank');
 
-                    // Show modal
-                    $('#genericModal').modal('show');
-                },
-                error: function(xhr, status, error) {
-                    // Update modal for error display
-                    $('#genericModalLabel').text('Error');
-                    $('#genericModalBody').html('<p>An error occurred while fetching the update information. Please try again later.</p>');
-                    $('#genericModalCloseButton').text('Close');
-                    $('#genericModalActionButton').hide(); // Hide the action button in case of error
+                        // Show modal
+                        $('#genericModal').modal('show');
+                    },
+                    error: function (xhr, status, error) {
+                        // Update modal for error display
+                        $('#genericModalLabel').text('Error');
+                        $('#genericModalBody').html('<p>An error occurred while fetching the update information. Please try again later.</p>');
+                        $('#genericModalCloseButton').text('Close');
+                        $('#genericModalActionButton').hide(); // Hide the action button in case of error
 
-                    // Show modal
-                    $('#genericModal').modal('show');
-                    console.error("An error occurred while fetching updates: ", error);
-                }
+                        // Show modal
+                        $('#genericModal').modal('show');
+                        console.error("An error occurred while fetching updates: ", error);
+                    }
+                });
             });
         });
-    });
 
 
-</script>
+    </script>
 
-<script>
-    function setCookie(name, value, days) {
-        var expires = "";
-        if (days) {
-            var date = new Date();
-            date.setTime(date.getTime() + (days*24*60*60*1000));
-            expires = "; expires=" + date.toUTCString();
+    <script>
+        function setCookie(name, value, days) {
+            var expires = "";
+            if (days) {
+                var date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "") + expires + "; path=/";
         }
-        document.cookie = name + "=" + (value || "")  + expires + "; path=/";
-    }
-</script>
+    </script>
 
 
 
-<script>
-    function getCookie(name) {
-        var nameEQ = name + "=";
-        var ca = document.cookie.split(';');
-        for(var i=0;i < ca.length;i++) {
-            var c = ca[i];
-            while (c.charAt(0)==' ') c = c.substring(1,c.length);
-            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    <script>
+        function getCookie(name) {
+            var nameEQ = name + "=";
+            var ca = document.cookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
         }
-        return null;
-    }
-</script>
+    </script>
 
-<script>
-    $(document).ready(function() {
-        var sidebarState = getCookie('sidebarState');
-        if (sidebarState === 'collapsed') {
-            $('body').addClass('sidebar-collapse');
-        }
+    <script>
+        $(document).ready(function () {
+            var sidebarState = getCookie('sidebarState');
+            if (sidebarState === 'collapsed') {
+                $('body').addClass('sidebar-collapse');
+            }
 
-        $('[data-widget="pushmenu"]').on('click', function(event) {
-            event.preventDefault();
-            setTimeout(function() {
-                if ($('body').hasClass('sidebar-collapse')) {
-                    setCookie('sidebarState', 'collapsed', 7);
-                } else {
-                    setCookie('sidebarState', 'opened', 7);
-                }
-            }, 500);
+            $('[data-widget="pushmenu"]').on('click', function (event) {
+                event.preventDefault();
+                setTimeout(function () {
+                    if ($('body').hasClass('sidebar-collapse')) {
+                        setCookie('sidebarState', 'collapsed', 7);
+                    } else {
+                        setCookie('sidebarState', 'opened', 7);
+                    }
+                }, 500);
+            });
         });
-    });
-</script>
+    </script>
 
 
-{% include "template_messages.html" %}
+    {% include "template_messages.html" %}
 
-{% block custom_page_scripts %}
+    {% block custom_page_scripts %}
 
-{% endblock %}
+    {% endblock %}
 
     {% block page_modals %}
     {% endblock %}
 </body>
+
 </html>

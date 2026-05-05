@@ -41,7 +41,7 @@
 
                             {% if not backup.success and not backup.error %}
                                 <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="This debug information is only displayed while the backup is not finished."></i> Backup Status</b>
+                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Estado del Respaldo</b>
                                     <span class="float-right">
                                     {% if backup.success %}
                                         <i class="far fa-check-circle text-success"></i>
@@ -50,7 +50,7 @@
                                            title="{{ backup.error_message }}"></i>
                                     {% elif backup.backup_pending_retrieval %}
                                         <i class="fas fa-cloud-download-alt text-info"
-                                           title="Backup pending Retrieval"></i>
+                                           title="Respaldo pendiente de recuperación"></i>
                                     {% else %}
                                         <i class="far fa-clock text-warning"></i>
                                     {% endif %}
@@ -58,21 +58,21 @@
                                 </li>
 
                                 <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="This debug information is only displayed while the backup is not finished."></i> Host Monitoring</b>
+                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Monitoreo de Host</b>
                                     <span class="float-right">
                                     {% if backup.router.monitoring %}
                                         {% if backup.router.routerstatus.status_online %}
                                             <i class="far fa-check-circle text-success"></i>
                                         {% else %}
-                                            <i class="far fa-times-circle text-danger"></i> Host offline. Waiting for it to come online
+                                            <i class="far fa-times-circle text-danger"></i> Equipo fuera de línea. Esperando conexión...
                                         {% endif %}
                                     {% else %}
-                                        Not enabled
+                                        No habilitado
                                     {% endif %}
                                 </span>
                                 </li>
                                 <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="This debug information is only displayed while the backup is not finished."></i> Retry Count</b>
+                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Intentos</b>
                                     <span class="float-right">
                                         <span {% if backup.retry_count > 0 %}class="text-danger"{% endif %}>
                                             {{ backup.retry_count }}
@@ -81,24 +81,24 @@
                                 </li>
 
                                 <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="This debug information is only displayed while the backup is not finished."></i> Next Retry</b>
+                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Próximo Intento</b>
                                     <span class="float-right">
                                     {% if backup.next_retry %}
                                         {% if backup.next_retry > now %}
                                             <a href="/backup/backup_details/?uuid={{ backup.uuid }}&action=anticipate&show_console={{ show_console|yesno:"true,false" }}">
-                                            (anticipate)
+                                            (anticipar)
                                             </a>
-                                            <span class="text-success" style="text-decoration: underline" title="This backup is scheduled to execute after {{ backup.next_retry }}">
+                                            <span class="text-success" style="text-decoration: underline" title="Este respaldo está programado para ejecutarse después de {{ backup.next_retry }}">
                                                  {{ backup.next_retry }} <i class="far fa-clock"></i>
                                             </span>
                                         {% else %}
-                                            <span class="text-info" style="text-decoration: underline" title="This backup is queued to be executed as soon as possible.">
+                                            <span class="text-info" style="text-decoration: underline" title="Este respaldo está en cola para ejecutarse lo antes posible.">
                                                 {{ backup.next_retry }} <i class="far fa-clock"></i>
                                             </span>
                                         {% endif %}
                                     {% else %}
-                                        <span class="text-info" style="text-decoration: underline" title="This backup is queued to be executed as soon as possible.">
-                                                queued <i class="far fa-clock"></i>
+                                        <span class="text-info" style="text-decoration: underline" title="Este respaldo está en cola para ejecutarse lo antes posible.">
+                                                en cola <i class="far fa-clock"></i>
                                         </span>
                                     {% endif %}
                                     
@@ -107,11 +107,11 @@
                                 </li>
 
                                 <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="This debug information is only displayed while the backup is not finished."></i> Cron last run</b>
+                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Última ejecución Cron</b>
                                     <span class="float-right">
                                     {% if webadmin_settings.cron_last_run %}
                                         {% if webadmin_settings.cron_last_run < 5_minutes_ago %}
-                                            <span class="text-danger" style="text-decoration: underline" title="Your cron tasks are not being executed properly.">
+                                            <span class="text-danger" style="text-decoration: underline" title="Tus tareas cron no se están ejecutando correctamente.">
                                             {{ webadmin_settings.cron_last_run }}
                                             </span>
                                         {% else %}
@@ -123,12 +123,12 @@
                                 </li>
 
                                 <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="This debug information is only displayed while the backup is not finished."></i> Task Lock</b>
+                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Bloqueo de Tarea</b>
                                     <span class="float-right">{{ backup.task_lock|default_if_none:"" }}</span>
                                 </li>
 
                                 <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="This debug information is only displayed while the backup is not finished."></i> Error message</b>
+                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Mensaje de error</b>
                                     <span class="float-right">
                                     {{ backup.error_message|default_if_none:"" }}
                                 </span>
@@ -138,63 +138,63 @@
                             {% endif %}
 
                             <li class="list-group-item">
-                                <b>Schedule Type</b>
+                                 <b>Tipo de Programación</b>
                                 <span class="float-right">
                                     {{ backup.get_schedule_type_display }}
                                 </span>
                             </li>
                             <li class="list-group-item">
-                                <b>Task Created</b>
+                                 <b>Tarea Creada</b>
                                 <span class="float-right">{{ backup.created }}</span>
                             </li>
                             <li class="list-group-item">
-                                <b>Schedule Time</b>
+                                 <b>Hora Programada</b>
                                 <span class="float-right">{{ backup.schedule_time|default_if_none:"" }}</span>
                             </li>
 
                             <li class="list-group-item">
-                                <b>Finish Time</b>
+                                 <b>Finalizado</b>
                                 <span class="float-right">{{ backup.finish_time|default_if_none:"" }}</span>
                             </li>
 
                             <li class="list-group-item">
-                                <b>Queue length</b>
+                                 <b>Longitud de Cola</b>
                                 <span class="float-right">{{ backup.queue_length }}s</span>
                             </li>
 
                             <li class="list-group-item">
-                                <b>Backup hash</b>
+                                 <b>Hash del respaldo</b>
                                 <span class="float-right" title="{{ backup.backup_text_hash }}">{{ backup.backup_text_hash|slice:":16" }}...</span>
                             </li>
 
                             <li class="list-group-item">
-                                <b>Download</b>
+                                 <b>Descargar</b>
                                 <span class="float-right">
                                 {% if backup.backup_text %}
                                     <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" download>
-                                    Text
+                                     Texto
                                 </a>
                                     {% if backup.backup_binary %} - {% endif %}
                                 {% endif %}
                                     {% if backup.backup_binary %}
                                         <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" download>
-                                    Binary
+                                     Binario
                                 </a>
                                     {% endif %}
                                 </span>
                             </li>
 
                             <li class="list-group-item">
-                                <b>Show Console</b>
+                                 <b>Mostrar Consola</b>
                                 <span class="float-right">
                                     <a href='/backup/backup_details/?uuid={{ backup.uuid }}&show_console={% if show_console %}false{% else %}true{% endif %}'>
-                                        {% if show_console %}hide{% else %}show{% endif %}
+                                         {% if show_console %}ocultar{% else %}mostrar{% endif %}
                                     </a>
                                 </span>
                             </li>
 
                             <li class="list-group-item">
-                                <b>Delete backup</b>
+                                 <b>Eliminar respaldo</b>
                                 <span class="float-right">
 
                                 <a href='javascript:void(0)' class='text-danger' data-command='delete' onclick='openCommandDialog(this)'>
@@ -209,61 +209,12 @@
                 </div>
             </div>
 
-            <div class="card card-primary card-outline">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        Latest Configuration changes
-                    </h3>
-
-                </div>
-
-                <div class="card-body row">
-                    <div class="col-lg-12">
-                        <table class="table">
-                            <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Date</th>
-                                <th>Compare</th>
-
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for compare_backup in backup_list %}
-                                <tr>
-                                    <td class="min-width">
-                                        <a href="/backup/backup_details/?uuid={{ compare_backup.uuid }}">
-                                            {{ compare_backup.id }}
-                                        </a>
-                                    </td>
-                                    <td>
-                                        {% if compare_backup.finish_time %}
-                                            {{ compare_backup.finish_time }}
-                                        {% else %}
-                                            {{ compare_backup.created }}
-                                        {% endif %}
-
-                                    </td>
-
-                                    <td>
-                                        <a href="/backup/compare/?uuid={{ backup.uuid }}&compare_uuid={{ compare_backup.uuid }}">
-                                            Compare
-                                        </a>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-
-                </div>
-            </div>
         </div>
         <div class='col-xl-8'>
             {% if show_console %}
                 <div class="card card-primary card-outline">
                     <div class="card-header">
-                        <h3 class="card-title">Task Console</h3>
+                        <h3 class="card-title">Consola de Tarea</h3>
                     </div>
 
                     <div class="card-body row">
@@ -273,15 +224,23 @@
                     </div>
                 </div>
             {% endif %}
+            {% if backup_truncated %}
+                <div class="alert alert-warning alert-dismissible">
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                    <h5><i class="icon fas fa-exclamation-triangle"></i> Capa de Seguridad Activa</h5>
+                    El archivo de respaldo es muy grande (más de 500KB). Se muestra solo el inicio para proteger la memoria del navegador. 
+                    Por favor, <strong>descargue el archivo completo</strong> si necesita revisarlo íntegramente.
+                </div>
+            {% endif %}
             <div class="card card-primary card-outline">
 
                 <div class="card-header">
-                    <h3 class="card-title">Text Backup</h3>
+                    <h3 class="card-title">Respaldo de Texto</h3>
                 </div>
 
                 <div class="card-body row">
                     <div class="col-lg-12">
-                        <pre>{{ backup.backup_text|default_if_none:"" }}</pre>
+                        <pre>{{ display_text|default_if_none:"" }}</pre>
                     </div>
                 </div>
             </div>
@@ -296,7 +255,7 @@
     <script>
         function openCommandDialog(element) {
             var command = element.getAttribute('data-command');
-            var confirmation = prompt("Please type 'delete{{ backup.id }}' to proceed.");
+            var confirmation = prompt("Por favor escribe 'borrar{{ backup.id }}' para proceder.");
             if (confirmation) {
                 var url = "/backup/delete/?uuid={{ backup.uuid }}&action=delete&confirmation=" + encodeURIComponent(confirmation);
                 window.location.href = url;

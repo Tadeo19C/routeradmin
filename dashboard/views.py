@@ -23,7 +23,19 @@ def human_readable_size(size):
         size /= 1024.0
     return f"{size:.2f} TB"  # For sizes larger than GB
 
+# Cache for directory statistics to avoid expensive os.walk on every load
+DIR_STATS_CACHE = {}
+
 def get_directory_statistics(directory_path):
+    global DIR_STATS_CACHE
+    current_time = timezone.now()
+    
+    # Check cache (valid for 5 minutes)
+    if directory_path in DIR_STATS_CACHE:
+        cached_data, timestamp = DIR_STATS_CACHE[directory_path]
+        if current_time - timestamp < timedelta(minutes=10):
+            return cached_data
+
     if not directory_path or not os.path.isdir(directory_path):
         return {
             "total": "0 B",
@@ -54,13 +66,18 @@ def get_directory_statistics(directory_path):
     elif usage_percentage > 75:
         storage_warning = "Caution: Storage usage is above 75%."
 
-    return {
+    result = {
         "total": total_human,
         "used": used_human,
         "free": free_human,
         "usage_percentage": round(usage_percentage, 2) if total > 0 else 0,
         "storage_warning": storage_warning
     }
+    
+    # Update cache
+    DIR_STATS_CACHE[directory_path] = (result, current_time)
+    
+    return result
 
 
 @login_required

@@ -1,15 +1,130 @@
 {% load crispy_forms_tags %}
 <div class="modal-header">
-    <h5 class="modal-title">{% if instance %}Editar Router: {{ instance.name }}{% else %}Nuevo Router{% endif %}</h5>
+    <h5 class="modal-title">{% if instance %}Editar Equipo: {{ instance.name }}{% else %}Nuevo Equipo{% endif %}</h5>
     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
         <span aria-hidden="true">&times;</span>
     </button>
 </div>
+<style>
+    /* Custom Radial Clock Styles */
+    .clock-picker-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 20px 0;
+        user-select: none;
+    }
+    .clock-face {
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: #f8f9fa;
+        border: 4px solid #007bff;
+        position: relative;
+        box-shadow: inset 0 2px 10px rgba(0,0,0,0.1), 0 4px 15px rgba(0,0,0,0.1);
+        cursor: pointer;
+    }
+    .clock-hour {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        text-align: center;
+        line-height: 30px;
+        font-weight: bold;
+        color: #495057;
+        font-size: 14px;
+        transition: all 0.2s;
+        border-radius: 50%;
+    }
+    .clock-hour:hover {
+        background: rgba(0,123,255,0.1);
+        color: #007bff;
+        transform: scale(1.2);
+    }
+    .clock-hour.active {
+        background: #007bff;
+        color: white;
+        transform: scale(1.2);
+        box-shadow: 0 0 10px rgba(0,123,255,0.5);
+    }
+    .clock-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 60px;
+        height: 60px;
+        margin-top: -30px;
+        margin-left: -30px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        z-index: 10;
+        border: 1px solid #dee2e6;
+    }
+    .ampm-toggle {
+        font-weight: bold;
+        font-size: 12px;
+        color: #007bff;
+        cursor: pointer;
+        padding: 2px 5px;
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+    .ampm-toggle:hover {
+        background: #f0f7ff;
+    }
+    .clock-hand {
+        position: absolute;
+        bottom: 50%;
+        left: 50%;
+        width: 3px;
+        background: #007bff;
+        transform-origin: bottom center;
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        z-index: 5;
+        border-radius: 3px;
+    }
+    .clock-hand::after {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: -3px;
+        width: 9px;
+        height: 9px;
+        background: #007bff;
+        border-radius: 50%;
+    }
+
+    /* Hide original select but keep it functional for synergy */
+    #div_id_custom_daily_hour, #div_id_custom_weekly_hour {
+        display: none !important;
+    }
+</style>
+
 <form id="router-manage-form" method="post" action="/router/manage/{% if instance %}?uuid={{ instance.uuid }}{% endif %}">
-    <div class="modal-body">
-        {% csrf_token %}
-        {% crispy form %}
+<div class="modal-body">
+    {% csrf_token %}
+    {% crispy form %}
+    
+    <!-- Custom Clock UI Inserted specifically after the backup type row -->
+    <div id="custom-clock-wrapper" style="display: none;">
+        <div class="clock-picker-container">
+            <h6 class="text-primary font-weight-bold mb-2">Hora de Respaldo</h6>
+            <div class="clock-face" id="clock-face">
+                <div class="clock-hand" id="clock-hand"></div>
+                <div class="clock-center">
+                    <div class="ampm-toggle" id="ampm-toggle">AM</div>
+                    <div id="selected-time-display" style="font-size: 10px; color: #6c757d;">03:00</div>
+                </div>
+                <!-- Hours will be injected via JS -->
+            </div>
+        </div>
     </div>
+</div>
 </form>
 
 <script>
@@ -52,16 +167,24 @@ $(document).ready(function() {
                     setTimeout(function() {
                         window.location.reload();
                     }, 1000);
+                } else if (typeof response === 'string') {
+                    // This happens if the server returns HTML (validation error with 200 status)
+                    $('#routerManageModal .modal-content').html(response);
                 }
             },
             error: function(xhr) {
                 // If it's a validation error, we might get the form back
                 if (xhr.status === 400 || xhr.status === 200) {
-                    // This is tricky because Django might return the full HTML if not careful
-                    // But we'll try to update the modal body
                     $('#routerManageModal .modal-content').html(xhr.responseText);
+                    $(document).Toasts('create', {
+                        class: 'bg-warning',
+                        title: 'Atención',
+                        body: 'Por favor, complete todos los campos requeridos correctamente.',
+                        delay: 5000,
+                        autohide: true
+                    });
                 } else {
-                    alert('Ocurrió un error al guardar el router.');
+                    alert('Ocurrió un error al guardar el equipo.');
                 }
             }
         });
@@ -101,43 +224,197 @@ $(document).ready(function() {
         }
     });
 
+    // Password Visibility Toggle (Eye icon) - Modal
+    function setupPasswordToggles() {
+        $('input[type="password"]').each(function() {
+            const $passwordField = $(this);
+            if ($passwordField.parent().hasClass('input-group')) return;
+            
+            $passwordField.wrap('<div class="input-group"></div>');
+            $passwordField.after(`
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary toggle-password" type="button" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            `);
+            
+            $passwordField.parent().find('.toggle-password').on('click', function() {
+                const $icon = $(this).find('i');
+                const isPassword = $passwordField.attr('type') === 'password';
+                $passwordField.attr('type', isPassword ? 'text' : 'password');
+                $icon.toggleClass('fa-eye fa-eye-slash');
+            });
+        });
+    }
+    setupPasswordToggles();
+
+    // Backup Profile Sync Logic
+    const $profileSelect = $('#id_backup_profile');
+    const $backupType = $('input[name="backup_type"]');
+    const $hourlyInterval = $('#id_custom_hourly_interval');
+    const $dailyHour = $('#id_custom_daily_hour');
+    const $weeklyDay = $('#id_custom_weekly_day');
+    const $weeklyHour = $('#id_custom_weekly_hour');
+
+    $profileSelect.on('change', function() {
+        const uuid = $(this).val();
+        if (!uuid) return; // Custom config
+
+        $.getJSON(`/backup/get_profile_details/?uuid=${uuid}`, function(data) {
+            // Set backup type
+            let type = 'daily';
+            if (data.hourly_backup) type = 'hourly';
+            else if (data.weekly_backup) type = 'weekly';
+            
+            $(`input[name="backup_type"][value="${type}"]`).prop('checked', true).trigger('change');
+            
+            // Set values
+            $hourlyInterval.val(data.hourly_interval);
+            $dailyHour.val(data.daily_hour);
+            $weeklyDay.val(data.weekly_day);
+            $weeklyHour.val(data.weekly_hour);
+            
+            // Optional: alert or visual feedback
+            console.log('Sincronizando con perfil:', data.name);
+        });
+    });
+
     // Custom Inline Backup Profile UI Logic
-    var $useCustomBackup = $('#id_use_custom_backup');
-    var $customBackupFields = $('.custom-backup-fields');
-    var $backupProfileContainer = $('#id_backup_profile').closest('.form-group');
-
     function toggleSubFields() {
-        $('#id_custom_hourly').is(':checked') ? $('#div_id_custom_hourly_interval').slideDown(150) : $('#div_id_custom_hourly_interval').slideUp(150);
-        $('#id_custom_daily').is(':checked') ? $('#div_id_custom_daily_hour').slideDown(150) : $('#div_id_custom_daily_hour').slideUp(150);
-        if ($('#id_custom_weekly').is(':checked')) {
-            $('#div_id_custom_weekly_day, #div_id_custom_weekly_hour').slideDown(150);
-        } else {
-            $('#div_id_custom_weekly_day, #div_id_custom_weekly_hour').slideUp(150);
+        var selectedType = $('input[name="backup_type"]:checked').val();
+        
+        // Deshabilitar todos primero
+        var allSelects = $('#div_id_custom_hourly_interval select, #div_id_custom_daily_hour select, #div_id_custom_weekly_day select, #div_id_custom_weekly_hour select');
+        var allDivs = $('#div_id_custom_hourly_interval, #div_id_custom_daily_hour, #div_id_custom_weekly_day, #div_id_custom_weekly_hour');
+        
+        allSelects.prop('disabled', true);
+        allDivs.css('opacity', '0.5'); // Visually fade out inactive ones
+        
+        // Habilitar el seleccionado
+        if (selectedType === 'hourly') {
+            $('#div_id_custom_hourly_interval select').prop('disabled', false);
+            $('#div_id_custom_hourly_interval').css('opacity', '1');
+        } else if (selectedType === 'daily') {
+            $('#div_id_custom_daily_hour select').prop('disabled', false);
+            $('#div_id_custom_daily_hour').css('opacity', '1');
+        } else if (selectedType === 'weekly') {
+            $('#div_id_custom_weekly_day select, #div_id_custom_weekly_hour select').prop('disabled', false);
+            $('#div_id_custom_weekly_day, #div_id_custom_weekly_hour').css('opacity', '1');
         }
     }
+    
+    // Bind change events to radio buttons
+    $('input[name="backup_type"]').on('change', toggleSubFields);
+    
+    // Initial trigger
+    toggleSubFields();
 
-    function toggleCustomBackup() {
-        if ($useCustomBackup.is(':checked')) {
-            $customBackupFields.slideDown();
-            $backupProfileContainer.hide();
-            $('#id_backup_profile').val(''); // clear profile
-            toggleSubFields(); // trigger sub-field check
-        } else {
-            $customBackupFields.hide();
-            $backupProfileContainer.slideDown();
-            $('#id_custom_hourly, #id_custom_daily, #id_custom_weekly').prop('checked', false);
-            toggleSubFields(); // hide sub-fields instantly
-        }
+    // Radial Clock Logic
+    const clockFace = document.getElementById('clock-face');
+    const clockHand = document.getElementById('clock-hand');
+    const ampmToggle = document.getElementById('ampm-toggle');
+    const timeDisplay = document.getElementById('selected-time-display');
+    const dailyHourSelect = $('#id_custom_daily_hour');
+    const weeklyHourSelect = $('#id_custom_weekly_hour');
+    const clockWrapper = $('#custom-clock-wrapper');
+
+    let currentHour = 3; // 1-12
+    let currentAMPM = 'AM';
+
+    // Inject Hours
+    for (let i = 1; i <= 12; i++) {
+        const angle = (i * 30) - 90;
+        const radius = 65;
+        const x = 90 + radius * Math.cos(angle * Math.PI / 180);
+        const y = 90 + radius * Math.sin(angle * Math.PI / 180);
+        
+        const hourDiv = document.createElement('div');
+        hourDiv.className = 'clock-hour';
+        if (i === 3) hourDiv.classList.add('active');
+        hourDiv.style.left = (x - 15) + 'px';
+        hourDiv.style.top = (y - 15) + 'px';
+        hourDiv.innerText = i;
+        hourDiv.onclick = (e) => {
+            e.stopPropagation();
+            selectHour(i);
+        };
+        clockFace.appendChild(hourDiv);
     }
 
-    if ($useCustomBackup.length > 0) {
-        $useCustomBackup.on('change', toggleCustomBackup);
-        $('#id_custom_hourly, #id_custom_daily, #id_custom_weekly').on('change', toggleSubFields);
+    function selectHour(h) {
+        currentHour = h;
+        updateClockUI();
+        syncToSelect();
+    }
+
+    function toggleAMPM() {
+        currentAMPM = (currentAMPM === 'AM') ? 'PM' : 'AM';
+        ampmToggle.innerText = currentAMPM;
+        updateClockUI();
+        syncToSelect();
+    }
+
+    ampmToggle.onclick = (e) => {
+        e.stopPropagation();
+        toggleAMPM();
+    };
+
+    function updateClockUI() {
+        // Update hand rotation
+        const angle = currentHour * 30;
+        clockHand.style.height = '65px';
+        clockHand.style.transform = `translateX(-50%) rotate(${angle}deg)`;
         
-        // Hide sub-fields by default on load without animation
-        $('#div_id_custom_hourly_interval, #div_id_custom_daily_hour, #div_id_custom_weekly_day, #div_id_custom_weekly_hour').hide();
+        // Update active hour
+        $('.clock-hour').removeClass('active');
+        $('.clock-hour').filter(function() {
+            return $(this).text().trim() === currentHour.toString();
+        }).addClass('active');
+
+        // Update display
+        const displayHour = currentHour < 10 ? '0' + currentHour : currentHour;
+        timeDisplay.innerText = `${displayHour}:00 ${currentAMPM}`;
+    }
+
+    function syncToSelect() {
+        let hour24 = currentHour % 12;
+        if (currentAMPM === 'PM') hour24 += 12;
         
-        toggleCustomBackup(); // init
+        dailyHourSelect.val(hour24).trigger('change');
+        weeklyHourSelect.val(hour24).trigger('change');
+    }
+
+    // Initial Sync from current select value if it exists
+    function initClockFromSelect() {
+        const val = parseInt(dailyHourSelect.val()) || 0;
+        currentAMPM = val >= 12 ? 'PM' : 'AM';
+        currentHour = val % 12;
+        if (currentHour === 0) currentHour = 12;
+        
+        ampmToggle.innerText = currentAMPM;
+        updateClockUI();
+    }
+    initClockFromSelect();
+
+    // Show/Hide clock based on backup type
+    $('input[name="backup_type"]').on('change', function() {
+        const type = $(this).val();
+        if (type === 'daily' || type === 'weekly') {
+            clockWrapper.fadeIn();
+            const targetDiv = (type === 'daily') ? $('#div_id_custom_daily_hour') : $('#div_id_custom_weekly_hour');
+            clockWrapper.insertAfter(targetDiv);
+        } else {
+            clockWrapper.fadeOut();
+        }
+    });
+    
+    // Initial visibility check
+    const initialType = $('input[name="backup_type"]:checked').val();
+    if (initialType === 'daily' || initialType === 'weekly') {
+        clockWrapper.show();
+        const targetDiv = (initialType === 'daily') ? $('#div_id_custom_daily_hour') : $('#div_id_custom_weekly_hour');
+        clockWrapper.insertAfter(targetDiv);
     }
 
 });

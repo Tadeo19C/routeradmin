@@ -4,7 +4,7 @@
 <div class="container mt-3">
     <div class="card card-primary card-outline">
         <div class="card-header">
-            <h3 class="card-title">{{ form.instance.pk|yesno:"Edit User,Create New User" }}</h3>
+            <h3 class="card-title">{{ form.instance.pk|yesno:"Editar Usuario,Crear Nuevo Usuario" }}</h3>
         </div>
         <div class="card-body">
 <div class="row">
@@ -14,23 +14,23 @@
 
             <!-- Username -->
             <div class="form-group">
-                <label for="{{ form.username.id_for_label }}">Username</label>
-                <input type="text" class="form-control" id="{{ form.username.id_for_label }}" name="{{ form.username.html_name }}" placeholder="Enter Username" value="{{ form.username.value|default_if_none:'' }}" {% if form.instance.pk %}readonly{% endif %}>
+                <label for="{{ form.username.id_for_label }}">Nombre de usuario</label>
+                <input type="text" class="form-control" id="{{ form.username.id_for_label }}" name="{{ form.username.html_name }}" placeholder="Ingresa el nombre de usuario" value="{{ form.username.value|default_if_none:'' }}" {% if form.instance.pk %}readonly{% endif %}>
             </div>
             <!-- Password -->
             <div class="form-group">
-                <label for="{{ form.password1.id_for_label }}">Password</label>
-                <input type="password" class="form-control" id="{{ form.password1.id_for_label }}" name="{{ form.password1.html_name }}" placeholder="Password">
+                <label for="{{ form.password1.id_for_label }}">Contraseña</label>
+                <input type="password" class="form-control" id="{{ form.password1.id_for_label }}" name="{{ form.password1.html_name }}" placeholder="Contraseña">
             </div>
             
             <!-- Retype Password -->
             <div class="form-group">
-                <label for="{{ form.password2.id_for_label }}">Retype Password</label>
-                <input type="password" class="form-control" id="{{ form.password2.id_for_label }}" name="{{ form.password2.html_name }}" placeholder="Retype Password">
+                <label for="{{ form.password2.id_for_label }}">Repetir contraseña</label>
+                <input type="password" class="form-control" id="{{ form.password2.id_for_label }}" name="{{ form.password2.html_name }}" placeholder="Repetir contraseña">
             </div>           
             <!-- User Level -->
             <div class="form-group">
-                <label for="{{ form.user_level.id_for_label }}">{{ form.user_level.label }}</label>
+                <label for="{{ form.user_level.id_for_label }}">Nivel de Usuario</label>
                 <select class="form-control" id="{{ form.user_level.id_for_label }}" name="{{ form.user_level.html_name }}">
                     {% for value, display in form.user_level.field.choices %}
                         <option value="{{ value }}" {% if form.user_level.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>{{ display }}</option>
@@ -39,9 +39,9 @@
             </div>
 
             <div>
-                <button type="submit" class="btn btn-primary">Submit</button>
-                <a href="/user/list/" class="btn btn-outline-secondary">Back</a>
-                {% if user_acl %}<a href='javascript:void(0)' class='btn btn-outline-danger' data-command='delete' onclick='openCommandDialog(this)'>Delete User</a>{% endif %}
+                <button type="submit" class="btn btn-primary">Guardar</button>
+                <a href="/user/list/" class="btn btn-outline-secondary">Volver</a>
+                {% if user_acl %}<a href='javascript:void(0)' class='btn btn-outline-danger' data-command='delete' onclick='openCommandDialog(this)'>Eliminar Usuario</a>{% endif %}
     
             </div>
         </form>
@@ -49,16 +49,16 @@
         
     
     <div class="col-md-8">
-        <h5>Viewer</h5>
-        <p>This level has view-only access. Users can see queue information and the backup list, but they cannot access backup data or any sensitive information.</p>
-        <h5>Backup Operator</h5>
-        <p>In addition to the permissions of the Viewer level, users at this level can view host backups and start instant backups.</p>
-        <h5>Host Manager</h5>
-        <p>Users at this level can configure, add, and remove hosts, and delete backups. They also have all the permissions of the Backup Operator level.</p>
-        <h5>Configuration Manager</h5>
-        <p>In addition to the permissions of the Host Manager level, users at this level can configure backup profiles, SSH keys, and router groups.</p>
-        <h5>Administrator</h5>
-        <p>Users at this level have full administrative rights, including all the permissions of the previous levels.</p>
+        <h5>Viewer (Visor)</h5>
+        <p>Este nivel tiene acceso de solo lectura. Los usuarios pueden ver información de colas y la lista de respaldos, pero no pueden acceder a los datos de respaldo ni a información sensible.</p>
+        <h5>Backup Operator (Operador de Respaldos)</h5>
+        <p>Además de los permisos de nivel Visor, los usuarios en este nivel pueden ver los respaldos de los equipos e iniciar respaldos instantáneos.</p>
+        <h5>Host Manager (Gestor de Equipos)</h5>
+        <p>Los usuarios de este nivel pueden configurar, añadir y eliminar equipos, y borrar respaldos. También cuentan con todos los permisos del nivel Operador de Respaldos.</p>
+        <h5>Configuration Manager (Gestor de Configuración)</h5>
+        <p>Además de los permisos de nivel Host Manager, los usuarios de este nivel pueden configurar perfiles de respaldo, llaves SSH y grupos de equipos.</p>
+        <h5>Administrator (Administrador)</h5>
+        <p>Los usuarios de este nivel tienen derechos administrativos totales, incluyendo todos los permisos de los niveles anteriores.</p>
     </div>
 </div>
         
@@ -73,7 +73,7 @@
 <script>
     function openCommandDialog(element) {
         var command = element.getAttribute('data-command');
-        var confirmation = prompt("Please type '{{ user_acl.user.username }}' to remove this user.");
+        var confirmation = prompt("Por favor, escribe '{{ user_acl.user.username }}' para eliminar este usuario.");
         if (confirmation) {
             var url = "?uuid={{ user_acl.uuid }}&action=delete&confirmation=" + encodeURIComponent(confirmation);
             window.location.href = url;
@@ -81,4 +81,4 @@
     }
 </script>
 
-{% endblock %}
+{% endblock %}

@@ -18,8 +18,8 @@ class BackupProfile(models.Model):
     monthly_backup = models.BooleanField(default=False)
     hourly_backup = models.BooleanField(default=False)
     hourly_interval = models.IntegerField(default=6, choices=(
-        (1, 'Every 1 hour'), (2, 'Every 2 hours'), (4, 'Every 4 hours'),
-        (6, 'Every 6 hours'), (8, 'Every 8 hours'), (12, 'Every 12 hours'),
+        (1, 'Cada 1 hora'), (2, 'Cada 2 horas'), (4, 'Cada 4 horas'),
+        (6, 'Cada 6 horas'), (8, 'Cada 8 horas'), (12, 'Cada 12 horas'),
     ))
     hourly_retention = models.IntegerField(default=3)
 
@@ -40,17 +40,17 @@ class BackupProfile(models.Model):
     daily_day_saturday = models.BooleanField(default=True)
     daily_day_sunday = models.BooleanField(default=True)
 
-    weekly_day = models.CharField(max_length=10, default='sunday', choices=(('monday', 'Monday'), ('tuesday', 'Tuesday'), ('wednesday', 'Wednesday'), ('thursday', 'Thursday'), ('friday', 'Friday'), ('saturday', 'Saturday'), ('sunday', 'Sunday')))
-    monthly_day = models.IntegerField(default=1, choices=((1, '1st'), (7, '7th'), (14, '14th'), (21, '21st'), (28, '28th')))
+    weekly_day = models.CharField(max_length=10, default='sunday', choices=(('monday', 'Lunes'), ('tuesday', 'Martes'), ('wednesday', 'Miércoles'), ('thursday', 'Jueves'), ('friday', 'Viernes'), ('saturday', 'Sábado'), ('sunday', 'Domingo')))
+    monthly_day = models.IntegerField(default=1, choices=((1, '1º'), (7, '7º'), (14, '14º'), (21, '21º'), (28, '28º')))
 
     daily_hour = models.IntegerField(default=3, choices=HOUR_CHOICES)
     weekly_hour = models.IntegerField(default=1, choices=HOUR_CHOICES)
     monthly_hour = models.IntegerField(default=0, choices=HOUR_CHOICES)
 
     max_retry = models.IntegerField(default=3, choices=((1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')))
-    retry_interval = models.IntegerField(default=30, choices=((1, '1 Minute'), (15, '15 Minutes'), (30, '30 Minutes'), (60, '1 Hour')))
-    retrieve_interval = models.IntegerField(default=60, choices=((15, '15 Seconds'), (30, '30 Seconds'), (60, '1 Minute'), (900, '15 Minutes'), (1800, '30 Minutes'), (3600, '1 Hour')))
-    backup_interval = models.IntegerField(default=0, choices=((0, 'No interval'), (5, '5 seconds'), (60, '1 minute')))
+    retry_interval = models.IntegerField(default=30, choices=((1, '1 Minuto'), (15, '15 Minutos'), (30, '30 Minutos'), (60, '1 Hora')))
+    retrieve_interval = models.IntegerField(default=60, choices=((15, '15 Segundos'), (30, '30 Segundos'), (60, '1 Minuto'), (900, '15 Minutos'), (1800, '30 Minutos'), (3600, '1 Hora')))
+    backup_interval = models.IntegerField(default=0, choices=((0, 'Sin intervalo'), (5, '5 segundos'), (60, '1 minuto')))
 
     profile_error_information = models.CharField(max_length=100, blank=True, null=True)
 

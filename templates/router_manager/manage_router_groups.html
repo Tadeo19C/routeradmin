@@ -12,7 +12,7 @@
                     {% csrf_token %}
                     <div class="row">
                         <div class="col-md-12">
-                            <h4>Selected Routers:</h4>
+                            <h4>Equipos Seleccionados:</h4>
                             <ul>
                                 {% for router in routers %}
                                     <li>{{ router.name }}</li>
@@ -46,9 +46,9 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-12">
-                            <button type="submit" class="btn btn-success">Apply Changes</button>
-                            <a href="/router/list/" class="btn btn-secondary">Cancel</a>
+                        <div class="col-md-12 text-right">
+                            <button type="submit" class="btn btn-success">Aplicar Cambios</button>
+                            <a href="/router/list/" class="btn btn-secondary">Cancelar</a>
                         </div>
                     </div>
                 </form>

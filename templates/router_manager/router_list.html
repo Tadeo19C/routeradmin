@@ -25,13 +25,12 @@
                                     <th data-column="type">Tipo</th>
                                     {% endif %}
                                     {% if "address" in visible_columns %}
-                                    <th style="width: 15%">IP / Hostname</th>
+                                    <th style="width: 15%">Dirección IP</th>
                                     {% endif %}
                                     {% if "status" in visible_columns %}
                                     <th data-column="status">Estado</th>
                                     {% endif %}
                                     {% if "backup" in visible_columns %}
-                                    <th data-column="backup">Respaldo</th>
                                     {% endif %}
                                     {% if "last_backup" in visible_columns %}
                                     <th data-column="last_backup">Último Respaldo</th>
@@ -85,7 +84,16 @@
                                     <tr {% if not router.enabled %}style="text-decoration: line-through;"{% endif %}>
                                         <td><input type="checkbox" class="router-checkbox" data-uuid="{{ router.uuid }}"></td>
                                         {% if "name" in visible_columns %}
-                                        <td data-column="name"><a href="/router/details/?uuid={{ router.uuid }}">{{ router.name }}</a></td>
+                                        <td data-column="name">
+                                            <a href="/router/details/?uuid={{ router.uuid }}">{{ router.name }}</a>
+                                            <!-- Hidden search blob for DataTables to find hidden data -->
+                                            <span style="display:none;">
+                                                {{ router.address }} {{ router.get_router_type_display }}
+                                                {{ router.routerinformation.os_version }} {{ router.routerinformation.model_name }}
+                                                {{ router.routerinformation.serial_number }} {{ router.internal_notes|default:"" }}
+                                                {% for group in router.routergroup_set.all %}{{ group.name }} {% endfor %}
+                                            </span>
+                                        </td>
                                         {% endif %}
                                         {% if "type" in visible_columns %}
                                         <td data-column="type">{{ router.get_router_type_display }}</td>
@@ -107,15 +115,6 @@
                                         </td>
                                         {% endif %}
                                         {% if "backup" in visible_columns %}
-                                        <td data-column="backup">
-                                            {% if router.router_type != 'monitoring' %}
-                                                {% if router.backup_profile %}
-                                                    {{ router.backup_profile }} {% if router.routerstatus.last_backup_failed %}<i class="fas fa-exclamation-triangle text-danger" title="Last backup failed to complete"></i>{% endif %}
-                                                {% else %}
-                                                    <i class="fas fa-exclamation-triangle text-warning" title="No backup profile selected"></i>
-                                                {% endif %}
-                                            {% endif %}
-                                        </td>
                                         {% endif %}
                                         {% if "last_backup" in visible_columns %}
                                         <td data-column="last_backup">
@@ -172,7 +171,7 @@
                                         <td data-column="auth" class="min-width">
                                             {% if router.router_type != 'monitoring' %}
                                                 {% if router.password %}
-                                                    <span style="display: none">password</span><i class="fas fa-keyboard" title="Password Authentication"></i>
+                                                    <span style="display: none">password</span>
                                                 {% else %}
                                                     <i class="fas fa-exclamation-triangle text-warning" title="Missing authentication"></i>
                                                 {% endif %}
@@ -231,17 +230,20 @@
                                         <td class="min-width">
                                             {% if router.router_type != 'monitoring' %}
                                                 <div class="btn-group">
-                                                    <a href="/router/details/?uuid={{ router.uuid }}" class="btn btn-sm btn-outline-info" title="View Logs">
-                                                        <i class="fas fa-list"></i> Logs
+                                                    <a href="/router/details/?uuid={{ router.uuid }}" class="btn btn-sm btn-outline-info" title="Información">
+                                                        <i class="fas fa-info-circle"></i> Info
                                                     </a>
-                                                    <a href="/backup/backup_list/?router={{ router.uuid }}" class="btn btn-sm btn-outline-success" title="Backup History & Download">
+                                                    <a href="/backup/backup_list/?router={{ router.uuid }}" class="btn btn-sm btn-outline-success" title="Historial de Respaldos y Descarga">
                                                         <i class="fas fa-download"></i> Historial
                                                     </a>
                                                 </div>
                                             {% endif %}
                                         </td>
                                          <td class="min-width">
-                                             <a href="javascript:void(0)" class="manage-router-btn" data-uuid="{{ router.uuid }}"><i class="fas fa-edit" title="Edit Router"></i></a>
+                                             <a href="javascript:void(0)" class="manage-router-btn mr-2" data-uuid="{{ router.uuid }}"><i class="fas fa-edit" title="Editar Equipo"></i></a>
+                                              <a href="javascript:void(0)" class="text-danger" title="Eliminar Equipo" onclick="confirmDeleteRouter('{{ router.uuid }}', '{{ router.name }}')">
+                                                  <i class="fas fa-trash"></i>
+                                              </a>
                                          </td>
                                     </tr>
                                 {% endfor %}
@@ -250,12 +252,12 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-lg-12 text-right">
-                                <a href="javascript:void(0)" class="btn btn-primary" id="add-router-btn">Add Router</a>
-                                <a href="/router/import_tool/" class="btn btn-primary">Import Tool</a>
-                                <button id="select-all" class="btn btn-outline-primary" title="Select All"><i class="fas fa-check-square"></i></button>
-                                <button id="select-none" class="btn btn-outline-primary" title="Select None"><i class="fas fa-square"></i></button>
-                                <button id="create-backup" class="btn btn-warning" style="display: none;">Create Backup Task</button>
-                                <button id="run-command" class="btn btn-info" style="display: none;">Run Command</button>
+                                <a href="javascript:void(0)" class="btn btn-primary" id="add-router-btn">Añadir Equipo</a>
+                                <a href="/router/import_tool/" class="btn btn-primary">Herramienta de Importación</a>
+                                <button id="select-all" class="btn btn-outline-primary" title="Seleccionar Todo"><i class="fas fa-check-square"></i></button>
+                                <button id="select-none" class="btn btn-outline-primary" title="Seleccionar Ninguno"><i class="fas fa-square"></i></button>
+                                <button id="create-backup" class="btn btn-warning" style="display: none;">Crear Tarea de Respaldo</button>
+                                <button id="run-command" class="btn btn-info" style="display: none;">Ejecutar Comando</button>
                                 <button id="manage-groups" class="btn btn-primary" style="display: none;">Nodos</button>
                             </div>
                         </div>
@@ -306,6 +308,18 @@
 {% block custom_page_scripts %}
     <script>
         var last_status_change = "{{ last_status_change_timestamp }}";
+        
+        function confirmDeleteRouter(uuid, name) {
+            if (confirm('¿Estás seguro de que deseas eliminar el equipo "' + name + '"?')) {
+                var confirmation = prompt('Por favor, escribe "borrar" para confirmar la eliminación:');
+                if (confirmation === 'borrar') {
+                    window.location.href = '/router/manage/?uuid=' + uuid + '&action=delete&confirmation=borrar';
+                } else if (confirmation !== null) {
+                    alert('Confirmación incorrecta. El equipo no ha sido eliminado.');
+                }
+            }
+        }
+
         var group_uuid = "{{ filter_group.uuid|default_if_none:'' }}";
         var status_online_text = '<span style="display: none">online</span><i class="far fa-check-circle text-success" title="Host is Online"></i>';
         var status_offline_text = '<span style="display: none">offline</span><i class="far fa-times-circle text-danger" title="Host is unavailable"></i>';
@@ -314,7 +328,7 @@
         var columnDefinitions = [
             { name: "name", label: "Name", default: true },
             { name: "type", label: "Type", default: true },
-            { name: "address", label: "IP / Hostname", default: true },
+            { name: "address", label: "Dirección IP", default: true },
             { name: "status", label: "Status", default: true },
             { name: "backup", label: "Backup", default: true },
             { name: "last_backup", label: "Last Backup", default: false },

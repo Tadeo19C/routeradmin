@@ -1,12 +1,21 @@
 from django import forms
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Submit, Row, Column, HTML
+from crispy_forms.layout import Layout, Submit, Row, Column, HTML, Field
+from crispy_forms.bootstrap import InlineRadios
 from django.core.validators import RegexValidator
 from .models import Router, RouterGroup
 from backup.models import BackupProfile, HOUR_CHOICES
 from routerlib.functions import test_authentication, connect_to_ssh
 import ipaddress
 import socket
+
+HOUR_CHOICES_12H = (
+    (0, '12:00 AM'), (1, '01:00 AM'), (2, '02:00 AM'), (3, '03:00 AM'), (4, '04:00 AM'), (5, '05:00 AM'), (6, '06:00 AM'), (7, '07:00 AM'),
+    (8, '08:00 AM'), (9, '09:00 AM'), (10, '10:00 AM'), (11, '11:00 AM'), (12, '12:00 PM'), (13, '01:00 PM'), (14, '02:00 PM'),
+    (15, '03:00 PM'), (16, '04:00 PM'), (17, '05:00 PM'), (18, '06:00 PM'), (19, '07:00 PM'), (20, '08:00 PM'), (21, '09:00 PM'),
+    (22, '10:00 PM'), (23, '11:00 PM')
+)
+
 
 
 class RouterForm(forms.ModelForm):
@@ -17,26 +26,44 @@ class RouterForm(forms.ModelForm):
         empty_label='-- Sin nodo --',
         label='Nodo'
     )
+    backup_profile = forms.ModelChoiceField(
+        queryset=BackupProfile.objects.all().order_by('name'),
+        required=False,
+        empty_label='-- Configuración Personalizada --',
+        label='Perfil de Respaldo'
+    )
     
-    use_custom_backup = forms.BooleanField(required=False, label="Configurar Respaldo Automático")
-    custom_hourly = forms.BooleanField(required=False, label="Respaldo por Hora")
+    backup_type = forms.ChoiceField(
+        required=True, 
+        label="", # Quitar label para centrarlo mejor
+        choices=(('hourly', 'Por Hora'), ('daily', 'Diario'), ('weekly', 'Semanal')),
+        widget=forms.RadioSelect,
+        initial='daily'
+    )
     custom_hourly_interval = forms.ChoiceField(required=False, label="Intervalo", choices=(
         (1, 'Cada 1 hr'), (2, 'Cada 2 hrs'), (4, 'Cada 4 hrs'), (6, 'Cada 6 hrs'), (8, 'Cada 8 hrs'), (12, 'Cada 12 hrs')
     ), initial=6)
 
-    custom_daily = forms.BooleanField(required=False, label="Respaldo Diario")
-    custom_daily_hour = forms.ChoiceField(required=False, label="Hora de Respaldo", choices=HOUR_CHOICES, initial=3)
+    custom_daily_hour = forms.ChoiceField(required=False, label="Hora de Respaldo", choices=HOUR_CHOICES_12H, initial=3)
 
-    custom_weekly = forms.BooleanField(required=False, label="Respaldo Semanal")
     custom_weekly_day = forms.ChoiceField(required=False, label="Día Semanal", choices=(
         ('monday', 'Lunes'), ('tuesday', 'Martes'), ('wednesday', 'Miércoles'), ('thursday', 'Jueves'), 
         ('friday', 'Viernes'), ('saturday', 'Sábado'), ('sunday', 'Domingo')
     ), initial='sunday')
-    custom_weekly_hour = forms.ChoiceField(required=False, label="Hora Semanal", choices=HOUR_CHOICES, initial=1)
+    custom_weekly_hour = forms.ChoiceField(required=False, label="Hora Semanal", choices=HOUR_CHOICES_12H, initial=1)
 
     class Meta:
         model = Router
-        fields = ['name', 'connection_protocol', 'port', 'address', 'username', 'password', 'monitoring', 'router_type', 'enabled', 'backup_profile']
+        fields = ['name', 'router_type', 'connection_protocol', 'address', 'port', 'username', 'password', 'monitoring', 'enabled']
+        labels = {
+            'name': 'Nombre',
+            'router_type': 'Tipo de Equipo',
+            'connection_protocol': 'Protocolo',
+            'address': 'Dirección IP',
+            'port': 'Puerto',
+            'username': 'Usuario',
+            'password': 'Contraseña',
+        }
         widgets = {
             'monitoring': forms.HiddenInput(),
             'enabled': forms.HiddenInput(),
@@ -47,14 +74,40 @@ class RouterForm(forms.ModelForm):
         self.helper = FormHelper()
         self.helper.form_tag = False
         self.helper.form_method = 'post'
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-sm-4 col-form-label col-form-label-sm font-weight-bold text-primary mb-0'
+        self.helper.field_class = 'col-sm-8'
+        self.helper.form_error_title = 'Error'
+        
+        # Simple class assignment
+        for field in self.fields:
+            if not isinstance(self.fields[field].widget, forms.HiddenInput):
+                self.fields[field].widget.attrs['class'] = 'form-control form-control-sm'
         if self.instance.pk:
-            delete_html = "<a href='javascript:void(0)' class='btn btn-outline-danger' data-command='delete' onclick='openCommandDialog(this)'>Delete</a>"
+            delete_html = "<a href='javascript:void(0)' class='btn btn-outline-danger' data-command='delete' onclick='openCommandDialog(this)'>Borrar</a>"
             if self.instance.password:
                 self.fields['password'].widget.attrs['placeholder'] = '************'
             # Pre-select the current group if the router belongs to one
             current_group = self.instance.routergroup_set.first()
             if current_group:
                 self.fields['router_group'].initial = current_group
+            
+            # Populate custom backup fields from the assigned profile
+            if self.instance.backup_profile:
+                profile = self.instance.backup_profile
+                if profile.hourly_backup:
+                    self.initial['backup_type'] = 'hourly'
+                elif profile.daily_backup:
+                    self.initial['backup_type'] = 'daily'
+                elif profile.weekly_backup:
+                    self.initial['backup_type'] = 'weekly'
+                else:
+                    self.initial['backup_type'] = 'none'
+
+                self.initial['custom_hourly_interval'] = profile.hourly_interval
+                self.initial['custom_daily_hour'] = profile.daily_hour
+                self.initial['custom_weekly_day'] = profile.weekly_day
+                self.initial['custom_weekly_hour'] = profile.weekly_hour
         else:
             delete_html = ''
 
@@ -69,44 +122,43 @@ class RouterForm(forms.ModelForm):
         self.initial['enabled'] = True
         self.helper.layout = Layout(
             Row(
-                Column('name', css_class='form-group col-md-8 mb-0'),
-                Column('router_type', css_class='form-group col-md-4 mb-0'),
+                Column('name', css_class='form-group col-md-6 mb-2'),
+                Column('router_type', css_class='form-group col-md-6 mb-2'),
                 css_class='form-row'
             ),
             Row(
-                Column('address', css_class='form-group col-md-4 mb-0'),
-                Column('connection_protocol', css_class='form-group col-md-4 mb-0'),
-                Column('port', css_class='form-group col-md-4 mb-0'),
+                Column('address', css_class='form-group col-md-6 mb-2'),
+                Column('port', css_class='form-group col-md-6 mb-2'),
                 css_class='form-row'
             ),
             Row(
-                Column('username', css_class='form-group col-md-6 mb-0'),
-                Column('password', css_class='form-group col-md-6 mb-0'),
+                Column('connection_protocol', css_class='form-group col-md-6 mb-2'),
+                Column('router_group', css_class='form-group col-md-6 mb-2'),
                 css_class='form-row'
             ),
             Row(
-                Column('router_group', css_class='form-group col-md-6 mb-0'),
-                Column('backup_profile', css_class='form-group col-md-6 mb-0'),
+                Column('username', css_class='form-group col-md-6 mb-2'),
+                Column('password', css_class='form-group col-md-6 mb-2'),
                 css_class='form-row'
             ),
+            HTML('<hr class="my-3">'),
+            'backup_profile',
+            'backup_type',
+            # Sub-campos de configuración
             Row(
-                Column('use_custom_backup', css_class='form-group col-md-12 mb-0 font-weight-bold float-right d-flex justify-content-end'),
-                css_class='form-row'
-            ),
-            Row(
-                Column('custom_hourly', 'custom_hourly_interval', css_class='form-group col-md-4 mb-0 custom-backup-fields'),
-                Column('custom_daily', 'custom_daily_hour', css_class='form-group col-md-4 mb-0 custom-backup-fields'),
-                Column('custom_weekly', 'custom_weekly_day', 'custom_weekly_hour', css_class='form-group col-md-4 mb-0 custom-backup-fields'),
+                Column('custom_hourly_interval', css_class='col-md-4'),
+                Column('custom_daily_hour', css_class='col-md-4'),
+                Column('custom_weekly_day', 'custom_weekly_hour', css_class='col-md-4'),
                 css_class='form-row'
             ),
             'monitoring',
             'enabled',
             Row(
                 Column(
-                    Submit('submit', 'Save', css_class='btn btn-success'),
+                    Submit('submit', 'Guardar Router', css_class='btn btn-success btn-sm'),
                     HTML(delete_html),
-                    css_class='col-md-12'),
-                css_class='form-row'
+                    css_class='col-md-12 text-right'),
+                css_class='form-row mt-3'
             )
         )
 
@@ -155,33 +207,48 @@ class RouterForm(forms.ModelForm):
         )
         if not test_authentication_success:
             if test_authentication_message:
-                raise forms.ValidationError('Could not authenticate: ' + test_authentication_message)
+                raise forms.ValidationError('No se pudo autenticar: ' + test_authentication_message)
             else:
-                raise forms.ValidationError('Could not authenticate to the router. Please check the credentials and try again.')
+                raise forms.ValidationError('No se pudo autenticar con el router. Por favor verifique las credenciales e intente de nuevo.')
         return cleaned_data
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        if self.cleaned_data.get('use_custom_backup'):
+        
+        backup_type = self.cleaned_data.get('backup_type')
+        backup_profile = self.cleaned_data.get('backup_profile')
+        
+        if backup_profile:
+            # Si seleccionó un perfil, usamos ese.
+            instance.backup_profile = backup_profile
+            # Opcional: Podríamos verificar si el usuario modificó los campos custom
+            # y en ese caso crear un perfil nuevo, pero por ahora simplificamos.
+        elif backup_type and backup_type != 'none':
             profile_name = f"Perfil Automático - {instance.name}"
-            # Se create or get
             profile, created = BackupProfile.objects.get_or_create(name=profile_name)
             
-            profile.hourly_backup = self.cleaned_data.get('custom_hourly', False)
-            if profile.hourly_backup:
+            # Reset all then set the selected one
+            profile.hourly_backup = False
+            profile.daily_backup = False
+            profile.weekly_backup = False
+
+            if backup_type == 'hourly':
+                profile.hourly_backup = True
                 profile.hourly_interval = self.cleaned_data.get('custom_hourly_interval')
-                
-            profile.daily_backup = self.cleaned_data.get('custom_daily', False)
-            if profile.daily_backup:
+            elif backup_type == 'daily':
+                profile.daily_backup = True
                 profile.daily_hour = self.cleaned_data.get('custom_daily_hour')
-                
-            profile.weekly_backup = self.cleaned_data.get('custom_weekly', False)
-            if profile.weekly_backup:
+            elif backup_type == 'weekly':
+                profile.weekly_backup = True
                 profile.weekly_day = self.cleaned_data.get('custom_weekly_day')
                 profile.weekly_hour = self.cleaned_data.get('custom_weekly_hour')
                 
             profile.save()
             instance.backup_profile = profile
+        else:
+            # Si no hay respaldo, desvinculamos el perfil automático
+            if instance.backup_profile and instance.backup_profile.name.startswith("Perfil Automático"):
+                instance.backup_profile = None
             
         if commit:
             instance.save()
@@ -191,6 +258,12 @@ class RouterGroupForm(forms.ModelForm):
     class Meta:
         model = RouterGroup
         fields = ['name', 'default_group', 'internal_notes', 'routers']
+        labels = {
+            'name': 'Nombre',
+            'default_group': 'Nodo por Defecto',
+            'internal_notes': 'Notas Internas',
+            'routers': 'Equipos',
+        }
         widgets = {
             'internal_notes': forms.Textarea(attrs={'rows': 4, 'cols': 40}),  # Define como um Textarea simples
         }
@@ -199,6 +272,9 @@ class RouterGroupForm(forms.ModelForm):
         super(RouterGroupForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_method = 'post'
+        self.helper.form_class = 'form-horizontal'
+        self.helper.label_class = 'col-sm-3 col-form-label font-weight-bold text-right'
+        self.helper.field_class = 'col-sm-9'
         if self.instance.pk:
             delete_html = "<a href='javascript:void(0)' class='btn btn-outline-danger' data-command='delete' onclick='openCommandDialog(this)'>Delete</a>"
         else:
@@ -210,11 +286,11 @@ class RouterGroupForm(forms.ModelForm):
             'default_group',
             Row(
                 Column(
-                    Submit('submit', 'Save', css_class='btn btn-success'),
-                    HTML(' <a class="btn btn-secondary" href="/router/group_list/">Back</a> '),
+                    Submit('submit', 'Guardar Grupo', css_class='btn btn-success btn-sm'),
+                    HTML(' <a class="btn btn-secondary btn-sm" href="/router/group_list/">Atrás</a> '),
                     HTML(delete_html),
-                    css_class='col-md-12'),
-                css_class='form-row'
+                    css_class='col-md-12 text-right'),
+                css_class='form-row mt-3'
             )
         )
 

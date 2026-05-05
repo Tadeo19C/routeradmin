@@ -10,7 +10,6 @@
         transform: scale(1.05);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
-
 </style>
 <div class="row">
     <!-- Left Column for General Information -->
@@ -31,15 +30,16 @@
                         <div class="info-box bg-info">
                             <span class="info-box-icon"><i class="fas fa-hdd"></i></span>
                             <div class="info-box-content">
-                                <span class="info-box-text">Almacenamiento (Copias Locales)</span>
+                                <span class="info-box-text">Almacenamiento</span>
                                 <span class="info-box-number">{{ media_root_stats.used }} en uso</span>
                                 <div class="progress">
-                                    <div class="progress-bar" style="width: {{ media_root_stats.usage_percentage }}%"></div>
+                                    <div class="progress-bar" style="width: {{ media_root_stats.usage_percentage }}%">
+                                    </div>
                                 </div>
                                 <span class="progress-description">
                                     {{ media_root_stats.usage_percentage }}% de {{ media_root_stats.total }}
                                     {% if media_root_stats.storage_warning %}
-                                        <span class="text-danger">{{ media_root_stats.storage_warning }}</span>
+                                    <span class="text-danger">{{ media_root_stats.storage_warning }}</span>
                                     {% endif %}
                                 </span>
                             </div>
@@ -86,7 +86,7 @@
                         <div class="info-box bg-primary">
                             <span class="info-box-icon"><i class="fas fa-network-wired"></i></span>
                             <div class="info-box-content">
-                                <span class="info-box-text">Total de Nodos</span>
+                                <span class="info-box-text">Total de equipos</span>
                                 <span class="info-box-number">{{ total_router_count }}</span>
                             </div>
                         </div>
@@ -97,7 +97,7 @@
                         <div class="info-box bg-success">
                             <span class="info-box-icon"><i class="fas fa-plug"></i></span>
                             <div class="info-box-content">
-                                <span class="info-box-text">Nodos en Línea</span>
+                                <span class="info-box-text">Equipos en Línea</span>
                                 <span class="info-box-number">{{ router_online_count }}</span>
                             </div>
                         </div>
@@ -108,7 +108,7 @@
                         <div class="info-box bg-danger">
                             <span class="info-box-icon"><i class="fas fa-plug"></i></span>
                             <div class="info-box-content">
-                                <span class="info-box-text">Nodos Desconectados</span>
+                                <span class="info-box-text">Equipos Desconectados</span>
                                 <span class="info-box-number">{{ router_offline_count }}</span>
                             </div>
                         </div>
@@ -165,133 +165,134 @@
             </div>
         </div>
     </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    var backupChart;
+    <script src="/static/AdminLTE-3.2.0/plugins/chart.js/Chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        var backupChart;
 
-    function createBackupChart(data) {
-        var ctx = document.getElementById('backupChart').getContext('2d');
-        if (backupChart) {
-            backupChart.destroy();
-        }
-        backupChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: data.dates,
-                datasets: [{
-                    label: 'Respaldos Exitosos',
-                    data: data.success_data,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 2,
-                    fill: true, // Fill the area under the line
+        function createBackupChart(data) {
+            var ctx = document.getElementById('backupChart').getContext('2d');
+            if (backupChart) {
+                backupChart.destroy();
+            }
+            backupChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [{
+                        label: 'Respaldos Exitosos',
+                        data: data.success_data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        fill: true, // Fill the area under the line
+                    },
+                    {
+                        label: 'Respaldos Fallidos',
+                        data: data.error_data,
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2,
+                        fill: true, // Fill the area under the line
+                    }]
                 },
-                {
-                    label: 'Respaldos Fallidos',
-                    data: data.error_data,
-                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 2,
-                    fill: true, // Fill the area under the line
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     }
                 }
-            }
-        });
-    }
-    function updateBackupStatistics(days) {
-        fetch(`/backup_statistics_data?days=${days}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Invalid days parameter');
-            }
-            return response.json();
-        })
-        .then(data => {
-            createBackupChart(data);
-        })
-        .catch(error => {
-            alert(error.message);
-        });
-    }
-
-    document.addEventListener("DOMContentLoaded", function() {
-        const daysSelectBackup = document.getElementById('days-select-backup');
-        daysSelectBackup.addEventListener('change', (event) => {
-            updateBackupStatistics(event.target.value);
-        });
-
-        updateBackupStatistics(7); // Initial load for the last 7 days
-    });
-</script>
-<script>
-    var routerStatusChart;
-    function createRouterStatusChart(data) {
-        var ctx2 = document.getElementById('routerStatusChart').getContext('2d');
-        if (routerStatusChart) {
-            routerStatusChart.destroy();
+            });
         }
-        routerStatusChart = new Chart(ctx2, {
-            type: 'line',
-            data: {
-                labels: data.dates,
-                datasets: [{
-                    label: 'Nodos en Línea',
-                    data: data.online_data,
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 2,
-                    fill: true, // Fill the area under the line
+        function updateBackupStatistics(days) {
+            fetch(`/backup_statistics_data?days=${days}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Invalid days parameter');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    createBackupChart(data);
+                })
+                .catch(error => {
+                    alert(error.message);
+                });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const daysSelectBackup = document.getElementById('days-select-backup');
+            daysSelectBackup.addEventListener('change', (event) => {
+                updateBackupStatistics(event.target.value);
+            });
+
+            updateBackupStatistics(7); // Initial load for the last 7 days
+        });
+    </script>
+    <script>
+        var routerStatusChart;
+        function createRouterStatusChart(data) {
+            var ctx2 = document.getElementById('routerStatusChart').getContext('2d');
+            if (routerStatusChart) {
+                routerStatusChart.destroy();
+            }
+            routerStatusChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [{
+                        label: 'Equipos en Línea',
+                        data: data.online_data,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: true, // Fill the area under the line
+                    },
+                    {
+                        label: 'Equipos Caídos',
+                        data: data.offline_data,
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 2,
+                        fill: true, // Fill the area under the line
+                    }]
                 },
-                {
-                    label: 'Nodos Caídos',
-                    data: data.offline_data,
-                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                    borderColor: 'rgba(153, 102, 255, 1)',
-                    borderWidth: 2,
-                    fill: true, // Fill the area under the line
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     }
                 }
-            }
+            });
+        }
+
+        function updateRouterStatus(days) {
+            fetch(`/router_status_data?days=${days}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Invalid days parameter' + " " + days);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    createRouterStatusChart(data);
+                })
+                .catch(error => {
+                    alert(error.message);
+                });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const daysSelectStatus = document.getElementById('days-select-status');
+            daysSelectStatus.addEventListener('change', (event) => {
+                updateRouterStatus(event.target.value);
+            });
+
+            updateRouterStatus(7); // Initial load for the last 7 days
         });
-    }
-
-    function updateRouterStatus(days) {
-        fetch(`/router_status_data?days=${days}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Invalid days parameter'+ " " + days);
-            }
-            return response.json();
-        })
-        .then(data => {
-            createRouterStatusChart(data);
-        })
-        .catch(error => {
-            alert(error.message);
-        });
-    }
-
-    document.addEventListener("DOMContentLoaded", function() {
-        const daysSelectStatus = document.getElementById('days-select-status');
-        daysSelectStatus.addEventListener('change', (event) => {
-            updateRouterStatus(event.target.value);
-        });
-
-        updateRouterStatus(7); // Initial load for the last 7 days
-    });
-</script>
+    </script>
 
 
-{% endblock %}
+    {% endblock %}
