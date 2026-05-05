@@ -8,15 +8,22 @@ echo "        MEGACOM - Professional Setup            "
 echo "------------------------------------------------"
 
 # Check for Docker
-if ! [ -x "$(command -v docker)" ]; then
+if ! command -v docker &> /dev/null; then
   echo "Error: Docker is not installed. Please install Docker first." >&2
   exit 1
 fi
 
-if ! [ -x "$(command -v docker-compose)" ]; then
-  echo "Error: docker-compose is not installed." >&2
+# Check for Docker Compose (plugin or legacy)
+if docker compose version &> /dev/null; then
+  DOCKER_COMPOSE_CMD="docker compose"
+elif command -v docker-compose &> /dev/null; then
+  DOCKER_COMPOSE_CMD="docker-compose"
+else
+  echo "Error: Docker Compose is not installed (neither 'docker compose' nor 'docker-compose' found)." >&2
   exit 1
 fi
+
+echo "Using: $DOCKER_COMPOSE_CMD"
 
 # Create .env if not exists
 if [ ! -f .env ]; then
@@ -27,8 +34,8 @@ fi
 
 # Build and Start
 echo "Building and starting MEGACOM containers..."
-docker-compose -f docker-compose.megacom.yml build
-docker-compose -f docker-compose.megacom.yml up -d
+$DOCKER_COMPOSE_CMD -f docker-compose.megacom.yml build
+$DOCKER_COMPOSE_CMD -f docker-compose.megacom.yml up -d
 
 echo "------------------------------------------------"
 echo "MEGACOM is being deployed!"
