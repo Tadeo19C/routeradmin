@@ -41,7 +41,7 @@ curl -L $REPO_URL -o $ZIP_FILE
 
 # 3. Extraer archivos
 echo "[3/5] Extrayendo archivos..."
-unzip -q $ZIP_FILE
+unzip -qo $ZIP_FILE
 rm $ZIP_FILE
 
 # 4. Determinar carpeta extraída (GitHub reresentado por repo-branch)
