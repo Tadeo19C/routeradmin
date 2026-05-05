@@ -26,8 +26,8 @@ if [[ "${DATABASE_ENGINE,,}" == "sqlite" ]]; then
     }"
 elif [[ "${DATABASE_ENGINE,,}" == "postgres" ]]; then
     if [ -n "$POSTGRES_HOST" ]; then
-      if [[ "$COMPOSE_TYPE" != "no-postgres" ]]; then
-          echo "ERROR: When using a remote PostgreSQL server, please use 'docker-compose-no-postgres.yml'. Exiting."
+      if [[ "$COMPOSE_TYPE" != "no-postgres" && "$COMPOSE_TYPE" != "with-postgres" ]]; then
+          echo "ERROR: Invalid COMPOSE_TYPE for the provided POSTGRES_HOST. Exiting."
           exit 1
       fi
       if [ -z "$POSTGRES_PORT" ]; then
