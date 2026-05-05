@@ -1,3 +1,4 @@
+version: "3.8"
 services:
   megacom-db:
     container_name: megacom-db
@@ -9,11 +10,6 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-megacom}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d megacom"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   megacom-app:
     container_name: megacom-app
@@ -34,8 +30,7 @@ services:
       - megacom_static:/app_static_files/
     command: /bin/bash /app/init.sh
     depends_on:
-      megacom-db:
-        condition: service_healthy
+      - megacom-db
 
   megacom-web:
     container_name: megacom-web
