@@ -30,6 +30,7 @@ services:
     volumes:
       - megacom_media:/var/lib/routerfleet/
       - megacom_static:/app_static_files/
+      - megacom_secrets:/app_secrets/
     command: /bin/bash /app/init.sh
     depends_on:
       - megacom-db
@@ -50,3 +51,4 @@ volumes:
   megacom_postgres_data:
   megacom_media:
   megacom_static:
+  megacom_secrets:

@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     inetutils-traceroute \
     nano \
     vim-nox \
+    dos2unix \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /app/
