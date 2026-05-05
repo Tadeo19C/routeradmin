@@ -50,3 +50,20 @@ chmod +x setup.sh
 ### Paso 5: Acceder a la Interfaz Web
 Visita `http://tu-ip-servidor` en tu navegador para comenzar. El sistema te pedirá crear la primera cuenta de administrador.
 
+## Guía de Inicio Rápido
+
+Una vez instalado, sigue estos pasos para comenzar a monitorear tus equipos:
+
+1.  **Crear un Nodo (Grupo)**: Ve a la sección de "Equipos" y crea un nuevo Nodo. Los nodos sirven para agrupar tus routers por ubicación o cliente.
+2.  **Agregar un Router**: Dentro de un Nodo, haz clic en "Agregar Equipo". Ingresa la dirección IP, el usuario y la contraseña de tu MikroTik.
+3.  **Configurar Respaldo**: En la pestaña "Respaldo", elige un perfil (ej. Diario a las 02:00 AM). El sistema comenzará a realizar copias de seguridad automáticamente.
+4.  **Ver el Dashboard**: Regresa al Dashboard principal para ver el estado en tiempo real (Online/Offline) de toda tu red.
+
+## Contribuciones
+Como proyecto en evolución, MEGACOM agradece el apoyo de la comunidad. Ya sea que seas desarrollador, ingeniero de redes o entusiasta, hay muchas formas de ayudar a mejorar esta herramienta.
+
+## Soporte
+Para reportar fallos o sugerir mejoras, utiliza la sección de Issues en el repositorio oficial.
+
+## Licencia
+MEGACOM se distribuye bajo la [Licencia MIT](LICENSE).
