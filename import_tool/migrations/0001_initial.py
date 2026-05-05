@@ -47,7 +47,6 @@ class Migration(migrations.Migration):
                 ('csv_data', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='import_tool.csvdata')),
                 ('router', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='router_manager.router')),
                 ('router_group', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='router_manager.routergroup')),
-                ('ssh_key', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='router_manager.sshkey')),
             ],
         ),
     ]
