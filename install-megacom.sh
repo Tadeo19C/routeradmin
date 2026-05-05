@@ -35,6 +35,17 @@ for cmd in "${DEPENDENCIAS[@]}"; do
     fi
 done
 
+# Verificación extra para Docker Compose (plugin o legacy)
+if ! docker compose version &> /dev/null && ! command -v docker-compose &> /dev/null; then
+    echo "Docker Compose no detectado. Intentando instalar el plugin..."
+    if command -v apt-get &> /dev/null; then
+        sudo apt-get update && sudo apt-get install -y docker-compose-v2
+    else
+        echo "Error: Docker Compose no está instalado y no pudo instalarse automáticamente."
+        exit 1
+    fi
+fi
+
 # 2. Descargar el proyecto
 echo "[2/5] Descargando la última versión desde GitHub..."
 curl -L $REPO_URL -o $ZIP_FILE
