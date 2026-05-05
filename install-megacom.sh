@@ -16,10 +16,22 @@ ZIP_FILE="megacom.zip"
 
 # 1. Verificar dependencias básicas
 echo "[1/5] Verificando dependencias locales..."
-for cmd in curl unzip docker; do
-    if ! command -v $cmd &> /dev/null; then
-        echo "Error: El comando '$cmd' no está instalado. Por favor, instálalo e intenta de nuevo."
-        exit 1
+DEPENDENCIAS=("curl" "unzip" "docker")
+
+for cmd in "${DEPENDENCIAS[@]}"; do
+    if ! command -v "$cmd" &> /dev/null; then
+        if [ "$cmd" == "unzip" ] || [ "$cmd" == "curl" ]; then
+            echo "Instalando dependencia faltante: $cmd..."
+            if command -v apt-get &> /dev/null; then
+                sudo apt-get update && sudo apt-get install -y "$cmd"
+            else
+                echo "Error: El comando '$cmd' no está instalado y no se pudo instalar automáticamente. Instálalo manualmente."
+                exit 1
+            fi
+        else
+            echo "Error: El comando '$cmd' no está instalado. Por favor, instala Docker e intenta de nuevo."
+            exit 1
+        fi
     fi
 done
 
