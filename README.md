@@ -16,19 +16,6 @@ Bienvenido a **MEGACOM** - la evolución en la gestión y respaldo centralizado 
 - **Seguridad Reforzada (Hardening):** Protección contra inyección de comandos, gestión de concurrencia y reintentos ante fallos de red.
 - **Localización Completa:** Interfaz y documentación totalmente en español, ajustada a la zona horaria de Centroamérica.
 
-## Capturas de Pantalla
-### Comparación de Respaldos
-Identifica cambios rápidamente entre diferentes fechas de respaldo.
-![Comparación de Respaldos](screenshots/backup-diff.png)
-### Perfiles de Respaldo
-Configura múltiples agendas de respaldo para diferentes nodos.
-![Perfiles de Respaldo](screenshots/backup-profiles.png)
-### Detalles del Equipo
-Visualiza información detallada y el historial completo de cada router.
-![Detalles del Equipo](screenshots/router-details.png)
-### Gestión de Usuarios
-Administra accesos y permisos de forma segura.
-![Gestión de Usuarios](screenshots/user-manager.png)
 
 ## Instrucciones de Despliegue
 
