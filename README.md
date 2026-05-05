@@ -50,11 +50,3 @@ chmod +x setup.sh
 ### Paso 5: Acceder a la Interfaz Web
 Visita `http://tu-ip-servidor` en tu navegador para comenzar. El sistema te pedirá crear la primera cuenta de administrador.
 
-## Contribuciones
-Como proyecto en evolución, MEGACOM agradece el apoyo de la comunidad. Ya sea que seas desarrollador, ingeniero de redes o entusiasta, hay muchas formas de ayudar a mejorar esta herramienta.
-
-## Soporte
-Para reportar fallos o sugerir mejoras, utiliza la sección de Issues en el repositorio oficial.
-
-## Licencia
-MEGACOM se distribuye bajo la [Licencia MIT](LICENSE).
