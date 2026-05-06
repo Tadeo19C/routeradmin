@@ -12,10 +12,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RemoveField(
             model_name='importtask',
-            name='ssh_key',
-        ),
-        migrations.RemoveField(
-            model_name='importtask',
             name='ssh_key_name',
         ),
     ]

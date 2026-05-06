@@ -34,7 +34,7 @@ fi
 
 # Build and Start
 echo "Building and starting MEGACOM containers..."
-$DOCKER_COMPOSE_CMD -f docker-compose.megacom.yml build
+$DOCKER_COMPOSE_CMD -f docker-compose.megacom.yml build --no-cache
 $DOCKER_COMPOSE_CMD -f docker-compose.megacom.yml up -d
 
 echo "------------------------------------------------"
