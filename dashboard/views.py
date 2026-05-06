@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest, JsonResponse
@@ -8,9 +8,6 @@ from django.utils import timezone
 from backup_data.models import RouterBackup
 from router_manager.models import Router, RouterStatus
 from .models import ActivityLog
-import psutil
-import platform
-import socket
 
 ALLOWED_DAYS = [3,5,7,10, 15, 30]  # Define allowed values
 
@@ -83,41 +80,6 @@ def get_directory_statistics(directory_path):
     return result
 
 
-def get_host_metrics():
-    """Returns a dictionary of host system resource metrics."""
-    try:
-        # CPU Usage (instantaneous value)
-        cpu_percent = psutil.cpu_percent(interval=None)
-        
-        # Memory Usage
-        mem = psutil.virtual_memory()
-        ram_total = mem.total / (1024**3)
-        ram_used = mem.used / (1024**3)
-        ram_percent = mem.percent
-        
-        # Uptime
-        boot_time = datetime.fromtimestamp(psutil.boot_time())
-        if timezone.is_naive(boot_time):
-             boot_time = timezone.make_aware(boot_time)
-        uptime = timezone.now() - boot_time
-        days = uptime.days
-        hours = uptime.seconds // 3600
-        uptime_str = f"{days}d {hours}h" if days > 0 else f"{hours}h {uptime.seconds % 3600 // 60}m"
-
-        return {
-            'cpu_percent': cpu_percent,
-            'ram_total': round(ram_total, 1),
-            'ram_used': round(ram_used, 1),
-            'ram_percent': ram_percent,
-            'uptime': uptime_str,
-            'os_info': f"{platform.system()} {platform.release()}",
-            'hostname': socket.gethostname(),
-            'python_version': platform.python_version(),
-        }
-    except Exception as e:
-        return {'error': str(e)}
-
-
 @login_required
 def view_dashboard(request):
     context = {'page_title': 'Bienvenido'}
@@ -140,7 +102,6 @@ def view_status(request):
         'router_offline_count': RouterStatus.objects.filter(status_online=False, router__monitoring=True).count(),
         'router_not_monitored_count': Router.objects.filter(enabled=True, monitoring=False).count(),
         'routerfleet_version': settings.ROUTERFLEET_VERSION,
-        'host_metrics': get_host_metrics(),
     }
 
     return render(request, 'dashboard/status.html', context=context)
@@ -159,7 +120,6 @@ def view_status_summary(request):
         'total_router_count': Router.objects.all().count(),
         'router_online_count': RouterStatus.objects.filter(status_online=True, router__monitoring=True).count(),
         'router_offline_count': RouterStatus.objects.filter(status_online=False, router__monitoring=True).count(),
-        'host_metrics': get_host_metrics(),
     })
 @login_required
 def backup_statistics_data(request):
