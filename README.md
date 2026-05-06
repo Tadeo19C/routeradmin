@@ -59,11 +59,4 @@ Una vez instalado, sigue estos pasos para comenzar a monitorear tus equipos:
 3.  **Configurar Respaldo**: En la pestaña "Respaldo", elige un perfil (ej. Diario a las 02:00 AM). El sistema comenzará a realizar copias de seguridad automáticamente.
 4.  **Ver el Dashboard**: Regresa al Dashboard principal para ver el estado en tiempo real (Online/Offline) de toda tu red.
 
-## Contribuciones
-Como proyecto en evolución, MEGACOM agradece el apoyo de la comunidad. Ya sea que seas desarrollador, ingeniero de redes o entusiasta, hay muchas formas de ayudar a mejorar esta herramienta.
 
-## Soporte
-Para reportar fallos o sugerir mejoras, utiliza la sección de Issues en el repositorio oficial.
-
-## Licencia
-MEGACOM se distribuye bajo la [Licencia MIT](LICENSE).
