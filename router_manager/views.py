@@ -315,6 +315,37 @@ def view_manage_router_group(request):
 
 import time
 
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
+@login_required()
+@require_POST
+def view_ajax_quick_create_group(request):
+    if not UserAcl.objects.filter(user=request.user, user_level__gte=40).exists():
+        return JsonResponse({'status': 'error', 'message': 'Acceso Denegado'}, status=403)
+    
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'status': 'error', 'message': 'El nombre del nodo es requerido.'}, status=400)
+    
+    if RouterGroup.objects.filter(name=name).exists():
+        return JsonResponse({'status': 'error', 'message': 'Ya existe un nodo con este nombre.'}, status=400)
+    
+    group = RouterGroup.objects.create(name=name)
+    
+    ActivityLog.objects.create(
+        user=request.user,
+        action="Nodo Creado (Rápido)",
+        details=f"Nodo '{group.name}' creado desde formulario de equipo",
+    )
+    
+    return JsonResponse({
+        'status': 'success',
+        'uuid': str(group.uuid),
+        'name': group.name
+    })
+
+
 def process_backup_fully(backup_uuid):
     # Process all steps of a backup (usually Execute -> Retrieve)
     for _ in range(3): # Max 3 attempts/steps
