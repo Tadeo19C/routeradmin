@@ -50,6 +50,11 @@ fi
 echo "[2/5] Descargando la última versión desde GitHub..."
 curl -L $REPO_URL -o $ZIP_FILE
 
+# Limpieza preventiva de contenedores viejos
+echo "Limpiando instalaciones previas si existen..."
+docker stop megacom-app megacom-web megacom-db 2>/dev/null || true
+docker rm megacom-app megacom-web megacom-db 2>/dev/null || true
+
 # 3. Extraer archivos
 echo "[3/5] Extrayendo archivos..."
 unzip -qo $ZIP_FILE
