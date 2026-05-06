@@ -60,6 +60,12 @@ def view_router_list(request):
         'routergroup_set'
     ).order_by('name')
 
+    status_filter = request.GET.get('status')
+    if status_filter == 'online':
+        router_list = router_list.filter(routerstatus__status_online=True, monitoring=True)
+    elif status_filter == 'offline':
+        router_list = router_list.filter(routerstatus__status_online=False, monitoring=True)
+
     last_router_status_change = RouterStatus.objects.filter(last_status_change__isnull=False).order_by('-last_status_change').first()
     if last_router_status_change:
         last_status_change_timestamp = last_router_status_change.last_status_change.isoformat()

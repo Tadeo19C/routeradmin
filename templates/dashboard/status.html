@@ -24,94 +24,96 @@
             </div>
             {% endif %}
             <div class="card-body">
+                <!-- Group 1: Red y Estado de Equipos -->
+                <h5 class="mb-3 text-muted"><i class="fas fa-network-wired"></i> Estado de la Red</h5>
                 <div class="row mb-4">
-                    <!-- Used Storage -->
-                    <div class="col-md-3">
-                        <div class="info-box bg-info">
-                            <span class="info-box-icon"><i class="fas fa-hdd"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Almacenamiento</span>
-                                <span class="info-box-number" id="stats-storage">{{ media_root_stats.used }} en uso</span>
-                                <div class="progress">
-                                    <div class="progress-bar" style="width: {{ media_root_stats.usage_percentage }}%">
-                                    </div>
-                                </div>
-                                <span class="progress-description">
-                                    {{ media_root_stats.usage_percentage }}% de {{ media_root_stats.total }}
-                                    {% if media_root_stats.storage_warning %}
-                                    <span class="text-danger">{{ media_root_stats.storage_warning }}</span>
-                                    {% endif %}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Backup Queue -->
-                    <div class="col-md-3">
-                        <div class="info-box bg-warning">
-                            <span class="info-box-icon"><i class="fas fa-tasks"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Cola de Respaldos</span>
-                                <span class="info-box-number" id="stats-queue">{{ queue }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Successful Backups -->
-                    <div class="col-md-3">
-                        <div class="info-box bg-success">
-                            <span class="info-box-icon"><i class="fas fa-check-circle"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Respaldos Exitosos (24h)</span>
-                                <span class="info-box-number" id="stats-backups-success">{{ success_backup_last_24h }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Failed Backups -->
-                    <div class="col-md-3">
-                        <div class="info-box bg-danger">
-                            <span class="info-box-icon"><i class="fas fa-times-circle"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Respaldos Fallidos (24h)</span>
-                                <span class="info-box-number" id="stats-backups-error">{{ error_backup_last_24h }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mb-4">
-
                     <!-- Total Routers -->
                     <div class="col-md-4">
-                        <div class="info-box bg-primary">
-                            <span class="info-box-icon"><i class="fas fa-network-wired"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Total de equipos</span>
-                                <span class="info-box-number" id="stats-routers-total">{{ total_router_count }}</span>
+                        <a href="{% url 'router_list' %}" class="text-decoration-none">
+                            <div class="info-box bg-primary elevation-2">
+                                <span class="info-box-icon"><i class="fas fa-server"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total de equipos</span>
+                                    <span class="info-box-number" id="stats-routers-total">{{ total_router_count }}</span>
+                                </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
 
                     <!-- Online Routers -->
                     <div class="col-md-4">
-                        <div class="info-box bg-success">
-                            <span class="info-box-icon"><i class="fas fa-plug"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Equipos en Línea</span>
-                                <span class="info-box-number" id="stats-routers-online">{{ router_online_count }}</span>
+                        <a href="{% url 'router_list' %}?status=online" class="text-decoration-none">
+                            <div class="info-box bg-success elevation-2">
+                                <span class="info-box-icon"><i class="fas fa-plug"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Equipos en Línea</span>
+                                    <span class="info-box-number" id="stats-routers-online">{{ router_online_count }}</span>
+                                </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
 
                     <!-- Offline Routers -->
                     <div class="col-md-4">
-                        <div class="info-box bg-danger">
-                            <span class="info-box-icon"><i class="fas fa-plug"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Equipos Desconectados</span>
-                                <span class="info-box-number" id="stats-routers-offline">{{ router_offline_count }}</span>
+                        <a href="{% url 'router_list' %}?status=offline" class="text-decoration-none">
+                            <div class="info-box bg-danger elevation-2">
+                                <span class="info-box-icon"><i class="fas fa-power-off"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Equipos Desconectados</span>
+                                    <span class="info-box-number" id="stats-routers-offline">{{ router_offline_count }}</span>
+                                </div>
                             </div>
-                        </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Group 2: Gestión de Respaldos y Datos -->
+                <h5 class="mb-3 text-muted"><i class="fas fa-database"></i> Gestión de Respaldos</h5>
+                <div class="row mb-4">
+                    <!-- Almacenamiento -->
+                    <div class="col-md-4">
+                        <a href="{% url 'backup_list' %}" class="text-decoration-none">
+                            <div class="info-box bg-info elevation-2">
+                                <span class="info-box-icon"><i class="fas fa-hdd"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Almacenamiento (Base de Datos)</span>
+                                    <span class="info-box-number" id="stats-storage">{{ media_root_stats.used }} en uso</span>
+                                    <div class="progress">
+                                        <div class="progress-bar" style="width: {{ media_root_stats.usage_percentage }}%">
+                                        </div>
+                                    </div>
+                                    <span class="progress-description">
+                                        {{ media_root_stats.usage_percentage }}% de {{ media_root_stats.total }}
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Successful Backups -->
+                    <div class="col-md-4">
+                        <a href="{% url 'backup_list' %}?status=success" class="text-decoration-none">
+                            <div class="info-box bg-success elevation-2">
+                                <span class="info-box-icon"><i class="fas fa-check-double"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Respaldos Exitosos (24h)</span>
+                                    <span class="info-box-number" id="stats-backups-success">{{ success_backup_last_24h }}</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Failed Backups -->
+                    <div class="col-md-4">
+                        <a href="{% url 'backup_list' %}?status=error" class="text-decoration-none">
+                            <div class="info-box bg-danger elevation-2">
+                                <span class="info-box-icon"><i class="fas fa-exclamation-triangle"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Respaldos Fallidos (24h)</span>
+                                    <span class="info-box-number" id="stats-backups-error">{{ error_backup_last_24h }}</span>
+                                </div>
+                            </div>
+                        </a>
                     </div>
                 </div>
             </div> <!-- /.card-body -->
@@ -301,8 +303,8 @@
             fetch('{% url "status_summary" %}')
                 .then(response => response.json())
                 .then(data => {
+                    // Update main statistics
                     document.getElementById('stats-storage').textContent = data.media_root_stats.used + ' en uso';
-                    document.getElementById('stats-queue').textContent = data.queue;
                     document.getElementById('stats-backups-success').textContent = data.success_backup_last_24h;
                     document.getElementById('stats-backups-error').textContent = data.error_backup_last_24h;
                     document.getElementById('stats-routers-total').textContent = data.total_router_count;

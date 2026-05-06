@@ -74,9 +74,12 @@ def view_backup_list(request):
     if request.GET.get('type') == 'queue':
         backup_list = backup_list.filter(error=False, success=False).order_by('next_retry')
         view_type = 'queue'
-    elif request.GET.get('type') == 'errors':
+    elif request.GET.get('type') == 'errors' or request.GET.get('status') == 'error':
         backup_list = backup_list.filter(error=True).order_by('-created')
         view_type = 'errors'
+    elif request.GET.get('status') == 'success':
+        backup_list = backup_list.filter(success=True).order_by('-created')
+        view_type = 'success'
     else:
         backup_list = backup_list.filter(success=True, identical_to_previous=False).order_by('-created')
         view_type = 'success'
