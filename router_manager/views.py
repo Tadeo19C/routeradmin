@@ -184,6 +184,13 @@ def view_manage_router(request):
                     details=f"Equipo '{router.name}' ({router.address})",
                     router=None # Router is being deleted
                 )
+                # Cleanup: Delete the automated profile if it belongs to this router
+                if router.backup_profile and router.backup_profile.name.startswith("Perfil Automático -"):
+                    profile_to_delete = router.backup_profile
+                    router.backup_profile = None # Disconnect
+                    router.save()
+                    profile_to_delete.delete()
+
                 router.delete()
                 messages.success(request, 'Equipo eliminado correctamente')
                 webadmin_settings.router_config_last_updated = timezone.now()

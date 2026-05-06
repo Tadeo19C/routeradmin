@@ -22,8 +22,8 @@ class RouterForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput, required=False)
     router_group = forms.ModelChoiceField(
         queryset=RouterGroup.objects.all().order_by('name'),
-        required=False,
-        empty_label='-- Sin nodo --',
+        required=True,
+        empty_label='-- Seleccione un Nodo --',
         label='Nodo'
     )
     backup_profile = forms.ModelChoiceField(
@@ -201,17 +201,18 @@ class RouterForm(forms.ModelForm):
 
         if router_type == 'monitoring':
             cleaned_data['password'] = ''
-            if backup_profile or cleaned_data.get('use_custom_backup'):
-                raise forms.ValidationError('Monitoring only routers cannot have a backup profile')
+            if backup_profile:
+                raise forms.ValidationError('Equipos de solo monitoreo no pueden tener un perfil de respaldo.')
             return cleaned_data
         else:
             if not port:
-                raise forms.ValidationError('You must provide a port')
+                raise forms.ValidationError('Debe proporcionar un puerto.')
             if not 1 <= port <= 65535:
-                raise forms.ValidationError('Invalid port number')
-
-        if not password and not self.instance.password:
-            raise forms.ValidationError('You must provide a password')
+                raise forms.ValidationError('Número de puerto inválido (debe estar entre 1 y 65535).')
+            if not username:
+                raise forms.ValidationError('Debe proporcionar un nombre de usuario.')
+            if not password and not self.instance.password:
+                raise forms.ValidationError('Debe proporcionar una contraseña para este tipo de equipo.')
 
         if not password and self.instance.password:
             cleaned_data['password'] = self.instance.password
