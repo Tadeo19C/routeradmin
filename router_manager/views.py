@@ -300,6 +300,9 @@ def view_manage_router_group(request):
             details=f"Nodo '{saved_group.name}'",
         )
         messages.success(request, 'Grupo de Nodos guardado correctamente')
+        next_url = request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
         return redirect('router_group_list')
 
     context = {

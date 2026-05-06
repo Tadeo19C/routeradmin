@@ -129,52 +129,35 @@
 
 <script>
 $(document).ready(function() {
-    // Quick Node Creation Logic
-    function setupQuickNodeCreate() {
+    // Subtle Link and Redirect Logic for Node Creation
+    function setupNodeRedirectFlow() {
         const $groupField = $('#id_router_group');
-        if ($groupField.length === 0 || $groupField.parent().hasClass('input-group')) return;
+        if ($groupField.length === 0) return;
 
-        $groupField.wrap('<div class="input-group"></div>');
-        $groupField.after(`
-            <div class="input-group-append">
-                <button id="btn-quick-create-node" class="btn btn-outline-primary" type="button" title="Crear Nuevo Nodo" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
-                    <i class="fas fa-plus"></i>
-                </button>
-            </div>
-        `);
+        // Add subtle helper text below the select if not exists
+        if ($('#node-redirect-hint').length === 0) {
+            $groupField.after(`
+                <div id="node-redirect-hint" class="mt-1">
+                    <small class="text-muted">
+                        ¿No encuentras el nodo? 
+                        <a href="#" id="link-create-node-redirect" class="text-primary font-weight-bold" style="text-decoration: underline;">Crea uno nuevo aquí</a>
+                    </small>
+                </div>
+            `);
+        }
 
-        $('#btn-quick-create-node').on('click', function() {
-            const nodeName = prompt("Ingrese el nombre del nuevo Nodo:");
-            if (nodeName && nodeName.trim() !== "") {
-                $.ajax({
-                    url: '/router/ajax_quick_create_group/',
-                    method: 'POST',
-                    data: {
-                        'name': nodeName,
-                        'csrfmiddlewaretoken': $('input[name="csrfmiddlewaretoken"]').val()
-                    },
-                    success: function(response) {
-                        if (response.status === 'success') {
-                            const newOption = new Option(response.name, response.uuid, true, true);
-                            $groupField.append(newOption).trigger('change');
-                            $(document).Toasts('create', {
-                                class: 'bg-success',
-                                title: 'Éxito',
-                                body: 'Nodo creado y seleccionado correctamente.',
-                                delay: 3000,
-                                autohide: true
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        const resp = xhr.responseJSON;
-                        alert('Error: ' + (resp ? resp.message : 'Error al crear el nodo'));
-                    }
-                });
-            }
+        $('#link-create-node-redirect').on('click', function(e) {
+            e.preventDefault();
+            
+            // Save current form state to sessionStorage to resume later
+            const formData = $('#router-manage-form').serializeArray();
+            sessionStorage.setItem('pending_router_form', JSON.stringify(formData));
+            
+            // Redirect to node management with resume context
+            window.location.href = '/router/manage_group/?next=/router/list/?action=resume_create';
         });
     }
-    setupQuickNodeCreate();
+    setupNodeRedirectFlow();
 
     $('#router-manage-form').on('submit', function(e) {
         e.preventDefault();

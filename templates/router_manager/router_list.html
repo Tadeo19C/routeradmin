@@ -617,12 +617,48 @@ $(document).ready(function() {
         window.location.href = '/fleet_commander/command/execute_multiple/?routers[]=' + selectedRouters.join('&routers[]=');
     });
 
-    // Router Modal Logic
+    // Router Modal Logic & State Restoration
     function openRouterModal(uuid) {
         var url = uuid ? '/router/manage/?uuid=' + uuid + '&ajax=1' : '/router/manage/?ajax=1';
         $('#routerManageModal .modal-content').load(url, function() {
             $('#routerManageModal').appendTo("body").modal('show');
+            
+            // Resume/Restore state from sessionStorage if context is 'new'
+            const savedData = sessionStorage.getItem('pending_router_form');
+            if (savedData && !uuid) {
+                try {
+                    const formData = JSON.parse(savedData);
+                    formData.forEach(field => {
+                        // Skip CSRF token
+                        if (field.name === 'csrfmiddlewaretoken') return;
+                        
+                        const $el = $(`[name="${field.name}"]`);
+                        if ($el.length) {
+                             if ($el.is(':checkbox') || $el.is(':radio')) {
+                                $(`[name="${field.name}"][value="${field.value}"]`).prop('checked', true).trigger('change');
+                             } else {
+                                $el.val(field.value).trigger('change');
+                             }
+                        }
+                    });
+                    
+                    $(document).Toasts('create', {
+                        class: 'bg-info',
+                        title: 'Formulario Recuperado',
+                        body: 'Se han restaurado los datos previamente ingresados.',
+                        delay: 4000,
+                        autohide: true
+                    });
+                    sessionStorage.removeItem('pending_router_form');
+                } catch(e) { console.error("Restore failed", e); }
+            }
         });
+    }
+
+    // Check for Resume Action on Page Load
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'resume_create') {
+        openRouterModal(null);
     }
 
     $('#add-router-btn').on('click', function() {
