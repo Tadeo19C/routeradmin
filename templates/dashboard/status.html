@@ -10,6 +10,30 @@
         transform: scale(1.05);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
+
+    .info-box {
+        min-height: 80px;
+        padding: 0.5rem;
+    }
+
+    .info-box-icon {
+        width: 60px;
+        font-size: 1.5rem;
+    }
+
+    .info-box-content {
+        padding: 0 10px;
+    }
+
+    .info-box-text {
+        font-size: 0.9rem;
+        margin-bottom: 2px;
+    }
+
+    .info-box-number {
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
 </style>
 <div class="row">
     <!-- Left Column for General Information -->
@@ -25,10 +49,10 @@
             {% endif %}
             <div class="card-body">
                 <!-- Group 1: Red y Estado de Equipos -->
-                <h5 class="mb-3 text-muted"><i class="fas fa-network-wired"></i> Estado de la Red</h5>
-                <div class="row mb-4">
+                <h5 class="mb-3 text-muted text-center"><i class="fas fa-network-wired"></i> Estado de la Red</h5>
+                <div class="row mb-4 justify-content-center">
                     <!-- Total Routers -->
-                    <div class="col-md-4">
+                    <div class="col-lg-3 col-md-4">
                         <a href="{% url 'router_list' %}" class="text-decoration-none">
                             <div class="info-box bg-primary elevation-2">
                                 <span class="info-box-icon"><i class="fas fa-server"></i></span>
@@ -41,7 +65,7 @@
                     </div>
 
                     <!-- Online Routers -->
-                    <div class="col-md-4">
+                    <div class="col-lg-3 col-md-4">
                         <a href="{% url 'router_list' %}?status=online" class="text-decoration-none">
                             <div class="info-box bg-success elevation-2">
                                 <span class="info-box-icon"><i class="fas fa-plug"></i></span>
@@ -54,7 +78,7 @@
                     </div>
 
                     <!-- Offline Routers -->
-                    <div class="col-md-4">
+                    <div class="col-lg-3 col-md-4">
                         <a href="{% url 'router_list' %}?status=offline" class="text-decoration-none">
                             <div class="info-box bg-danger elevation-2">
                                 <span class="info-box-icon"><i class="fas fa-power-off"></i></span>
@@ -68,10 +92,10 @@
                 </div>
 
                 <!-- Group 2: Gestión de Respaldos y Datos -->
-                <h5 class="mb-3 text-muted"><i class="fas fa-database"></i> Gestión de Respaldos</h5>
-                <div class="row mb-4">
+                <h5 class="mb-3 text-muted text-center"><i class="fas fa-database"></i> Gestión de Respaldos</h5>
+                <div class="row mb-4 justify-content-center">
                     <!-- Almacenamiento -->
-                    <div class="col-md-4">
+                    <div class="col-lg-3 col-md-4">
                         <a href="{% url 'backup_list' %}" class="text-decoration-none">
                             <div class="info-box bg-info elevation-2">
                                 <span class="info-box-icon"><i class="fas fa-hdd"></i></span>
@@ -91,7 +115,7 @@
                     </div>
 
                     <!-- Successful Backups -->
-                    <div class="col-md-4">
+                    <div class="col-lg-3 col-md-4">
                         <a href="{% url 'backup_list' %}?status=success" class="text-decoration-none">
                             <div class="info-box bg-success elevation-2">
                                 <span class="info-box-icon"><i class="fas fa-check-double"></i></span>
@@ -104,7 +128,7 @@
                     </div>
 
                     <!-- Failed Backups -->
-                    <div class="col-md-4">
+                    <div class="col-lg-3 col-md-4">
                         <a href="{% url 'backup_list' %}?status=error" class="text-decoration-none">
                             <div class="info-box bg-danger elevation-2">
                                 <span class="info-box-icon"><i class="fas fa-exclamation-triangle"></i></span>
