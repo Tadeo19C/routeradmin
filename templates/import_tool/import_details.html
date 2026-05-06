@@ -10,22 +10,22 @@
                     </div>
                 {% endif %}
                 <div class="card-body">
-                    <ul class="nav nav-tabs" role="tablist">
+                    <ul class="nav nav-tabs border-0" role="tablist">
                         <li class="nav-item">
-                            <a class="nav-link {% if import_view == 'tasks' %}active{% endif %}" href="?uuid={{ csv_data.uuid }}&view=taks" role="tab">
-                                Tasks
+                            <a class="nav-link {% if import_view == 'tasks' %}active{% endif %} text-bold" href="?uuid={{ csv_data.uuid }}&view=tasks" role="tab">
+                                <i class="fas fa-tasks mr-1"></i> Tareas de Importación
                             </a>
                         </li>
 
                         <li class="nav-item">
                             <a class="nav-link {% if import_view == 'processed' %}active{% endif %}" href="?uuid={{ csv_data.uuid }}&view=processed" role="tab">
-                                Processed data
+                                <i class="fas fa-code mr-1"></i> Datos Procesados
                             </a>
                         </li>
 
                         <li class="nav-item">
                             <a class="nav-link {% if import_view == 'raw' %}active{% endif %}" href="?uuid={{ csv_data.uuid }}&view=raw" role="tab">
-                                Raw data
+                                <i class="fas fa-file-csv mr-1"></i> Datos Originales
                             </a>
                         </li>
                     </ul>
@@ -41,12 +41,22 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-lg-12" style="padding-top: 10px">
-                            <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=create_tasks" class="btn btn-primary">Create import Tasks</a>
-                            <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=start_import" class="btn btn-primary">start/resume</a>
-                            <a href="/router/import_tool/" class="btn btn-default">Back</a>
-                            <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=delete_errors" onclick="return confirm('Remove failed tasks?\n\nAfter removing the failed tasks, you can click on Create import Tasks to retry only this tasks.')" class="btn btn-outline-danger">Delete failed tasks</a>
-                            <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=delete" onclick="return confirm('Are you sure you want to remove the current import task?\n\nThis action will remove all import data associated with this task, but will not affect routers that have already been imported.\n\nPress OK to confirm or Cancel to return.');" class="btn btn-danger">Delete import</a>
+                        <div class="col-lg-12 mt-4 d-flex align-items-center gap-2">
+                             <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=start_import" class="btn btn-success btn-lg elevation-2 mr-2">
+                                <i class="fas fa-play mr-1"></i> Iniciar / Reanudar Importación
+                             </a>
+                             <a href="/router/import_tool/" class="btn btn-outline-secondary mr-2">
+                                <i class="fas fa-arrow-left mr-1"></i> Volver al Listado
+                             </a>
+                             <div class="ml-auto">
+                                <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=delete_errors" onclick="return confirm('¿Eliminar tareas fallidas?\n\nEsto te permitirá reintentar solo los equipos que tuvieron problemas.')" class="btn btn-outline-warning mr-2">
+                                    Eliminar Errores
+                                </a>
+                                <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=delete" onclick="return confirm('¿Estás seguro de eliminar esta importación completa?');" class="btn btn-outline-danger">
+                                    Eliminar Importación
+                                </a>
+                             </div>
+                        </div>
                     </div>
                 </div>
             </div>

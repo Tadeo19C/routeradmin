@@ -6,8 +6,8 @@
         <div class='col-lg-12'>
             <div class="card card-primary card-outline">
                 {% if page_title %}
-                    <div class="card-header">
-                        <h3 class="card-title">{{ page_title }}</h3>
+                    <div class="card-header border-0 bg-white">
+                        <h3 class="card-title text-bold">Listado de Importaciones CSV</h3>
                     </div>
                 {% endif %}
                 <div class="card-body">
@@ -17,32 +17,39 @@
                                 <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>Created</th>
-                                    <th>Total Tasks</th>
-                                    <th>Success</th>
-                                    <th>Error</th>
-                                    <th>Status</th>
+                                    <th>Fecha de Creación</th>
+                                    <th>Total Equipos</th>
+                                    <th>Exitosos</th>
+                                    <th>Errores</th>
+                                    <th>Estado</th>
                                 </tr>
 
                                 </thead>
                                 <tbody>
                                 {% for import in import_list %}
-                                    <tr>
+                                    <tr style="cursor: pointer;" onclick="window.location='/router/import_tool/details/?uuid={{ import.csv_data.uuid }}'">
                                         <td>
-                                            <a href="/router/import_tool/details/?uuid={{ import.csv_data.uuid }}">
-                                                {{ import.csv_data.id }}
-                                            </a>
+                                            <span class="text-primary text-bold">{{ import.csv_data.id }}</span>
                                         </td>
                                         <td>
-                                            {{ import.csv_data.created }}
+                                            {{ import.csv_data.created|date:"d/m/Y H:i" }}
                                         </td>
-                                        <td>{{ import.task_count }}</td>
-                                        <td>{{ import.success_count }}</td>
-                                        <td>{{ import.error_count }}</td>
-                                        <td>{{ import.status }}</td>
+                                        <td><span class="badge badge-light">{{ import.task_count }}</span></td>
+                                        <td><span class="badge badge-success">{{ import.success_count }}</span></td>
+                                        <td><span class="badge badge-danger">{{ import.error_count }}</span></td>
+                                        <td>
+                                            {% if import.status == 'Completed' %}
+                                                <span class="badge badge-success px-2 py-1">Completado</span>
+                                            {% elif import.status == 'In Progress' %}
+                                                <span class="badge badge-info px-2 py-1">En Progreso</span>
+                                            {% elif import.status == 'Completed with Errors' %}
+                                                <span class="badge badge-warning px-2 py-1">Completado con errores</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary px-2 py-1">{{ import.status }}</span>
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                 {% endfor %}
-
                                 </tbody>
                             </table>
                         </div>

@@ -214,7 +214,7 @@ def view_import_details(request):
         'action': action,
         'import_task_list': import_task_list,
         'import_view': import_view,
-        'page_title': f'Import Details - {csv_data.id}',
+        'page_title': f'Detalles de Importación - {csv_data.id}',
     }
     return render(request, 'import_tool/import_details.html', context=data)
 
@@ -252,7 +252,29 @@ def view_import_csv_file(request):
         csv_data_instance.import_data = form.cleaned_data['import_data']
         csv_data_instance.save()
 
-        messages.success(request, 'CSV data successfully processed and saved.')
+        # Automatic Task Creation for a single-step workflow
+        tasks_created = 0
+        for task in csv_data_instance.import_data:
+            # We use name, address etc from the cleaned JSON data
+            import_task, created = ImportTask.objects.get_or_create(
+                csv_data=csv_data_instance, 
+                import_id=task['import_id'], 
+                defaults={
+                    'name': task.get('name'),
+                    'username': task.get('username'),
+                    'password': task.get('password'),
+                    'address': task.get('address'),
+                    'port': task.get('port', 22),
+                    'router_type': task.get('router_type'),
+                    'backup_profile_name': task.get('backup_profile'),
+                    'router_group_name': task.get('router_group'),
+                    'monitoring': True if str(task.get('monitoring', 'true')).lower() == 'true' else False,
+                }
+            )
+            if created:
+                tasks_created += 1
+
+        messages.success(request, f'CSV procesado. Se han preparado {tasks_created} equipos para importar.')
         return redirect('/router/import_tool/details/?uuid=' + str(csv_data_instance.uuid))
 
     data = {
