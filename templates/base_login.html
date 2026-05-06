@@ -15,19 +15,20 @@
   <link rel="stylesheet" href="/static/modern_ui.css">
   <style>
     body {
-        background: radial-gradient(circle at top left, #1a367c 0%, #0c142c 100%) !important;
+        background-color: #ffffff !important;
         height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
+        font-family: 'Outfit', sans-serif;
     }
     .register-box, .login-box {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 20px;
-        padding: 2rem;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 2.5rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        width: 400px;
     }
     .register-box .card, .login-box .card {
         background: transparent !important;
@@ -37,45 +38,48 @@
     }
     .register-card-body, .login-card-body {
         background: transparent !important;
-        color: white !important;
+        color: #0f172a !important;
         padding: 0 !important;
     }
     .register-logo a, .login-logo a {
-        color: white !important;
+        color: #2563eb !important;
         font-weight: 800;
         letter-spacing: -1px;
+        font-size: 2rem;
     }
     .form-control {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
         border-right: none !important;
-        color: white !important;
-        border-top-left-radius: 10px !important;
-        border-bottom-left-radius: 10px !important;
+        color: #0f172a !important;
+        border-top-left-radius: 8px !important;
+        border-bottom-left-radius: 8px !important;
+        height: 48px !important;
     }
     .form-control::placeholder {
-        color: rgba(255, 255, 255, 0.4) !important;
+        color: #94a3b8 !important;
     }
     .input-group-text {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
         border-left: none !important;
-        color: rgba(255, 255, 255, 0.8) !important;
-        border-top-right-radius: 10px !important;
-        border-bottom-right-radius: 10px !important;
+        color: #64748b !important;
+        border-top-right-radius: 8px !important;
+        border-bottom-right-radius: 8px !important;
     }
     .btn-primary {
-        background: rgba(255, 255, 255, 0.1) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        background: #2563eb !important;
+        border: none !important;
         color: white !important;
-        border-radius: 10px !important;
-        backdrop-filter: blur(10px);
+        border-radius: 8px !important;
+        height: 48px !important;
+        font-weight: 700 !important;
         transition: all 0.3s ease;
-        box-shadow: none !important;
+        margin-top: 1rem;
     }
     .btn-primary:hover {
-        background: rgba(255, 255, 255, 0.2) !important;
-        border-color: rgba(255, 255, 255, 0.3) !important;
+        background: #1d4ed8 !important;
+        transform: translateY(-1px);
     }
   </style>
 </head>
