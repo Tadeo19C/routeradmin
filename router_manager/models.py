@@ -23,7 +23,7 @@ class Router(models.Model):
 
     name = models.CharField(max_length=100, unique=True)
     internal_notes = models.TextField(null=True, blank=True)
-    address = models.CharField(max_length=100)
+    address = models.CharField(max_length=100, unique=True)
     connection_protocol = models.CharField(max_length=10, choices=(('ssh', 'SSH'), ('telnet', 'Telnet')), default='ssh')
     port = models.IntegerField(default=22)
     username = models.CharField(max_length=100, default='admin')

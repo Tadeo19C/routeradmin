@@ -177,6 +177,13 @@ def view_manage_router(request):
         router = get_object_or_404(Router, uuid=uuid)
         if request.GET.get('action') == 'delete':
             if request.GET.get('confirmation') in ['delete', 'borrar']:
+                # Log the activity before deleting
+                ActivityLog.objects.create(
+                    user=request.user,
+                    action="Equipo Eliminado",
+                    details=f"Equipo '{router.name}' ({router.address})",
+                    router=None # Router is being deleted
+                )
                 router.delete()
                 messages.success(request, 'Equipo eliminado correctamente')
                 webadmin_settings.router_config_last_updated = timezone.now()
@@ -261,6 +268,11 @@ def view_manage_router_group(request):
         router_group = get_object_or_404(RouterGroup, uuid=request.GET.get('uuid'))
         if request.GET.get('action') == 'delete':
             if request.GET.get('confirmation') == 'delete':
+                ActivityLog.objects.create(
+                    user=request.user,
+                    action="Nodo Eliminado",
+                    details=f"Nodo '{router_group.name}'",
+                )
                 router_group.delete()
                 messages.success(request, 'Grupo de Nodos eliminado correctamente')
                 return redirect('router_group_list')
@@ -272,7 +284,14 @@ def view_manage_router_group(request):
 
     form = RouterGroupForm(request.POST or None, instance=router_group)
     if form.is_valid():
-        form.save()
+        saved_group = form.save()
+        # Log the activity
+        action = "Nodo Editado" if request.GET.get('uuid') else "Nodo Creado"
+        ActivityLog.objects.create(
+            user=request.user,
+            action=action,
+            details=f"Nodo '{saved_group.name}'",
+        )
         messages.success(request, 'Grupo de Nodos guardado correctamente')
         return redirect('router_group_list')
 

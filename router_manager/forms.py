@@ -172,10 +172,6 @@ class RouterForm(forms.ModelForm):
         backup_profile = cleaned_data.get('backup_profile')
         port = cleaned_data.get('port')
 
-        if name:
-            name = name.strip()
-            cleaned_data['name'] = name
-
         if address:
             address = address.lower().strip()
             cleaned_data['address'] = address
@@ -184,6 +180,24 @@ class RouterForm(forms.ModelForm):
                 ipaddress.ip_address(address)
             except ValueError:
                 raise forms.ValidationError('Formato inválido. Solo se permiten direcciones IP numéricas válidas (ej. 192.168.1.1). No se admiten nombres ni letras.')
+
+            # Check for unique IP
+            qs = Router.objects.filter(address=address)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError('Ya existe un equipo registrado con esta dirección IP.')
+
+        if name:
+            name = name.strip()
+            cleaned_data['name'] = name
+            
+            # Check for unique name
+            qs = Router.objects.filter(name=name)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError('Ya existe un equipo registrado con este nombre.')
 
         if router_type == 'monitoring':
             cleaned_data['password'] = ''

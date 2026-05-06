@@ -98,6 +98,11 @@ def view_manage_command(request):
         if request.GET.get('action') == 'delete':
             if request.GET.get('confirmation') == 'delete':
                 try:
+                    ActivityLog.objects.create(
+                        user=request.user,
+                        action="Comando Eliminado",
+                        details=f"Comando '{command.name}'",
+                    )
                     command.delete()
                     messages.success(request, 'Command deleted successfully')
                 except ProtectedError:
@@ -113,6 +118,13 @@ def view_manage_command(request):
     form = CommandForm(request.POST or None, instance=command)
     if form.is_valid():
         saved = form.save()
+        # Log the activity
+        action = "Comando Editado" if request.GET.get('uuid') else "Comando Creado"
+        ActivityLog.objects.create(
+            user=request.user,
+            action=action,
+            details=f"Comando '{saved.name}'",
+        )
         messages.success(request, 'Command saved successfully')
         if command:
             return redirect(f'/fleet_commander/command/details/?uuid={saved.uuid}')
@@ -161,6 +173,11 @@ def view_execute_command(request):
             user=request.user
         )
         if job:
+            ActivityLog.objects.create(
+                user=request.user,
+                action="Comando Ejecutado",
+                details=f"Ejecución de '{command.name}' en {job.tasks.count()} equipos (Job ID: {job.uuid})",
+            )
             messages.success(request, f'Job created for {job.tasks.count()} targets')
             return redirect(f'/fleet_commander/job/details/?uuid={job.uuid}')
         else:
@@ -205,6 +222,11 @@ def view_run_command_multiple(request):
             user=request.user
         )
         if job:
+            ActivityLog.objects.create(
+                user=request.user,
+                action="Comando Ejecutado",
+                details=f"Ejecución de '{command.name}' en {job.tasks.count()} equipos (Job ID: {job.uuid})",
+            )
             messages.success(request, f'Job created for {job.tasks.count()} targets')
             return redirect(f'/fleet_commander/job/details/?uuid={job.uuid}')
         else:
@@ -433,6 +455,11 @@ def view_broadcast_command(request):
         )
 
         if job:
+            ActivityLog.objects.create(
+                user=request.user,
+                action="Comando Broadcast",
+                details=f"Broadcast iniciado: '{command_text[:30]}...' en {job.tasks.count()} equipos (Job ID: {job.uuid})",
+            )
             messages.success(request, f'Broadcast iniciado para {job.tasks.count()} targets.')
             return redirect(f'/fleet_commander/job/details/?uuid={job.uuid}')
         else:
