@@ -140,6 +140,55 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Group 3: Recursos del Sistema (Host) -->
+                <h5 class="mb-3 text-muted text-center"><i class="fas fa-microchip"></i> Recursos del Servidor</h5>
+                <div class="row mb-0 justify-content-center">
+                    <!-- CPU Usage -->
+                    <div class="col-lg-3 col-md-4">
+                        <div class="info-box bg-white border elevation-1">
+                            <span class="info-box-icon bg-primary"><i class="fas fa-microchip"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Uso de CPU</span>
+                                <span class="info-box-number" id="stats-host-cpu">{{ host_metrics.cpu_percent }}%</span>
+                                <div class="progress">
+                                    <div class="progress-bar bg-primary" id="pb-host-cpu" style="width: {{ host_metrics.cpu_percent }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RAM Usage -->
+                    <div class="col-lg-3 col-md-4">
+                        <div class="info-box bg-white border elevation-1">
+                            <span class="info-box-icon bg-info"><i class="fas fa-memory"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Memoria RAM</span>
+                                <span class="info-box-number" id="stats-host-ram">{{ host_metrics.ram_percent }}%</span>
+                                <div class="progress">
+                                    <div class="progress-bar bg-info" id="pb-host-ram" style="width: {{ host_metrics.ram_percent }}%"></div>
+                                </div>
+                                <span class="progress-description">
+                                    {{ host_metrics.ram_used }}G de {{ host_metrics.ram_total }}G
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Info -->
+                    <div class="col-lg-3 col-md-4">
+                        <div class="info-box bg-white border elevation-1">
+                            <span class="info-box-icon bg-secondary"><i class="fas fa-server"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text" title="{{ host_metrics.os_info }}">{{ host_metrics.hostname }}</span>
+                                <span class="info-box-number" style="font-size: 0.75rem;">{{ host_metrics.os_info|truncatechars:20 }}</span>
+                                <span class="progress-description">
+                                    Uptime: {{ host_metrics.uptime }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div> <!-- /.card-body -->
         </div> <!-- /.card -->
     </div> <!-- /.col-lg-12 -->
