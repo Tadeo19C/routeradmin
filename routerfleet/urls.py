@@ -7,7 +7,7 @@ from backup.views import view_backup_profile_list, view_manage_backup_profile, v
     view_get_backup_profile_details
 from backup_data.views import view_cron_generate_backup_schedule, view_cron_create_backup_tasks, \
     view_cron_perform_backup_tasks, view_cron_housekeeping
-from dashboard.views import view_dashboard, view_status, view_activity_logs, backup_statistics_data, router_status_data
+from dashboard.views import view_dashboard, view_status, view_activity_logs, backup_statistics_data, router_status_data, view_status_summary
 from fleet_commander.views import view_command_list, view_command_details, view_manage_command, \
     view_manage_command_variant, view_manage_command_schedule, view_job_list, view_job_details, view_task_details, \
     view_cron_create_command_jobs, view_cron_perform_command_tasks, view_execute_command, view_run_command_multiple, \
@@ -34,6 +34,7 @@ urlpatterns = [
     path('', view_status, name='dashboard'),
     path('router_status_data/', router_status_data, name='router_status_data'),
     path('backup_statistics_data/', backup_statistics_data, name='backup_statistics_data'),
+    path('dashboard/status_summary/', view_status_summary, name='status_summary'),
     path('user/list/', view_user_list, name='user_list'),
     path('user/manage/', view_manage_user, name='manage_user'),
     path('accounts/create_first_user/', view_create_first_user, name='create_first_user'),

@@ -105,6 +105,22 @@ def view_status(request):
     }
 
     return render(request, 'dashboard/status.html', context=context)
+
+
+@login_required
+def view_status_summary(request):
+    """
+    Returns a JSON summary of dashboard statistics for real-time polling.
+    """
+    return JsonResponse({
+        'media_root_stats': get_directory_statistics(settings.MEDIA_ROOT),
+        'queue': RouterBackup.objects.filter(success=False, error=False).count(),
+        'success_backup_last_24h': RouterBackup.objects.filter(success=True, created__gte=timezone.now() - timedelta(days=1)).count(),
+        'error_backup_last_24h': RouterBackup.objects.filter(error=True, created__gte=timezone.now() - timedelta(days=1)).count(),
+        'total_router_count': Router.objects.all().count(),
+        'router_online_count': RouterStatus.objects.filter(status_online=True, router__monitoring=True).count(),
+        'router_offline_count': RouterStatus.objects.filter(status_online=False, router__monitoring=True).count(),
+    })
 @login_required
 def backup_statistics_data(request):
     try:
