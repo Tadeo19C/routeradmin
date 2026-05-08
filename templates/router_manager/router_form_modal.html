@@ -386,31 +386,51 @@ $(document).ready(function() {
     function toggleSubFields() {
         var selectedType = $('input[name="backup_type"]:checked').val();
         
-        // Deshabilitar todos primero
-        var allSelects = $('#div_id_custom_hourly_interval select, #div_id_custom_daily_hour select, #div_id_custom_weekly_day select, #div_id_custom_weekly_hour select');
-        var allDivs = $('#div_id_custom_hourly_interval, #div_id_custom_daily_hour, #div_id_custom_weekly_day, #div_id_custom_weekly_hour');
+        var $hourlyCol = $('#div_id_custom_hourly_interval').closest('[class*="col-"]');
+        var $dailyCol = $('#div_id_custom_daily_hour').closest('[class*="col-"]');
+        var $weeklyCol = $('#div_id_custom_weekly_day').closest('[class*="col-"]');
+        var $row = $hourlyCol.closest('.form-row');
         
-        allSelects.prop('disabled', true);
-        allDivs.css('opacity', '0.5'); // Visually fade out inactive ones
+        // Disable all first
+        $('#div_id_custom_hourly_interval select, #div_id_custom_daily_hour select, #div_id_custom_weekly_day select, #div_id_custom_weekly_hour select').prop('disabled', true);
         
-        // Habilitar el seleccionado
+        // Hide all & reset layout
+        $hourlyCol.hide();
+        $dailyCol.hide();
+        $weeklyCol.hide();
+        $row.addClass('justify-content-center text-center');
+
+        // Habilitar el seleccionado y mostrarlo centrado (col-md-6 es ideal para balancear con el reloj)
         if (selectedType === 'hourly') {
+            $hourlyCol.show().removeClass('col-md-4').addClass('col-md-6');
             $('#div_id_custom_hourly_interval select').prop('disabled', false);
-            $('#div_id_custom_hourly_interval').css('opacity', '1');
         } else if (selectedType === 'daily') {
+            $dailyCol.show().removeClass('col-md-4').addClass('col-md-6');
             $('#div_id_custom_daily_hour select').prop('disabled', false);
-            $('#div_id_custom_daily_hour').css('opacity', '1');
         } else if (selectedType === 'weekly') {
+            $weeklyCol.show().removeClass('col-md-4').addClass('col-md-6');
             $('#div_id_custom_weekly_day select, #div_id_custom_weekly_hour select').prop('disabled', false);
-            $('#div_id_custom_weekly_day, #div_id_custom_weekly_hour').css('opacity', '1');
         }
     }
     
+    function handleClockVisibility(type) {
+        if (type === 'daily' || type === 'weekly') {
+            clockWrapper.fadeIn();
+            const targetDiv = (type === 'daily') ? $('#div_id_custom_daily_hour') : $('#div_id_custom_weekly_hour');
+            // Insert it after the fields box within the same centered column
+            clockWrapper.appendTo(targetDiv.closest('[class*="col-"]'));
+        } else {
+            clockWrapper.fadeOut();
+        }
+    }
+
     // Bind change events to radio buttons
-    $('input[name="backup_type"]').on('change', toggleSubFields);
+    $('input[name="backup_type"]').on('change', function() {
+        toggleSubFields();
+        handleClockVisibility($(this).val());
+    });
     
-    // Initial trigger
-    toggleSubFields();
+    // Initial trigger will happen after clock logic initialization
 
     // Radial Clock Logic
     const clockFace = document.getElementById('clock-face');
@@ -499,25 +519,11 @@ $(document).ready(function() {
     }
     initClockFromSelect();
 
-    // Show/Hide clock based on backup type
-    $('input[name="backup_type"]').on('change', function() {
-        const type = $(this).val();
-        if (type === 'daily' || type === 'weekly') {
-            clockWrapper.fadeIn();
-            const targetDiv = (type === 'daily') ? $('#div_id_custom_daily_hour') : $('#div_id_custom_weekly_hour');
-            clockWrapper.insertAfter(targetDiv);
-        } else {
-            clockWrapper.fadeOut();
-        }
-    });
+    initClockFromSelect();
     
-    // Initial visibility check
-    const initialType = $('input[name="backup_type"]:checked').val();
-    if (initialType === 'daily' || initialType === 'weekly') {
-        clockWrapper.show();
-        const targetDiv = (initialType === 'daily') ? $('#div_id_custom_daily_hour') : $('#div_id_custom_weekly_hour');
-        clockWrapper.insertAfter(targetDiv);
-    }
+    // Final Initial Trigger
+    toggleSubFields();
+    handleClockVisibility($('input[name="backup_type"]:checked').val());
 
 });
 </script>
