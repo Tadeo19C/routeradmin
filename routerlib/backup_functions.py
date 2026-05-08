@@ -191,6 +191,12 @@ def execute_backup(router_backup: RouterBackup):
             clean_text = re.sub(r'^Building configuration.*?\n', '', stdout_text, flags=re.MULTILINE).strip()
             
             if clean_text:
+                # Check for duplicate
+                previous_backup = RouterBackup.objects.filter(router=router, success=True).order_by('-created').first()
+                if previous_backup and previous_backup.backup_text == clean_text:
+                    router_backup.identical_to_previous = True
+                    append_task_console_output(router_backup, '[Deduplication] Configuration matches previous backup exactly.')
+
                 router_backup.backup_text = clean_text
                 router_backup.backup_text_filename = f'{backup_name}.{file_extension["text"]}'
                 router_backup.save()
