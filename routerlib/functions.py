@@ -19,6 +19,8 @@ def get_router_backup_file_extension(router_type):
         return {'text': 'txt', 'binary': 'tar.gz'}
     elif router_type == 'ubiquiti-airos':
         return {'text': 'cfg', 'binary': None}
+    elif router_type == 'cisco-ios':
+        return {'text': 'cfg', 'binary': None}
     else:
         return {'text': 'txt', 'binary': 'bin'}
 
@@ -102,6 +104,14 @@ def test_ssh_authentication(router_type, address, port, username, password, sshk
                 result = True, f'Success: Ubiquiti airOS device confirmed ({output})'
             else:
                 result = False, 'Device is not airOS'
+
+        elif router_type == 'cisco-ios':
+            stdin, stdout, stderr = ssh_client.exec_command('show version')
+            output = stdout.read().decode()
+            if 'Cisco IOS Software' in output:
+                result = True, 'Success: Cisco IOS device confirmed'
+            else:
+                result = False, 'Device is not Cisco IOS'
 
         else:
             result = False, 'Unsupported device type'

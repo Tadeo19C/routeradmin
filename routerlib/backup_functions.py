@@ -1,4 +1,5 @@
 import datetime
+import re
 from django.utils import timezone
 from backup_data.models import RouterBackup
 import os
@@ -181,6 +182,22 @@ def execute_backup(router_backup: RouterBackup):
             append_task_console_output(router_backup, '=== Skipping remote backup (airOS uses existing /tmp/system.cfg) ===')
             return True, ['/tmp/system.cfg'], error_message
 
+        elif router_backup.router.router_type == 'cisco-ios':
+            ssh_client = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)
+            command = 'show running-config'
+            exit_code, stdout_text, stderr_text = run_ssh_command(ssh_client, command, router_backup, skip_stdout=True)
+            
+            # Clean output (remove "Building configuration..." and leading/trailing whitespace)
+            clean_text = re.sub(r'^Building configuration.*?\n', '', stdout_text, flags=re.MULTILINE).strip()
+            
+            if clean_text:
+                router_backup.backup_text = clean_text
+                router_backup.backup_text_filename = f'{backup_name}.{file_extension["text"]}'
+                router_backup.save()
+                return True, [f'{backup_name}.{file_extension["text"]}'], error_message
+            else:
+                return False, [], "Failed to execute backup: Empty configuration received"
+
         else:
             error_message = f"Router type not supported: {router_backup.router.get_router_type_display()}"
             return False, [], error_message
@@ -284,6 +301,14 @@ def retrieve_backup(router_backup: RouterBackup):
             os.remove(local_path)
             success = True
 
+        elif router_backup.router.router_type == 'cisco-ios':
+            # Cisco backup (text-only) was already handled in execute_backup
+            # We just verify that we have the text
+            if router_backup.backup_text:
+                success = True
+            else:
+                error_message = 'Backup text not found'
+
         else:
             error_message = f"Router type not supported: {router_backup.router.get_router_type_display()}"
             return success, error_message
@@ -312,6 +337,9 @@ def clean_up_backup_files(router_backup: RouterBackup):
             run_ssh_command(ssh_client, command, router_backup)
         elif router_backup.router.router_type == 'ubiquiti-airos':
             append_task_console_output(router_backup, 'airOS: skipping cleanup (no remote temp files created)')
+            return
+        elif router_backup.router.router_type == 'cisco-ios':
+            # Cisco: no remote temp files created in this implementation
             return
         else:
             append_task_console_output(router_backup, f"Router type not supported: {router_backup.router.get_router_type_display()}")

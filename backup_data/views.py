@@ -388,9 +388,32 @@ def view_cron_system_self_backup(request):
     }
     
     try:
-        # Perform the copy
-        shutil.copy2(db_path, backup_path)
-        data['backup_created'] = True
+        if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
+            # Perform the copy
+            shutil.copy2(db_path, backup_path)
+            data['backup_created'] = True
+        elif settings.DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
+            import subprocess
+            db_name = settings.DATABASES['default']['NAME']
+            db_user = settings.DATABASES['default']['USER']
+            db_password = settings.DATABASES['default']['PASSWORD']
+            db_host = settings.DATABASES['default']['HOST']
+            db_port = settings.DATABASES['default']['PORT']
+            
+            env = os.environ.copy()
+            env['PGPASSWORD'] = db_password
+            
+            backup_filename = f"db_megacom_{timestamp}.sql"
+            backup_path = os.path.join(backup_dir, backup_filename)
+            data['filename'] = backup_filename
+            
+            cmd = ['pg_dump', '-h', db_host, '-p', str(db_port), '-U', db_user, '-f', backup_path, db_name]
+            subprocess.run(cmd, env=env, check=True)
+            data['backup_created'] = True
+        else:
+            data['status'] = 'error'
+            data['message'] = f"Unsupported database engine for self-backup: {settings.DATABASES['default']['ENGINE']}"
+            return JsonResponse(data)
         
         # Rotation: Keep last 30 backups
         all_backups = sorted([

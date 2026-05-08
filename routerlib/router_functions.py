@@ -149,6 +149,35 @@ def get_router_information(router_information: RouterInformation):
                     or board.get('board.cpurevision', '')
             )[:field_max_length]
             success = True
+        elif router.router_type == 'cisco-ios':
+            # 1) Get Version & Model
+            stdin, stdout, stderr = ssh.exec_command('show version')
+            raw_version = stdout.read().decode('utf-8', errors='ignore')
+            json_data['show version'] = raw_version
+            
+            # Simple regex search
+            # Version: "Cisco IOS Software, ... Version 15.1(4)M4, ..."
+            ver_match = re.search(r'Version ([^,]+)', raw_version)
+            if ver_match:
+                router_information.os_version = ver_match.group(1)[:field_max_length]
+            
+            # Model: "Cisco CISCO2901/K9 (revision 1.0) with ..."
+            model_match = re.search(r'Cisco (\S+) \(revision', raw_version)
+            if model_match:
+                router_information.model_name = model_match.group(1)[:field_max_length]
+
+            # 2) Get Inventory & Serial
+            stdin, stdout, stderr = ssh.exec_command('show inventory')
+            raw_inventory = stdout.read().decode('utf-8', errors='ignore')
+            json_data['show inventory'] = raw_inventory
+            
+            # SN: "SN: PID00000000"
+            sn_match = re.search(r'SN: (\S+)', raw_inventory)
+            if sn_match:
+                router_information.serial_number = sn_match.group(1)[:field_max_length]
+            
+            success = True
+
         else:
             return False, f"Router type not supported: {router.get_router_type_display()}"
 
