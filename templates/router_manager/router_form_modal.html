@@ -159,6 +159,78 @@ $(document).ready(function() {
     }
     setupNodeRedirectFlow();
 
+    // Autofocus on Name field
+    setTimeout(function() {
+        $('#id_name').focus();
+    }, 500);
+
+    // AJAX Test Connection Handler
+    $('#btn-test-connection').on('click', function() {
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+        
+        // Prepare data
+        const data = {
+            'address': $('#id_address').val(),
+            'username': $('#id_username').val(),
+            'password': $('#id_password').val(),
+            'port': $('#id_port').val(),
+            'router_type': $('#id_router_type').val(),
+            'uuid': '{% if instance %}{{ instance.uuid }}{% endif %}',
+            'csrfmiddlewaretoken': $('input[name="csrfmiddlewaretoken"]').val()
+        };
+
+        if (!data.address || !data.username) {
+            $(document).Toasts('create', {
+                class: 'bg-warning',
+                title: 'Datos Incompletos',
+                body: 'Por favor, ingrese al menos la IP y el Usuario.',
+                delay: 3000,
+                autohide: true
+            });
+            return;
+        }
+
+        $btn.html('<i class="fas fa-spinner fa-spin"></i> Probando...').prop('disabled', true);
+
+        $.ajax({
+            url: '{% url "ajax_test_connection" %}',
+            method: 'POST',
+            data: data,
+            success: function(response) {
+                if (response.status === 'success') {
+                    $(document).Toasts('create', {
+                        class: 'bg-success',
+                        title: 'Conexión OK',
+                        body: response.message,
+                        delay: 4000,
+                        autohide: true
+                    });
+                    $btn.removeClass('btn-outline-info').addClass('btn-success').html('<i class="fas fa-check"></i> Éxito');
+                } else {
+                    $(document).Toasts('create', {
+                        class: 'bg-danger',
+                        title: 'Error de Conexión',
+                        body: response.message,
+                        delay: 5000,
+                        autohide: true
+                    });
+                    $btn.html(originalHtml).prop('disabled', false);
+                }
+            },
+            error: function() {
+                $(document).Toasts('create', {
+                    class: 'bg-danger',
+                    title: 'Error Fatal',
+                    body: 'No se pudo contactar con el servidor de pruebas.',
+                    delay: 5000,
+                    autohide: true
+                });
+                $btn.html(originalHtml).prop('disabled', false);
+            }
+        });
+    });
+
     $('#router-manage-form').on('submit', function(e) {
         e.preventDefault();
         

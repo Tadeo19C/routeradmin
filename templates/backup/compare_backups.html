@@ -23,30 +23,39 @@
             <div class="card card-primary card-outline">
                 <div class="card-header">
                     <h3 class="card-title">
-                        <a href="/router/details/?uuid={{ backup1.router.uuid }}">{{ backup1.router }}</a> -
-                        Comparing backup
-                        <a href="/backup/backup_details/?uuid={{ backup1.uuid }}" title="hash: {{ backup1.backup_text_hash }}">{{ backup1.id }}</a>
-                        with
-                        <a href="/backup/backup_details/?uuid={{ backup2.uuid }}" title="hash: {{ backup2.backup_text_hash }}">{{ backup2.id }}</a>
+                        <i class="fas fa-columns"></i> Comparando Equipo: 
+                        <a href="/router/details/?uuid={{ backup1.router.uuid }}">{{ backup1.router.name }}</a>
                     </h3>
-                </div>
-                <div class="card-body row">
-                    <div class="col-lg-12">
-                        <button class="btn btn-outline-primary" onclick="renderDiff('side-by-side')">Side by Side
-                        </button>
-                        <button class="btn btn-outline-primary" onclick="renderDiff('inline')">Inline</button>
-                        <a class="btn btn-outline-primary"
-                           href="?uuid={{ backup1.uuid }}&compare_uuid={{ backup2.uuid }}">Diff only</a>
-                        <a class="btn btn-outline-primary"
-                           href="?uuid={{ backup1.uuid }}&compare_uuid={{ backup2.uuid }}&display=all">Complete file</a>
-                        <div id="diff-container"></div>
+                    <div class="card-tools">
+                         <span class="badge badge-info">ID #{{ backup1.id }} vs #{{ backup2.id }}</span>
                     </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary active" id="btn-side" onclick="renderDiff('side-by-side')">
+                                <i class="fas fa-columns"></i> Lado a Lado
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" id="btn-inline" onclick="renderDiff('inline')">
+                                <i class="fas fa-align-left"></i> En Línea
+                            </button>
+                        </div>
+                        <div class="btn-group ml-2">
+                            <a class="btn btn-sm btn-outline-secondary"
+                               href="?uuid={{ backup1.uuid }}&compare_uuid={{ backup2.uuid }}">
+                                <i class="fas fa-minus-square"></i> Solo Diferencias
+                            </a>
+                            <a class="btn btn-sm btn-outline-secondary"
+                               href="?uuid={{ backup1.uuid }}&compare_uuid={{ backup2.uuid }}&display=all">
+                                <i class="fas fa-plus-square"></i> Archivo Completo
+                            </a>
+                        </div>
+                    </div>
+                    <div id="diff-container" style="font-size: 13px;"></div>
                 </div>
             </div>
         </div>
     </div>
-
-
 {% endblock %}
 
 {% block custom_page_scripts %}
@@ -55,10 +64,19 @@
         function renderDiff(viewType) {
             var targetElement = document.getElementById('diff-container');
             
+            // Toggle active state on buttons
+            if(viewType === 'side-by-side') {
+                document.getElementById('btn-side').classList.add('active');
+                document.getElementById('btn-inline').classList.remove('active');
+            } else {
+                document.getElementById('btn-side').classList.remove('active');
+                document.getElementById('btn-inline').classList.add('active');
+            }
+
             if (!diffString || diffString.trim() === "") {
                 targetElement.innerHTML = `
                     <div class="alert alert-info mt-4 text-center">
-                        <i class="fas fa-info-circle"></i> No differences found between these two backups. The configurations are identical.
+                        <i class="fas fa-info-circle"></i> No se encontraron diferencias entre estos respaldos. Las configuraciones son 100% idénticas.
                     </div>`;
                 return;
             }
@@ -66,17 +84,26 @@
             var processedDiffString = diffString.split('\n').filter(line => {
                 return !line.startsWith('--- a/') && !line.startsWith('+++ b/');
             }).join('\n');
+            
             var configuration = {
                 inputFormat: 'diff',
                 showFiles: false,
                 matching: 'lines',
                 outputFormat: viewType,
+                drawFileList: false,
+                renderNothingWhenEmpty: true
             };
 
             var diffHtml = Diff2Html.html(processedDiffString, configuration);
             targetElement.innerHTML = diffHtml;
+            
+            // Apply some custom styling to handle density
+            $('.d2h-file-wrapper').css('border', 'none');
+            $('.d2h-code-line-ctn').css('font-family', 'monospace');
         }
-        //renderDiff('inline');
-        renderDiff('side-by-side');
+        
+        document.addEventListener("DOMContentLoaded", function() {
+            renderDiff('side-by-side');
+        });
     </script>
 {% endblock %}

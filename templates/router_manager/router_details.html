@@ -290,14 +290,14 @@
             var selected = $('.backup-compare-checkbox:checked').length;
             if (selected > 2) {
                 $(this).prop('checked', false);
-                alert('You can only select up to 2 backups for comparison.');
+                alert('Solo puedes seleccionar hasta 2 respaldos para comparar.');
             }
         });
 
         window.compareSelectedBackups = function() {
             var selectedCheckboxes = $('.backup-compare-checkbox:checked');
             if (selectedCheckboxes.length !== 2) {
-                alert('Please select exactly two backups to compare.');
+                alert('Por favor selecciona exactamente dos respaldos para realizar la comparación.');
                 return;
             }
 
@@ -307,7 +307,7 @@
             var success2 = $(selectedCheckboxes[1]).data('success');
 
             if (!success1 || !success2) {
-                alert('Both selected backups must be successful (Green Check) to be compared. Please wait for the backup to finish or select another one.');
+                alert('Ambos respaldos deben ser exitosos (check verde) para compararlos. Por favor espera a que terminen o selecciona otros.');
                 return;
             }
 

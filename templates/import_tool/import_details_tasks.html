@@ -1,4 +1,4 @@
-<table class="table table-hover datatables-no-export">
+<table id="example1" class="table table-hover datatables-with-export">
     <thead>
     <tr>
         <th>ID</th>
@@ -24,14 +24,14 @@
         <td>{{ task.address }}</td>
         <td id="status-{{ task.uuid }}">
             {% if task.import_success %}
-            <span class="badge badge-success">Success</span>
+            <span class="badge badge-success">Éxito</span>
             {% elif task.import_error %}
             <span class="badge badge-danger">Error</span>
             {% else %}
-            <span class="badge badge-warning">Pending</span>
+            <span class="badge badge-warning">Pendiente</span>
             {% endif %}
             {% comment %}
-            <span class="badge badge-info">Working...</span>
+            <span class="badge badge-info">Procesando...</span>
             {% endcomment %}
         </td>
         <td id="errormessage-{{ task.uuid }}">{{ task.import_error_message|default_if_none:'' }}</td>

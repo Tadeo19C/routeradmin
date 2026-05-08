@@ -11,6 +11,14 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
 
+  megacom-redis:
+    container_name: megacom-redis
+    restart: unless-stopped
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - megacom_redis_data:/data
+
   megacom-app:
     container_name: megacom-app
     restart: unless-stopped
@@ -26,6 +34,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-megacom}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
+      - CELERY_BROKER_URL=redis://megacom-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://megacom-redis:6379/0
       - TZ=${TIMEZONE:-UTC}
     volumes:
       - megacom_media:/var/lib/routerfleet/
@@ -34,6 +44,49 @@ services:
     command: /bin/bash /app/init.sh
     depends_on:
       - megacom-db
+      - megacom-redis
+
+  megacom-celery-worker:
+    container_name: megacom-celery-worker
+    restart: unless-stopped
+    build: .
+    command: celery -A routerfleet worker --loglevel=info --concurrency=${CELERY_CONCURRENCY:-4}
+    environment:
+      - DATABASE_ENGINE=postgres
+      - POSTGRES_HOST=megacom-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-megacom}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
+      - CELERY_BROKER_URL=redis://megacom-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://megacom-redis:6379/0
+      - TZ=${TIMEZONE:-UTC}
+    volumes:
+      - megacom_media:/var/lib/routerfleet/
+    depends_on:
+      - megacom-db
+      - megacom-redis
+      - megacom-app
+
+  megacom-celery-beat:
+    container_name: megacom-celery-beat
+    restart: unless-stopped
+    build: .
+    command: celery -A routerfleet beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler 2>/dev/null || celery -A routerfleet beat --loglevel=info
+    environment:
+      - DATABASE_ENGINE=postgres
+      - POSTGRES_HOST=megacom-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-megacom}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
+      - CELERY_BROKER_URL=redis://megacom-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://megacom-redis:6379/0
+      - TZ=${TIMEZONE:-UTC}
+    depends_on:
+      - megacom-db
+      - megacom-redis
+      - megacom-app
 
   megacom-web:
     container_name: megacom-web
@@ -52,3 +105,4 @@ volumes:
   megacom_media:
   megacom_static:
   megacom_secrets:
+  megacom_redis_data:

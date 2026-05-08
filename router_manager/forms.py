@@ -137,9 +137,13 @@ class RouterForm(forms.ModelForm):
                 css_class='form-row'
             ),
             Row(
-                Column('username', css_class='form-group col-md-6 mb-2'),
-                Column('password', css_class='form-group col-md-6 mb-2'),
-                css_class='form-row'
+                Column('username', css_class='form-group col-md-4 mb-2'),
+                Column('password', css_class='form-group col-md-4 mb-2'),
+                Column(
+                    HTML('<div class="form-group mb-2"><label>&nbsp;</label><div><button type="button" id="btn-test-connection" class="btn btn-outline-info btn-sm btn-block"><i class="fas fa-plug"></i> Probar Conexión</button></div></div>'),
+                    css_class='col-md-4'
+                ),
+                css_class='form-row align-items-end'
             ),
             HTML('<hr class="my-3">'),
             'backup_profile',
@@ -155,7 +159,7 @@ class RouterForm(forms.ModelForm):
             'enabled',
             Row(
                 Column(
-                    Submit('submit', 'Guardar Router', css_class='btn btn-success btn-sm'),
+                    Submit('submit', 'Guardar Equipo', css_class='btn btn-success btn-sm'),
                     HTML(delete_html),
                     css_class='col-md-12 text-right'),
                 css_class='form-row mt-3'
@@ -199,20 +203,14 @@ class RouterForm(forms.ModelForm):
             if qs.exists():
                 raise forms.ValidationError('Ya existe un equipo registrado con este nombre.')
 
-        if router_type == 'monitoring':
-            cleaned_data['password'] = ''
-            if backup_profile:
-                raise forms.ValidationError('Equipos de solo monitoreo no pueden tener un perfil de respaldo.')
-            return cleaned_data
-        else:
-            if not port:
-                raise forms.ValidationError('Debe proporcionar un puerto.')
-            if not 1 <= port <= 65535:
-                raise forms.ValidationError('Número de puerto inválido (debe estar entre 1 y 65535).')
-            if not username:
-                raise forms.ValidationError('Debe proporcionar un nombre de usuario.')
-            if not password and not self.instance.password:
-                raise forms.ValidationError('Debe proporcionar una contraseña para este tipo de equipo.')
+        if not port:
+            raise forms.ValidationError('Debe proporcionar un puerto.')
+        if not 1 <= port <= 65535:
+            raise forms.ValidationError('Número de puerto inválido (debe estar entre 1 y 65535).')
+        if not username:
+            raise forms.ValidationError('Debe proporcionar un nombre de usuario.')
+        if not password and not self.instance.password:
+            raise forms.ValidationError('Debe proporcionar una contraseña para este tipo de equipo.')
 
         if not password and self.instance.password:
             cleaned_data['password'] = self.instance.password
@@ -291,7 +289,7 @@ class RouterGroupForm(forms.ModelForm):
         self.helper.label_class = 'col-sm-3 col-form-label font-weight-bold text-right'
         self.helper.field_class = 'col-sm-9'
         if self.instance.pk:
-            delete_html = "<a href='javascript:void(0)' class='btn btn-outline-danger' data-command='delete' onclick='openCommandDialog(this)'>Delete</a>"
+            delete_html = "<a href='javascript:void(0)' class='btn btn-outline-danger' data-command='delete' onclick='openCommandDialog(this)'>Borrar</a>"
         else:
             delete_html = ''
         self.helper.layout = Layout(
@@ -301,7 +299,7 @@ class RouterGroupForm(forms.ModelForm):
             'default_group',
             Row(
                 Column(
-                    Submit('submit', 'Guardar Grupo', css_class='btn btn-success btn-sm'),
+                    Submit('submit', 'Guardar Nodo', css_class='btn btn-success btn-sm'),
                     HTML(' <a class="btn btn-secondary btn-sm" href="/router/group_list/">Atrás</a> '),
                     HTML(delete_html),
                     css_class='col-md-12 text-right'),

@@ -10,8 +10,8 @@ from django.contrib.sessions.models import Session
 @login_required
 def view_user_list(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
-    page_title = 'User Manager'
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
+    page_title = 'Gestión de Usuarios'
     user_acl_list = UserAcl.objects.all().order_by('user__username')
     context = {'page_title': page_title, 'user_acl_list': user_acl_list}
     return render(request, 'user_manager/list.html', context)
@@ -20,14 +20,14 @@ def view_user_list(request):
 @login_required
 def view_manage_user(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     user_acl = None
     user = None
     if 'uuid' in request.GET:
         user_acl = get_object_or_404(UserAcl, uuid=request.GET['uuid'])
         user = user_acl.user
         form = UserAclForm(instance=user, initial={'user_level': user_acl.user_level}, user_id=user.id)
-        page_title = 'Edit User ' + user.username
+        page_title = 'Editar Usuario: ' + user.username
         if request.GET.get('action') == 'delete':
             username = user.username
             if request.GET.get('confirmation') == username:
@@ -38,7 +38,7 @@ def view_manage_user(request):
             return redirect('/user/list/')
     else:
         form = UserAclForm()
-        page_title = 'Add User'
+        page_title = 'Agregar Usuario'
 
     if request.method == 'POST':
         if user_acl:

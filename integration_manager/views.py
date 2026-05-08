@@ -10,7 +10,7 @@ from user_manager.models import UserAcl
 @login_required()
 def view_wireguard_webadmin_launcher(request):
     context = {
-        'page_title': 'WireGuard WebAdmin Launcher',
+        'page_title': 'Integraciones WireGuard',
         'wireguard_integration': ExternalIntegration.objects.filter(name='wireguard_webadmin', integration_type='wireguard_webadmin').first()
     }
     return render(request, 'integration_manager/wireguard_webadmin_launcher.html', context=context)
@@ -50,19 +50,19 @@ def view_launch_wireguard_webadmin(request):
 @login_required()
 def view_manage_wireguard_integration(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     context = {
-        'page_title': 'Manage WireGuard WebAdmin Integration',
-        'delete_confirmation_message': 'Are you sure you want to delete this integration? This action cannot be undone. Type delete in the box below to confirm.'
+        'page_title': 'Gestionar Integración WireGuard',
+        'delete_confirmation_message': '¿Estás seguro de que deseas eliminar esta integración? Esta acción no se puede deshacer. Escribe delete en el campo para confirmar.'
     }
     wireguard_integration = ExternalIntegration.objects.filter(name='wireguard_webadmin', integration_type='wireguard_webadmin').first()
     if request.GET.get('action') == 'delete':
         if request.GET.get('confirmation') == 'delete':
             wireguard_integration.delete()
-            messages.success(request, 'WireGuard WebAdmin integration deleted')
+            messages.success(request, 'Integración WireGuard eliminada exitosamente.')
             return redirect('/wireguard_webadmin/')
         else:
-            messages.warning(request, 'Invalid confirmation. Integration not deleted')
+            messages.warning(request, 'Confirmación inválida. La integración no fue eliminada.')
             return redirect('/wireguard_webadmin/')
 
     form = WireGuardWebAdminForm(request.POST or None, instance=wireguard_integration, user=request.user)
@@ -72,7 +72,7 @@ def view_manage_wireguard_integration(request):
         this_form.name = 'wireguard_webadmin'
         this_form.integration_type = 'wireguard_webadmin'
         this_form.save()
-        messages.success(request, 'WireGuard WebAdmin integration saved')
+        messages.success(request, 'Integración WireGuard guardada exitosamente.')
         return redirect('/wireguard_webadmin/')
 
     context['form'] = form

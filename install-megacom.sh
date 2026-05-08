@@ -52,8 +52,8 @@ curl -L $REPO_URL -o $ZIP_FILE
 
 # Limpieza preventiva de contenedores viejos
 echo "Limpiando instalaciones previas si existen..."
-docker stop megacom-app megacom-web megacom-db 2>/dev/null || true
-docker rm megacom-app megacom-web megacom-db 2>/dev/null || true
+docker stop megacom-app megacom-web megacom-db megacom-redis megacom-celery-worker megacom-celery-beat 2>/dev/null || true
+docker rm megacom-app megacom-web megacom-db megacom-redis megacom-celery-worker megacom-celery-beat 2>/dev/null || true
 
 # 3. Extraer archivos
 echo "[3/5] Extrayendo archivos..."

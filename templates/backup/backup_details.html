@@ -31,12 +31,12 @@
                                 <span class="float-right">{{ backup }}</span>
                             </li>
                             {% endcomment %}
-                            <li class="list-group-item">
-                                <b>Backup ID</b>
-                                <span class="float-right">
-                                    {{ backup.id }}
-                                </span>
-                            </li>
+                             <li class="list-group-item">
+                                 <b>Folio de Respaldo</b>
+                                 <span class="float-right">
+                                     {{ backup.id }}
+                                 </span>
+                             </li>
 
 
                             {% if not backup.success and not backup.error %}
@@ -168,21 +168,21 @@
                             </li>
 
                             <li class="list-group-item">
-                                 <b>Descargar</b>
-                                <span class="float-right">
-                                {% if backup.backup_text %}
-                                    <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" download>
-                                     Texto
-                                </a>
-                                    {% if backup.backup_binary %} - {% endif %}
-                                {% endif %}
-                                    {% if backup.backup_binary %}
-                                        <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" download>
-                                     Binario
-                                </a>
-                                    {% endif %}
-                                </span>
-                            </li>
+                                 <b>Descargar Archivos</b>
+                                 <span class="float-right">
+                                 {% if backup.backup_text %}
+                                     <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" download title="Descargar archivo de texto (RSC)">
+                                      Texto (.rsc)
+                                 </a>
+                                     {% if backup.backup_binary %} - {% endif %}
+                                 {% endif %}
+                                     {% if backup.backup_binary %}
+                                         <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" download title="Descargar respaldo binario (BACKUP)">
+                                      Binario (.backup)
+                                 </a>
+                                     {% endif %}
+                                 </span>
+                             </li>
 
                             <li class="list-group-item">
                                  <b>Mostrar Consola</b>

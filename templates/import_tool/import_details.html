@@ -70,16 +70,16 @@
             document.addEventListener('DOMContentLoaded', function () {
                 // Function to fetch and update the status
                 async function fetchAndProcessStatus(uuid) {
-                    // Set the status to "Working..."
+                    // Set the status to "Procesando..."
                     let statusCell = document.getElementById(`status-${uuid}`);
-                    statusCell.innerHTML = '<span class="badge badge-info">Working...</span>';
+                    statusCell.innerHTML = '<span class="badge badge-info">Procesando...</span>';
 
                     try {
                         let response = await fetch(`/router/import_tool/run_import_task/?uuid=${uuid}`);
                         let data = await response.json();
 
                         if (data.status === 'success') {
-                            statusCell.innerHTML = '<span class="badge badge-success">Success</span>';
+                            statusCell.innerHTML = '<span class="badge badge-success">Éxito</span>';
                         } else if (data.status === 'error') {
                             statusCell.innerHTML = '<span class="badge badge-danger">Error</span>';
                             let errorMessageCell = document.getElementById(`errormessage-${uuid}`);
@@ -102,7 +102,7 @@
                         let statusCell = document.getElementById(`status-${uuid}`);
                         let statusBadge = statusCell.querySelector('.badge');
 
-                        if (statusBadge && statusBadge.textContent.trim() === 'Pending') {
+                        if (statusBadge && statusBadge.textContent.trim() === 'Pendiente') {
                             await fetchAndProcessStatus(uuid);
                         }
                     }

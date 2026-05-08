@@ -6,12 +6,7 @@ from backup.models import BackupProfile
 
 SUPPORTED_ROUTER_TYPES = (
     ('cisco-ios', 'Cisco (IOS)'),
-    ('cisco-xe', 'Cisco (IOS-XE)'),
     ('mikrotik', 'Mikrotik (RouterOS)'),
-    ('mikrotik-branded', 'Mikrotik (Branded)'),
-    ('openwrt', 'OpenWRT'),
-    ('ubiquiti-airos', 'Ubiquiti airOS'),
-    ('monitoring', 'Monitoring Only'),
 )
 
 

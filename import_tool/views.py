@@ -18,7 +18,7 @@ SUPPORTED_ROUTER_TYPES = [rt[0] for rt in SUPPORTED_ROUTER_TYPES]
 @login_required()
 def run_import_task(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     import_task = get_object_or_404(ImportTask, uuid=request.GET.get('uuid'), import_success=False, import_error=False)
     ssh_key = None
     backup_profile = None
@@ -27,14 +27,20 @@ def run_import_task(request):
     name = import_task.name.strip()
 
     if Router.objects.filter(name=name).exists():
-        error_message = f'Router with name "{name}" already exists.'
+        error_message = f'El equipo con el nombre "{name}" ya existe.'
         import_task.import_error = True
         import_task.import_error_message = error_message
         import_task.save()
         return JsonResponse({'status': 'error', 'error_message': error_message})
 
-
-    address = import_task.address.lower()
+    address = import_task.address.lower().strip()
+    
+    if Router.objects.filter(address=address).exists():
+        error_message = f'La dirección IP "{address}" ya está registrada en otro equipo.'
+        import_task.import_error = True
+        import_task.import_error_message = error_message
+        import_task.save()
+        return JsonResponse({'status': 'error', 'error_message': error_message})
     try:
         socket.gethostbyname(address)
     except socket.gaierror:
@@ -122,7 +128,7 @@ def run_import_task(request):
 @login_required()
 def view_import_tool_list(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     import_list = []
     for csv_data in CsvData.objects.all().order_by('-created'):
         import_summary = {
@@ -143,7 +149,7 @@ def view_import_tool_list(request):
         import_list.append(import_summary)
     data = {
         'import_list': import_list,
-        'page_title': 'CSV import List',
+        'page_title': 'Lista de Importaciones CSV',
     }
     return render(request, 'import_tool/import_tool_list.html', context=data)
 
@@ -151,7 +157,7 @@ def view_import_tool_list(request):
 @login_required()
 def view_import_details(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     csv_data = get_object_or_404(CsvData, uuid=request.GET.get('uuid'))
     import_task_list = ImportTask.objects.filter(csv_data=csv_data).order_by('import_id')
     action = None
@@ -222,7 +228,7 @@ def view_import_details(request):
 @login_required()
 def view_import_csv_file(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     form_description_content = '''
     <strong>CSV Formatting guide</strong>
@@ -279,7 +285,7 @@ def view_import_csv_file(request):
 
     data = {
         'form': form,
-        'page_title': 'Import CSV File',
+        'page_title': 'Importar Archivo CSV',
         'form_description': {
             'size': '',
             'content': form_description_content

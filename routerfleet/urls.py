@@ -6,7 +6,7 @@ from backup.views import view_backup_profile_list, view_manage_backup_profile, v
     view_debug_run_backups, view_compare_backups, view_backup_download, view_backup_delete, \
     view_get_backup_profile_details
 from backup_data.views import view_cron_generate_backup_schedule, view_cron_create_backup_tasks, \
-    view_cron_perform_backup_tasks, view_cron_housekeeping
+    view_cron_perform_backup_tasks, view_cron_housekeeping, view_cron_system_self_backup
 from dashboard.views import view_dashboard, view_status, view_activity_logs, backup_statistics_data, router_status_data, view_status_summary
 from fleet_commander.views import view_command_list, view_command_details, view_manage_command, \
     view_manage_command_variant, view_manage_command_schedule, view_job_list, view_job_details, view_task_details, \
@@ -23,7 +23,7 @@ from monitoring.views import view_export_router_list, view_update_router_status,
 from router_manager.views import view_create_instant_backup_multiple_routers, view_router_list, view_manage_router, \
     view_router_group_list, view_manage_router_group, view_router_details, \
     view_create_instant_backup_task, view_router_availability, view_cron_update_router_information, \
-    view_manage_router_groups_multiple, view_ajax_quick_create_group
+    view_manage_router_groups_multiple, view_ajax_quick_create_group, view_ajax_test_connection
 from routerfleet_tools.views import view_cron_check_updates
 from user_manager.views import view_manage_user, view_user_list
 
@@ -50,6 +50,7 @@ urlpatterns = [
     path('router/create_instant_backup/', view_create_instant_backup_task, name='create_instant_backup_task'),
     path('router/create_instant_backup/multiple/', view_create_instant_backup_multiple_routers, name='create_instant_backup_multiple'),
     path('router/manage_groups/multiple/', view_manage_router_groups_multiple, name='manage_router_groups_multiple'),
+    path('router/ajax_test_connection/', view_ajax_test_connection, name='ajax_test_connection'),
     path('router/import_tool/', view_import_tool_list, name='import_tool_list'),
     path('router/import_tool/csv/', view_import_csv_file, name='import_csv_file'),
     path('router/import_tool/details/', view_import_details, name='import_details'),
@@ -70,6 +71,7 @@ urlpatterns = [
     path('cron/create_backup_tasks/', view_cron_create_backup_tasks, name='create_backup_tasks'),
     path('cron/perform_backup_tasks/', view_cron_perform_backup_tasks, name='perform_backup_tasks'),
     path('cron/housekeeping/', view_cron_housekeeping, name='housekeeping'),
+    path('cron/system_self_backup/', view_cron_system_self_backup, name='system_self_backup'),
     path('cron/check_updates/', view_cron_check_updates, name='check_updates'),
     path('cron/update_router_information/', view_cron_update_router_information, name='update_router_information'),
     path('cron/concatenate_notifications/', view_cron_concatenate_notifications, name='concatenate_notifications'),

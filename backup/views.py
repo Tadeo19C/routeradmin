@@ -164,8 +164,8 @@ def view_compare_backups(request):
 
     diff = difflib.unified_diff(normalize_text(backup1.backup_text).splitlines(keepends=True),
                                 normalize_text(backup2.backup_text).splitlines(keepends=True),
-                                fromfile=backup1.backup_text_hash[:16] + '...',
-                                tofile=backup2.backup_text_hash[:16] + '...',
+                                fromfile=f"Folio #{backup1.id} ({backup1.finish_time.strftime('%d/%m/%Y %H:%M') if backup1.finish_time else 'Pendiente' })",
+                                tofile=f"Folio #{backup2.id} ({backup2.finish_time.strftime('%d/%m/%Y %H:%M') if backup2.finish_time else 'Pendiente' })",
                                 lineterm='', n=show_lines)
     diff_str = '\n'.join(list(diff))
 

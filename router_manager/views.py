@@ -262,7 +262,7 @@ def view_manage_router(request):
 def view_router_group_list(request):
     context = {
         'router_group_list': RouterGroup.objects.all().order_by('name'),
-        'page_title': 'Grupos de Nodos',
+        'page_title': 'Listado de Nodos',
     }
     return render(request, 'router_manager/router_group_list.html', context=context)
 
@@ -281,10 +281,10 @@ def view_manage_router_group(request):
                     details=f"Nodo '{router_group.name}'",
                 )
                 router_group.delete()
-                messages.success(request, 'Grupo de Nodos eliminado correctamente')
+                messages.success(request, 'Nodo eliminado correctamente')
                 return redirect('router_group_list')
             else:
-                messages.warning(request, 'Grupo de Nodos no eliminado|Confirmación inválida')
+                messages.warning(request, 'Nodo no eliminado|Confirmación inválida')
                 return redirect('router_group_list')
     else:
         router_group = None
@@ -299,7 +299,7 @@ def view_manage_router_group(request):
             action=action,
             details=f"Nodo '{saved_group.name}'",
         )
-        messages.success(request, 'Grupo de Nodos guardado correctamente')
+        messages.success(request, 'Nodo guardado correctamente')
         next_url = request.GET.get('next')
         if next_url:
             return redirect(next_url)
@@ -307,7 +307,7 @@ def view_manage_router_group(request):
 
     context = {
         'form': form,
-        'page_title': 'Gestionar Grupo de Nodos',
+        'page_title': 'Gestionar Nodo',
         'instance': router_group
     }
     return render(request, 'generic_form.html', context=context)
@@ -520,3 +520,33 @@ def view_cron_update_router_information(request):
         data['message'] = 'No routers need update'
 
     return JsonResponse(data)
+
+
+@login_required()
+def view_ajax_test_connection(request):
+    """
+    AJAX endpoint to test router connectivity before saving the form.
+    """
+    from routerlib.functions import test_authentication
+    
+    address = request.POST.get('address')
+    username = request.POST.get('username')
+    password = request.POST.get('password')
+    port = request.POST.get('port')
+    router_type = request.POST.get('router_type')
+    
+    if not all([address, username, port, router_type]):
+        return JsonResponse({'status': 'error', 'message': 'Faltan datos requeridos (IP, Usuario, Puerto, Tipo)'})
+
+    # If it's an existing router and password is empty, fetch existing one
+    uuid = request.POST.get('uuid')
+    if not password and uuid:
+        router = get_object_or_404(Router, uuid=uuid)
+        password = router.password
+
+    success, message = test_authentication(router_type, address, port, username, password)
+    
+    if success:
+        return JsonResponse({'status': 'success', 'message': '¡Conexión exitosa!'})
+    else:
+        return JsonResponse({'status': 'error', 'message': f'Error de conexión: {message}'})

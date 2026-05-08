@@ -1,22 +1,23 @@
 :root {
-    --primary: #2563eb; /* Modern Vibrant Blue */
+    --primary: #2563eb; 
     --primary-gradient: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
-    --surface: #ffffff; /* Solid White */
-    --surface-light: #f8fafc; /* Very Light Blue-Gray */
-    --text: #0f172a; /* Near Black / Dark Slate */
-    --text-muted: #64748b; /* Slate Gray */
-    --bg: #ffffff; /* Total White Background */
-    --border: #e2e8f0; /* Soft Border */
-    --radius: 12px; /* More modern rounded corners */
-    --transition: 0.25s ease-in-out;
+    --surface: #ffffff; 
+    --surface-light: #f1f5f9; 
+    --text: #0f172a; 
+    --text-muted: #475569; 
+    --bg: #ffffff; 
+    --border: #94a3b8; /* Even more defined border */
+    --radius: 2px; /* Square edges for classic tool look */
+    --transition: 0.1s ease;
 }
 
 body {
     background-color: var(--bg);
-    font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    /* Narrower classic font stack */
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
     color: var(--text);
-    font-size: 1.05rem; /* Increased base size */
-    line-height: 1.6;
+    font-size: 13px !important; /* Fixed pixel size for absolute control */
+    line-height: 1.25 !important;
     margin: 0;
 }
 
@@ -24,309 +25,195 @@ body {
     background-color: var(--bg);
 }
 
-/* Classic Premium Navbar */
+/* Compact Navbar */
 .main-header {
-    background: #ffffff !important; /* Solid white */
-    border-bottom: 1px solid var(--border) !important; /* Subtle border */
-    padding: 0.4rem 1.25rem !important;
-    min-height: 56px !important;
-    max-height: 56px !important;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    background: #ffffff !important;
+    border-bottom: 2px solid var(--border) !important; /* Stronger separation */
+    padding: 0px 10px !important;
+    min-height: 42px !important; /* Narrow navbar */
+    max-height: 42px !important;
     display: flex;
     align-items: center;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     margin-left: 0 !important;
 }
 
 .brand-wrapper {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 4px;
     text-decoration: none;
-    margin-right: 2rem;
+    margin-right: 15px;
 }
 
 .brand-text {
-    font-size: 1.35rem;
-    font-weight: 800;
-    color: var(--primary); /* Solid color instead of gradient for clarity */
-    letter-spacing: -0.01em;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--primary);
+    letter-spacing: -0.5px;
 }
 
 .nav-links {
     display: flex;
-    gap: 0.25rem;
-    align-items: center;
+    gap: 2px;
 }
 
 .nav-link-item {
     color: var(--text-muted);
     text-decoration: none;
-    font-weight: 600; /* Heavier weight */
-    padding: 0.6rem 1.2rem;
-    border-radius: var(--radius);
-    transition: var(--transition);
+    font-weight: 700;
+    padding: 4px 10px !important;
+    font-size: 12px !important;
+    border-radius: 0; /* Boxy */
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 5px;
 }
 
 .nav-link-item:hover {
-    background: #f3f4f6;
+    background: #e2e8f0;
     color: var(--primary);
 }
 
 .nav-link-item.active {
     background: var(--primary);
-    color: #ffffff; /* High contrast active state */
+    color: #ffffff;
 }
 
-.nav-link-item i {
-    font-size: 1.2rem;
-}
-
-/* Specific styling for Historial button to avoid contrast issues */
-.nav-item-historial {
-    background: rgba(30, 64, 175, 0.05) !important;
-    border: 1px solid rgba(30, 64, 175, 0.2) !important;
-    border-radius: 4px !important;
-    padding: 0.35rem 0.9rem !important;
-    color: var(--primary) !important;
-}
-
-.nav-item-historial:hover {
-    background: rgba(30, 64, 175, 0.1) !important;
-    color: #1a367c !important;
-}
-
-.nav-item-historial.active {
-    background: var(--primary) !important;
-    color: #ffffff !important;
-    border-color: var(--primary) !important;
-}
-
-.nav-item-historial.active i {
-    color: #ffffff !important;
-}
-
-/* Content Wrapper */
+/* Density Optimization for Main Content */
 .content-wrapper {
     margin-left: 0 !important;
     background-color: var(--bg) !important;
-    padding: 1rem !important;
+    padding: 10px !important; /* Balanced padding */
 }
 
 .container-fluid {
-    max-width: 1400px;
+    max-width: 1400px !important; /* Controlled width to avoid "too long" look */
+    margin: 0 auto;
 }
 
-/* Classic Cards */
+/* Classic Solid Cards */
 .card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-    transition: var(--transition);
-    overflow: hidden;
-    margin-bottom: 2rem;
+    box-shadow: none; /* Flat classic look */
+    margin-bottom: 8px; /* Tight vertical flow */
 }
 
 .card:hover {
-    box-shadow: 0 4px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+    box-shadow: 0 0 4px rgba(0,0,0,0.1);
 }
 
 .card-header {
-    background: #ffffff !important; /* Pure white header */
+    background: #f8fafc !important;
     border-bottom: 1px solid var(--border);
-    padding: 0.75rem 1.25rem;
+    padding: 4px 10px !important;
+    min-height: 28px;
 }
 
 .card-title {
-    color: var(--primary);
-    font-weight: 700 !important;
-    font-size: 1.2rem !important;
+    color: var(--text) !important;
+    font-weight: 800 !important;
+    font-size: 13px !important;
+    margin-bottom: 0;
 }
 
-/* Buttons - Classic Accessibility */
-.nav-link-item {
-    font-size: 0.85rem !important;
-    font-weight: 700 !important;
-    padding: 0.35rem 0.9rem !important;
-}
-
-.btn {
-    font-weight: 700 !important;
-    border-radius: 4px !important;
-    padding: 0.3rem 0.8rem !important;
-    font-size: 0.85rem !important;
-    text-transform: none; /* Keep natural case for readability */
-}
-
-/* Extra small buttons for tables */
-.btn-sm, .btn-xs {
-    padding: 0.15rem 0.5rem !important;
-    font-size: 0.75rem !important;
-}
-
-.btn-primary {
-    background-color: var(--primary) !important;
-    border: 1px solid var(--primary) !important;
-    box-shadow: none !important;
-}
-
-.btn-primary:hover {
-    background-color: #1a367c !important;
-    transform: translateY(-1px);
-}
-
-.btn-success {
-    background-color: #15803d !important; /* Stronger Green */
-    border-color: #15803d !important;
-}
-
-.btn-info {
-    background-color: #0369a1 !important; /* Stronger Blue-Cyan */
-    border-color: #0369a1 !important;
-}
-
-.btn-warning {
-    background-color: #d97706 !important; /* Stronger Amber */
-    border-color: #d97706 !important;
-    color: #fff !important;
-}
-
-/* Tables - Excel-like grid styling */
+/* Ultra-Compact Tables */
 .table {
-    border-collapse: collapse;
-    border: 1px solid var(--border) !important;
+    width: auto !important; /* Don't force stretch if not needed */
+    min-width: 100% !important;
+    table-layout: auto !important; /* Allow columns to shrink to content */
+    margin-bottom: 0px !important;
 }
 
 .table thead th {
-    background-color: var(--surface-light);
+    background-color: #f1f5f9;
     color: var(--text);
     font-weight: 800;
     border: 1px solid var(--border) !important;
-    padding: 0.25rem 0.5rem !important;
-    font-size: 0.8rem !important;
+    padding: 4px 6px !important; /* Slightly more padding for arrows */
+    font-size: 12px !important;
+    white-space: nowrap;
+    position: relative;
+}
+
+/* Fix DataTables sorting arrows in compact mode */
+table.dataTable thead .sorting:before,
+table.dataTable thead .sorting:after,
+table.dataTable thead .sorting_asc:before,
+table.dataTable thead .sorting_asc:after,
+table.dataTable thead .sorting_desc:before,
+table.dataTable thead .sorting_desc:after {
+    bottom: 2px !important;
+    font-size: 0.7rem !important;
 }
 
 .table td {
     vertical-align: middle !important;
-    font-weight: 500;
     border: 1px solid var(--border) !important;
-    padding: 0.25rem 0.5rem !important;
-    font-size: 0.8rem !important;
+    padding: 2px 6px !important;
+    font-size: 13px !important;
+    white-space: nowrap; /* Avoid unnecessary wrapping */
 }
 
-.list-group-item {
-    padding: 0.3rem 0.75rem !important;
-    font-size: 0.85rem !important;
+/* Force narrow columns for status and actions */
+.table td.min-width, .table th.min-width {
+    width: 1% !important;
+    white-space: nowrap;
 }
 
-.card-body {
-    padding: 0.75rem 1rem !important;
-}
-
-.dataTables_info, .dataTables_paginate {
-    font-size: 0.75rem !important;
-}
-
-/* Modal Premium Improvements */
-
-.modal-content {
-    border: none !important;
-    border-radius: 12px !important;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
-    border-top: 5px solid var(--primary) !important;
-}
-
-.modal-header {
-    background: var(--surface-light);
-    border-bottom: 1px solid var(--border);
-    padding: 0.75rem 1.25rem !important;
-    border-radius: 12px 12px 0 0 !important;
-}
-
-.modal-title {
-    font-weight: 800;
-    color: var(--primary);
-    font-size: 1.1rem;
-}
-
-.modal-body {
-    padding: 1.5rem !important;
-}
-
-/* Ensure modal is centered and doesn't touch the top */
-.modal-dialog {
-    margin-top: 5vh !important;
-}
-
-/* Footer */
-.main-footer {
-    margin-left: 0 !important;
-    background: #ffffff !important;
-    border-top: 1px solid var(--border) !important;
-    padding: 1.5rem !important;
-    color: var(--text-muted);
-}
-
-/* Animations */
-.content-wrapper > section {
-    animation: fadeIn 0.4s ease-out forwards;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-/* --- CORPORATE FORMS AESTHETIC --- */
-/* Rigid grid layout matching reference: sleek uppercase labels, crisp input heights, tight grouping */
+/* Precise Form Sizing */
 .form-group {
-    margin-bottom: 0.8rem !important;
+    margin-bottom: 4px !important;
 }
 
 .form-group label {
-    margin-bottom: 0.15rem;
-    font-size: 0.75rem; /* Smaller label font */
-    font-weight: 700;
-    text-transform: uppercase; /* Uppercase like the reference */
-    letter-spacing: 0.5px;
-    color: var(--primary);
+    margin-bottom: 1px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #475569;
 }
 
 .form-control, .custom-select {
-    padding: 0.375rem 0.75rem !important;
-    height: 38px !important;  /* Standard comfortable height like the reference */
-    font-size: 0.9rem !important;
-    border-radius: 3px; /* Crisper edges */
-    border: 1px solid #ced4da;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+    padding: 2px 6px !important;
+    height: 28px !important;  /* Very compact input */
+    font-size: 12px !important;
+    border-radius: 2px;
+    border: 1px solid var(--border);
 }
 
-.form-control:focus, .custom-select:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 0.2rem rgba(30, 64, 175, 0.15);
+/* Compact Buttons */
+.btn {
+    font-weight: 800 !important;
+    padding: 2px 8px !important;
+    font-size: 11px !important;
+    border-radius: 2px !important;
 }
 
-/* Fix spacing inside tightly packed Rows */
-.form-row {
-    margin-bottom: 0px !important;
+.btn-sm {
+    padding: 1px 5px !important;
+    font-size: 10px !important;
 }
 
-.form-check {
-    margin-bottom: 0.3rem; 
-}
-.form-check > label {
-    font-size: 0.85rem;
-    text-transform: none; /* Keep checkboxes normal */
-    letter-spacing: normal;
+/* Modal Density */
+.modal-body {
+    padding: 8px !important;
 }
 
+.modal-header {
+    padding: 6px 12px !important;
+}
 
+/* Force reduction of generic AdminLTE padding */
+.card-body {
+    padding: 6px !important;
+}
 
+.p-3, .p-4 {
+    padding: 6px !important;
+}
 
-
+.mb-3, .mb-4 {
+    margin-bottom: 6px !important;
+}

@@ -60,7 +60,7 @@ def create_default_commands():
 @login_required()
 def view_command_list(request):
     if not UserAcl.objects.filter(user=request.user, user_level__gte=20).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     command_list = Command.objects.all().order_by('name')
     if not command_list:
         create_default_commands()
@@ -69,7 +69,7 @@ def view_command_list(request):
 
     context = {
         'command_list': command_list,
-        'page_title': 'Fleet Commander',
+        'page_title': 'Comandos de Flota',
     }
     return render(request, 'fleet_commander/command_list.html', context)
 
@@ -77,7 +77,7 @@ def view_command_list(request):
 @login_required()
 def view_command_details(request):
     if not UserAcl.objects.filter(user=request.user, user_level__gte=20).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     command = get_object_or_404(Command, uuid=request.GET.get('uuid'))
     context = {
         'command': command,
@@ -91,7 +91,7 @@ def view_command_details(request):
 @login_required()
 def view_manage_command(request):
     if not UserAcl.objects.filter(user=request.user, user_level__gte=40).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     if request.GET.get('uuid'):
         command = get_object_or_404(Command, uuid=request.GET.get('uuid'))
@@ -144,7 +144,7 @@ def view_manage_command(request):
 
     context = {
         'form': form,
-        'page_title': 'Manage Command',
+        'page_title': 'Gestionar Comando',
         'instance': command,
         'form_description': {
             'size': '',
@@ -157,7 +157,7 @@ def view_manage_command(request):
 @login_required()
 def view_execute_command(request):
     if not UserAcl.objects.filter(user=request.user, user_level__gte=40).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     command = get_object_or_404(Command, uuid=request.GET.get('command_uuid'), enabled=True)
     if not command.can_execute:
@@ -185,7 +185,7 @@ def view_execute_command(request):
 
     context = {
         'form': form,
-        'page_title': f'Execute Command: {command.name}',
+        'page_title': f'Ejecutar Comando: {command.name}',
         'command': command,
     }
     return render(request, 'generic_form.html', context)
@@ -194,7 +194,7 @@ def view_execute_command(request):
 @login_required()
 def view_run_command_multiple(request):
     if not UserAcl.objects.filter(user=request.user, user_level__gte=40).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     if request.method == 'POST':
         router_uuids = request.POST.getlist('router_uuids')
@@ -245,7 +245,7 @@ def view_run_command_multiple(request):
     context = {
         'routers': routers,
         'commands': commands,
-        'page_title': 'Run Command on Multiple Routers',
+        'page_title': 'Ejecutar Comando en Múltiples Equipos',
     }
 
     return render(request, 'fleet_commander/run_command_multiple.html', context)
@@ -254,7 +254,7 @@ def view_run_command_multiple(request):
 @login_required()
 def view_manage_command_variant(request):
     if not UserAcl.objects.filter(user=request.user, user_level__gte=40).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     if request.GET.get('uuid'):
         variant = get_object_or_404(CommandVariant, uuid=request.GET.get('uuid'))
@@ -278,7 +278,7 @@ def view_manage_command_variant(request):
 
     context = {
         'form': form,
-        'page_title': 'Manage Variant',
+        'page_title': 'Gestionar Variante',
         'instance': variant,
     }
     return render(request, 'generic_form.html', context)
@@ -287,7 +287,7 @@ def view_manage_command_variant(request):
 @login_required()
 def view_manage_command_schedule(request):
     if not UserAcl.objects.filter(user=request.user, user_level__gte=40).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     if request.GET.get('uuid'):
         schedule = get_object_or_404(CommandSchedule, uuid=request.GET.get('uuid'))
@@ -332,7 +332,7 @@ def view_manage_command_schedule(request):
 
     context = {
         'form': form,
-        'page_title': 'Manage Schedule',
+        'page_title': 'Gestionar Programación',
         'instance': schedule,
         'form_description': {
             'size': '',
@@ -345,10 +345,10 @@ def view_manage_command_schedule(request):
 @login_required()
 def view_job_list(request):
     if not UserAcl.objects.filter(user=request.user, user_level__gte=20).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     context = {
         'job_list': CommandJob.objects.all().select_related('command').order_by('-created'),
-        'page_title': 'Job History',
+        'page_title': 'Historial de Trabajos',
     }
     return render(request, 'fleet_commander/job_list.html', context)
 
@@ -356,7 +356,7 @@ def view_job_list(request):
 @login_required()
 def view_job_details(request):
     if not UserAcl.objects.filter(user=request.user, user_level__gte=20).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     job = get_object_or_404(CommandJob, uuid=request.GET.get('uuid'))
     context = {
         'job': job,

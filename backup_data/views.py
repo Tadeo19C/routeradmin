@@ -1,6 +1,8 @@
 import time
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import JsonResponse
 from django.utils import timezone
@@ -238,36 +240,57 @@ def view_cron_create_backup_tasks(request):
     return JsonResponse(data)
 
 
+def wrap_perform_backup(backup_id):
+    """
+    Wrapper to handle task locking and execution in a separate thread.
+    We fetch the object again to avoid threading issues with Django models.
+    """
+    from backup_data.models import RouterBackup
+    from routerlib.backup_functions import perform_backup
+    try:
+        backup = RouterBackup.objects.get(id=backup_id)
+        backup.task_lock = timezone.now()
+        backup.save(update_fields=["task_lock"])
+        
+        perform_backup(backup)
+        
+        backup.task_lock = None
+        backup.save(update_fields=["task_lock"])
+        return True
+    except Exception:
+        return False
+
 def view_cron_perform_backup_tasks(request):
-    data = {
-        'backup_tasks_performed': 0
-    }
+    data = {'backup_tasks_performed': 0}
     max_execution_time = 45  # seconds
     execution_start_time = timezone.now()
-    pending_backup_list = RouterBackup.objects.filter(success=False, error=False, task_lock__isnull=True).filter(
+    
+    # Get list of pending backups
+    pending_backup_list = RouterBackup.objects.filter(
+        success=False, error=False, task_lock__isnull=True
+    ).filter(
         Q(schedule_time__lte=timezone.now(), next_retry__isnull=True) | Q(next_retry__lte=timezone.now())
     ).filter(
         Q(router__monitoring=False) | Q(router__monitoring=True, router__routerstatus__status_online=True)
-    )
+    ).values_list('id', flat=True)[:50] # Limit chunk size for stability
 
-    for backup in pending_backup_list:
-        backup.task_lock = timezone.now()
-        backup.save(update_fields=["task_lock"])
-        perform_backup(backup)
-        data['backup_tasks_performed'] += 1
-        backup.task_lock = None
-        backup.save(update_fields=["task_lock"])
+    if not pending_backup_list:
+        return JsonResponse(data)
 
-        if backup.router.backup_profile.backup_interval >= 60:
-            break
-        else:
-            if timezone.now() - execution_start_time > timedelta(seconds=max_execution_time):
+    # Execute up to 10 backups in parallel
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_backup = {executor.submit(wrap_perform_backup, b_id): b_id for b_id in pending_backup_list}
+        
+        for future in as_completed(future_to_backup, timeout=max_execution_time + 5):
+            try:
+                if future.result():
+                    data['backup_tasks_performed'] += 1
+            except Exception:
+                pass
+            
+            # Check if we should stop to prevent request timeout
+            if (timezone.now() - execution_start_time).total_seconds() > max_execution_time:
                 break
-            else:
-                if backup.router.backup_profile.backup_interval > 0:
-                    time.sleep(backup.router.backup_profile.backup_interval)
-                if timezone.now() - execution_start_time > timedelta(seconds=max_execution_time):
-                    break
 
     return JsonResponse(data)
 
@@ -334,4 +357,54 @@ def view_cron_housekeeping(request):
     data['messages_removed'] = expired_messages.count()
     expired_messages.delete()
 
+    return JsonResponse(data)
+
+
+@login_required()
+def view_cron_system_self_backup(request):
+    """
+    CRON task to backup the MEGACOM system database itself.
+    Usually triggered once a day.
+    """
+    import os
+    import shutil
+    from django.conf import settings
+    
+    db_path = settings.DATABASES['default']['NAME']
+    backup_dir = os.path.join(settings.MEDIA_ROOT, 'backups', 'system_db')
+    
+    if not os.path.exists(backup_dir):
+        os.makedirs(backup_dir, exist_ok=True)
+        
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M')
+    backup_filename = f"db_megacom_{timestamp}.sqlite3"
+    backup_path = os.path.join(backup_dir, backup_filename)
+    
+    data = {
+        'status': 'success',
+        'backup_created': False,
+        'filename': backup_filename,
+        'rotation_count': 0
+    }
+    
+    try:
+        # Perform the copy
+        shutil.copy2(db_path, backup_path)
+        data['backup_created'] = True
+        
+        # Rotation: Keep last 30 backups
+        all_backups = sorted([
+            f for f in os.listdir(backup_dir) 
+            if f.startswith('db_megacom_') and f.endswith('.sqlite3')
+        ], reverse=True)
+        
+        if len(all_backups) > 30:
+            for old_backup in all_backups[30:]:
+                os.remove(os.path.join(backup_dir, old_backup))
+                data['rotation_count'] += 1
+                
+    except Exception as e:
+        data['status'] = 'error'
+        data['message'] = str(e)
+        
     return JsonResponse(data)

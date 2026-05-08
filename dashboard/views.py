@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseBadRequest, JsonResponse
@@ -80,6 +80,37 @@ def get_directory_statistics(directory_path):
     return result
 
 
+def get_system_db_backup_stats(media_root):
+    """
+    Retrieves the date of the last system database backup and the count of backups.
+    """
+    backup_dir = os.path.join(media_root, 'backups', 'system_db')
+    if not os.path.exists(backup_dir):
+        return {'last_backup': 'Nunca', 'count': 0}
+    
+    backups = sorted([
+        f for f in os.listdir(backup_dir) 
+        if f.startswith('db_megacom_') and f.endswith('.sqlite3')
+    ], reverse=True)
+    
+    if not backups:
+        return {'last_backup': 'Nunca', 'count': 0}
+    
+    last_backup_file = backups[0]
+    # Extract timestamp from db_megacom_YYYYMMDD_HHMM.sqlite3
+    try:
+        ts_part = last_backup_file.replace('db_megacom_', '').replace('.sqlite3', '')
+        dt = datetime.strptime(ts_part, '%Y%m%d_%H%M')
+        last_backup_str = dt.strftime('%d/%m/%Y %H:%M')
+    except:
+        last_backup_str = "Desconocido"
+        
+    return {
+        'last_backup': last_backup_str,
+        'count': len(backups)
+    }
+
+
 @login_required
 def view_dashboard(request):
     context = {'page_title': 'Bienvenido'}
@@ -98,6 +129,7 @@ def view_status(request):
         'total_router_count':Router.objects.all().count(),
         'router_enabled_count': Router.objects.filter(enabled=True).count(),
         'router_disabled_count': Router.objects.filter(enabled=False).count(),
+        'system_db_stats': get_system_db_backup_stats(settings.MEDIA_ROOT),
         'router_online_count': RouterStatus.objects.filter(status_online=True, router__monitoring=True).count(),
         'router_offline_count': RouterStatus.objects.filter(status_online=False, router__monitoring=True).count(),
         'router_not_monitored_count': Router.objects.filter(enabled=True, monitoring=False).count(),
@@ -192,26 +224,20 @@ def router_status_data(request):
         day_start = dates[i]
         day_end = dates[i + 1]
 
-        # Get statuses that changed within the current day
+        # 1. Count status changes THAT OCCURRED during this day
         daily_statuses = router_statuses.filter(last_status_change__gte=day_start, last_status_change__lt=day_end)
-        
-        online_count = daily_statuses.filter(status_online=True).count()
-        offline_count = daily_statuses.filter(status_online=False).count()
+        online_changes = daily_statuses.filter(status_online=True).count()
+        offline_changes = daily_statuses.filter(status_online=False).count()
 
-        # Get routers that have not changed status on the current day
+        # 2. Count routers that REMAINED in their status since before this day
+        # We exclude those that changed during the day to avoid double counting
         unchanged_routers = router_statuses.exclude(last_status_change__gte=day_start, last_status_change__lt=day_end)
+        
+        online_stable = unchanged_routers.filter(last_status_change__lt=day_start, status_online=True).count()
+        offline_stable = unchanged_routers.filter(last_status_change__lt=day_start, status_online=False).count()
 
-        for router_status in unchanged_routers:
-            last_change = router_status.last_status_change
-            # Only perform the comparison if last_change is not None
-            if last_change and last_change < day_start:
-                if router_status.status_online:
-                    online_count += 1
-                else:
-                    offline_count += 1
-
-        online_data.append(online_count)
-        offline_data.append(offline_count)
+        online_data.append(online_changes + online_stable)
+        offline_data.append(offline_changes + offline_stable)
 
     data = {
         'dates': [date.strftime('%Y-%m-%d') for date in dates[:-1]],

@@ -215,6 +215,9 @@ def retrieve_backup(router_backup: RouterBackup):
                 rsc_content_cleaned = '\n'.join(
                     line for line in rsc_content.split('\n') if not line.strip().startswith('#'))
                 
+                if not rsc_content_cleaned.strip():
+                    return False, "Failed to execute backup: Retrieved empty configuration text."
+                
                 # Check for duplicate
                 previous_backup = RouterBackup.objects.filter(router=router, success=True).order_by('-created').first()
                 if previous_backup and previous_backup.backup_text == rsc_content_cleaned:
@@ -265,6 +268,9 @@ def retrieve_backup(router_backup: RouterBackup):
             except UnicodeDecodeError:
                 text = raw_bytes.decode('latin-1', errors='replace')
                 append_task_console_output(router_backup, '[decode=latin-1 fallback]')
+
+            if not text.strip():
+                return False, "Failed to execute backup: Retrieved empty configuration text."
 
             # Check for duplicate
             previous_backup = RouterBackup.objects.filter(router=router, success=True).order_by('-created').first()
