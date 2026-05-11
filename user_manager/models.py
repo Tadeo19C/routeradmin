@@ -17,6 +17,9 @@ class UserAcl(models.Model):
     updated = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
 
+    def __str__(self):
+        return self.user.username
+
 
 class UserActionLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
