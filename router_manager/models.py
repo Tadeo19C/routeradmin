@@ -22,7 +22,7 @@ class Router(models.Model):
     connection_protocol = models.CharField(max_length=10, choices=(('ssh', 'SSH'), ('telnet', 'Telnet')), default='ssh')
     port = models.IntegerField(default=22)
     username = models.CharField(max_length=100, default='admin')
-    password = models.CharField(max_length=100, null=True, blank=True)
+    password = models.CharField(max_length=255, null=True, blank=True)
     ssh_key = models.TextField(null=True, blank=True)
     monitoring = models.BooleanField(default=True)
     backup_profile = models.ForeignKey(BackupProfile, on_delete=models.SET_NULL, null=True, blank=True)
@@ -31,6 +31,24 @@ class Router(models.Model):
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
     uuid = models.UUIDField(unique=True, editable=False, default=uuid.uuid4)
+
+    @property
+    def decrypted_password(self):
+        from routerlib.crypto import decrypt_credential
+        return decrypt_credential(self.password)
+
+    @property
+    def decrypted_ssh_key(self):
+        from routerlib.crypto import decrypt_credential
+        return decrypt_credential(self.ssh_key)
+
+    def save(self, *args, **kwargs):
+        from routerlib.crypto import encrypt_credential
+        if self.password and not str(self.password).startswith('enc::'):
+            self.password = encrypt_credential(self.password)
+        if self.ssh_key and not str(self.ssh_key).startswith('enc::'):
+            self.ssh_key = encrypt_credential(self.ssh_key)
+        super(Router, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.name

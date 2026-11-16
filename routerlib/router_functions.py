@@ -28,19 +28,40 @@ def _parse_routeros_key_value_output(output: str) -> dict:
 def get_router_information(router_information: RouterInformation):
     """
     Connect to the router, retrieve info, and store it in RouterInformation.
+    Utiliza enfoque híbrido: intenta primero la API ultrarrápida de MikroTik (8728)
+    y si no está disponible, conmuta transparentemente a SSH con timeouts estrictos.
     """
     router = router_information.router
     field_max_length = 100
     success = False
     error_message = ''
 
+    # 1. Intento por API MikroTik (Ultrarrápido: ~50ms)
+    if router.router_type in ('mikrotik', 'mikrotik-branded'):
+        try:
+            from routerlib.mikrotik_api import fetch_mikrotik_telemetry
+            telemetry = fetch_mikrotik_telemetry(router.address, 8728, router.username, router.password, timeout=2.5)
+            if telemetry.get('success'):
+                router_information.model_name = telemetry.get('board_name', '')[:field_max_length]
+                router_information.os_version = telemetry.get('version', '')[:field_max_length]
+                router_information.architecture = telemetry.get('architecture', '')[:field_max_length]
+                router_information.cpu = telemetry.get('cpu', '')[:field_max_length]
+                router_information.model_version = telemetry.get('model', '')[:field_max_length]
+                router_information.serial_number = telemetry.get('serial_number', '')[:field_max_length]
+                router_information.firmware_version = telemetry.get('current_firmware', '')[:field_max_length]
+                router_information.json_data = json.dumps(telemetry)
+                return True, ''
+        except Exception:
+            pass  # Falla silenciosamente a SSH si el puerto API está cerrado
+
+    # 2. Conexión por SSH (con reintentos y timeouts)
     try:
         ssh = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)
         json_data = {}
 
         if router.router_type in ('mikrotik', 'mikrotik-branded'):
             for cmd in ['/system resource print', '/system routerboard print']:
-                stdin, stdout, stderr = ssh.exec_command(cmd)
+                stdin, stdout, stderr = ssh.exec_command(cmd, timeout=20)
                 raw = stdout.read().decode('utf-8', errors='ignore')
                 parsed = _parse_routeros_key_value_output(raw)
                 json_data[cmd] = parsed

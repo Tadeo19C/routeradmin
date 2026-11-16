@@ -57,6 +57,8 @@ def view_manage_backup_profile(request):
         form.instance.profile_error_information = ''
         form.save()
         BackupSchedule.objects.filter(router__backup_profile=form.instance).delete()
+        from backup_data.services import service_generate_backup_schedule
+        service_generate_backup_schedule()
         messages.success(request, 'Backup Profile saved successfully')
         return redirect('backup_profile_list')
 
@@ -71,23 +73,28 @@ def view_manage_backup_profile(request):
 @login_required()
 def view_backup_list(request):
     backup_list = RouterBackup.objects.all().order_by('-created')
+    filter_mode = request.GET.get('filter')
+    
     if request.GET.get('type') == 'queue':
         backup_list = backup_list.filter(error=False, success=False).order_by('next_retry')
         view_type = 'queue'
     elif request.GET.get('type') == 'errors' or request.GET.get('status') == 'error':
         backup_list = backup_list.filter(error=True).order_by('-created')
         view_type = 'errors'
-    elif request.GET.get('status') == 'success':
-        backup_list = backup_list.filter(success=True).order_by('-created')
-        view_type = 'success'
-    else:
+    elif filter_mode == 'changes':
+        # Mostrar únicamente respaldos donde hubo cambio respecto al previo
         backup_list = backup_list.filter(success=True, identical_to_previous=False).order_by('-created')
-        view_type = 'success'
+        view_type = 'changes'
+    else:
+        # Por defecto mostrar TODOS los respaldos exitosos (incluyendo idénticos) para auditoría completa
+        backup_list = backup_list.filter(success=True).order_by('-created')
+        view_type = 'all'
 
     context = {
         'backup_list': backup_list,
         'page_title': 'Lista de Respaldos',
-        'view_type': view_type
+        'view_type': view_type,
+        'filter_mode': filter_mode
     }
     return render(request, 'backup/backup_list.html', context)
 
@@ -153,28 +160,88 @@ def normalize_text(text):
 def view_compare_backups(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=20).exists():
         return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
+    
     backup1 = get_object_or_404(RouterBackup, uuid=request.GET.get('uuid'))
-    backup2 = get_object_or_404(RouterBackup, uuid=request.GET.get('compare_uuid'))
-    if request.GET.get('display') == 'all':
-        show_lines = 100000
-        show_all = True
-    else:
-        show_lines = 3
-        show_all = False
+    compare_uuid = request.GET.get('compare_uuid')
+    target_rev = request.GET.get('target_rev')
 
-    diff = difflib.unified_diff(normalize_text(backup1.backup_text).splitlines(keepends=True),
-                                normalize_text(backup2.backup_text).splitlines(keepends=True),
-                                fromfile=f"Folio #{backup1.id} ({backup1.finish_time.strftime('%d/%m/%Y %H:%M') if backup1.finish_time else 'Pendiente' })",
-                                tofile=f"Folio #{backup2.id} ({backup2.finish_time.strftime('%d/%m/%Y %H:%M') if backup2.finish_time else 'Pendiente' })",
-                                lineterm='', n=show_lines)
+    if target_rev and target_rev.isdigit():
+        target_b = RouterBackup.objects.filter(router=backup1.router, id=int(target_rev)).first()
+        if target_b:
+            backup2 = target_b
+        else:
+            backup2 = backup1
+    elif not compare_uuid:
+        previous = RouterBackup.objects.filter(
+            router=backup1.router, success=True, created__lt=backup1.created, backup_text__isnull=False
+        ).exclude(backup_text='').order_by('-created').first()
+        if previous:
+            backup2 = backup1
+            backup1 = previous
+        else:
+            backup2 = backup1
+    else:
+        backup2 = get_object_or_404(RouterBackup, uuid=compare_uuid)
+
+    # Asegurar que el más antiguo quede a la izquierda (backup1) y el más nuevo a la derecha (backup2)
+    if backup1.created > backup2.created:
+        backup1, backup2 = backup2, backup1
+
+    router = backup1.router
+    show_all = request.GET.get('display') == 'all'
+    ignore_ws = request.GET.get('ignore_ws') == '1'
+    show_lines = 100000 if show_all else 3
+
+    # Normalización inteligente de configuración
+    from routerlib.config_normalizer import normalize_config
+    text1_norm = normalize_config(backup1.backup_text or '', router.router_type)
+    text2_norm = normalize_config(backup2.backup_text or '', router.router_type)
+
+    if ignore_ws:
+        import re
+        lines1 = [re.sub(r'\s+', ' ', line.strip()) + '\n' for line in text1_norm.splitlines()]
+        lines2 = [re.sub(r'\s+', ' ', line.strip()) + '\n' for line in text2_norm.splitlines()]
+    else:
+        lines1 = [line + '\n' for line in text1_norm.splitlines()]
+        lines2 = [line + '\n' for line in text2_norm.splitlines()]
+
+    fromfile_label = f"Rev #{backup1.id} ({backup1.created.strftime('%d/%m/%Y %H:%M')})"
+    tofile_label = f"Rev #{backup2.id} ({backup2.created.strftime('%d/%m/%Y %H:%M')})"
+
+    diff = difflib.unified_diff(
+        lines1,
+        lines2,
+        fromfile=fromfile_label,
+        tofile=tofile_label,
+        lineterm='',
+        n=show_lines
+    )
     diff_str = '\n'.join(list(diff))
+
+    # Obtener listado de revisiones para el navegador temporal y menú rápido
+    all_backups = RouterBackup.objects.filter(
+        router=router, success=True, backup_text__isnull=False
+    ).exclude(backup_text='').order_by('-created')
+
+    prev_backup = all_backups.filter(created__lt=backup1.created).first()
+    next_backup = all_backups.filter(created__gt=backup2.created).order_by('created').first()
+    latest_backup = all_backups.first()
+
+    primary_group = router.routergroup_set.first()
 
     context = {
         'backup1': backup1,
         'backup2': backup2,
+        'router': router,
+        'primary_group': primary_group,
         'diff_str': diff_str,
-        'page_title': 'Compare Backups',
-        'show_all': show_all
+        'page_title': f'Comparar: {router.name} (Rev #{backup1.id} ➔ #{backup2.id})',
+        'show_all': show_all,
+        'ignore_ws': ignore_ws,
+        'all_backups': all_backups[:35],
+        'prev_backup': prev_backup,
+        'next_backup': next_backup,
+        'latest_backup': latest_backup,
     }
 
     return render(request, 'backup/compare_backups.html', context)

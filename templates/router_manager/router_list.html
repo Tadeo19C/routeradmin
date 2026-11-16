@@ -105,9 +105,9 @@
                                         <td data-column="status" id="status-{{ router.uuid }}">
                                             {% if router.monitoring %}
                                                 {% if router.routerstatus.status_online %}
-                                                    <span style="display: none">online</span><i class="far fa-check-circle text-success" title="Host is Online"></i>
+                                                    <span style="display: none">online</span><span class="badge-pill-soft success" title="Host is Online"><span class="status-dot online"></span>En Línea</span>
                                                 {% else %}
-                                                    <span style="display: none">offline</span><i class="far fa-times-circle text-danger" title="Host is unavailable"></i>
+                                                    <span style="display: none">offline</span><span class="badge-pill-soft danger" title="Host is unavailable"><span class="status-dot offline"></span>Desconectado</span>
                                                 {% endif %}
                                             {% else %}
                                                 ---
@@ -334,8 +334,8 @@
         }
 
         var group_uuid = "{{ filter_group.uuid|default_if_none:'' }}";
-        var status_online_text = '<span style="display: none">online</span><i class="far fa-check-circle text-success" title="Host is Online"></i>';
-        var status_offline_text = '<span style="display: none">offline</span><i class="far fa-times-circle text-danger" title="Host is unavailable"></i>';
+        var status_online_text = '<span style="display: none">online</span><span class="badge-pill-soft success" title="Host is Online"><span class="status-dot online"></span>En Línea</span>';
+        var status_offline_text = '<span style="display: none">offline</span><span class="badge-pill-soft danger" title="Host is unavailable"><span class="status-dot offline"></span>Desconectado</span>';
 
         // Column definitions for the router table
         var columnDefinitions = [

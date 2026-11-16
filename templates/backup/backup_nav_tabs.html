@@ -1,29 +1,31 @@
-<ul class="nav nav-tabs" role="tablist">
+<ul class="nav nav-tabs mb-3" role="tablist">
     <li class="nav-item">
         <a class="nav-link {% if request.path == '/backup/profile_list/' %}active{% endif %}" href="/backup/profile_list/" role="tab">
-            Perfiles de Respaldo
+            <i class="fas fa-sliders-h mr-1"></i> Perfiles de Respaldo
         </a>
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {% if view_type == 'success' %}active{% endif %}" href="/backup/backup_list/"
-           role="tab">
-            Lista de Respaldos
+        <a class="nav-link {% if view_type == 'all' %}active{% endif %}" href="/backup/backup_list/" role="tab">
+            <i class="fas fa-list mr-1"></i> Todos los Respaldos
         </a>
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {% if view_type == 'queue' %}active{% endif %}" href="/backup/backup_list/?type=queue"
-           role="tab">
-            Cola de Respaldos
+        <a class="nav-link {% if view_type == 'changes' %}active{% endif %}" href="/backup/backup_list/?filter=changes" role="tab">
+            <i class="fas fa-code-branch mr-1"></i> Solo con Cambios
         </a>
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {% if view_type == 'errors' %}active{% endif %}" href="/backup/backup_list/?type=errors"
-           role="tab">
-            Errores de Respaldo
+        <a class="nav-link {% if view_type == 'queue' %}active{% endif %}" href="/backup/backup_list/?type=queue" role="tab">
+            <i class="fas fa-hourglass-half mr-1"></i> Cola Pendiente
         </a>
     </li>
-    
+
+    <li class="nav-item">
+        <a class="nav-link {% if view_type == 'errors' %}active{% endif %}" href="/backup/backup_list/?type=errors" role="tab">
+            <i class="fas fa-exclamation-triangle mr-1 text-danger"></i> Errores
+        </a>
+    </li>
 </ul>

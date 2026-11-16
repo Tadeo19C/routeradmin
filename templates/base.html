@@ -36,6 +36,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="/static/modern_ui.css">
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('megacom_theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 
     <style>
         .dataTables_filter,
@@ -71,6 +79,9 @@
             <div class="container-fluid">
                 <!-- Brand -->
                 <a href="/" class="brand-wrapper">
+                    <div class="brand-icon-box">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
                     <span class="brand-text">MEGACOM</span>
                 </a>
 
@@ -103,23 +114,39 @@
                         </a>
                     </div>
 
-                    <!-- Right Side -->
-                    <ul class="navbar-nav ml-auto">
-                        <!-- Global Search -->
-                        <!-- Activity Logs -->
-                        <li class="nav-item">
-                            <a href="/dashboard/logs/"
-                                class="nav-link-item nav-item-historial {% if '/dashboard/logs/' in request.path %}active{% endif %}"
-                                title="Historial de Actividad Global">
-                                <i class="fas fa-history"></i> <span class="d-none d-md-inline"
-                                    style="font-weight: 800;">Historial de Cambios</span>
-                            </a>
+                    <!-- Right Side (ControladorGPON Topbar Style) -->
+                    <ul class="navbar-nav ml-auto d-flex align-items-center">
+                        <li class="nav-item mr-2">
+                            <button id="themeToggle" class="theme-toggle-btn" type="button" title="Cambiar tema">
+                                <i class="fas fa-moon" id="themeIcon"></i>
+                            </button>
                         </li>
-                        <li class="nav-item">
-                            <a href="/accounts/logout/" class="nav-link-item">
-                                <i class="fas fa-sign-out-alt"></i> Salir
+                        {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="user-avatar-btn dropdown-toggle" href="#" id="userMenuDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <div class="user-avatar-circle">
+                                    {{ user.username|slice:":2"|upper }}
+                                </div>
+                                <div class="d-none d-md-block text-left">
+                                    <div class="user-name-text">{{ user.username }}</div>
+                                    <div class="user-role-badge">Administrador</div>
+                                </div>
                             </a>
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userMenuDropdown">
+                                <div class="dropdown-item-text pb-2 mb-1 border-bottom">
+                                    <div class="font-weight-bold">{{ user.username }}</div>
+                                    <small class="text-muted">{{ user.email|default:"admin@megacom.local" }}</small>
+                                </div>
+                                <a class="dropdown-item" href="/dashboard/logs/">
+                                    <i class="fas fa-history text-muted"></i> Historial de Cambios
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item text-danger" href="/accounts/logout/">
+                                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                                </a>
+                            </div>
                         </li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
@@ -386,6 +413,34 @@
 
     {% block page_modals %}
     {% endblock %}
+
+    <script>
+        $(document).ready(function() {
+            function updateThemeIcon(isDark) {
+                if (isDark) {
+                    $('#themeIcon').removeClass('fa-moon').addClass('fa-sun');
+                } else {
+                    $('#themeIcon').removeClass('fa-sun').addClass('fa-moon');
+                }
+            }
+
+            var currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            updateThemeIcon(currentTheme === 'dark');
+
+            $('#themeToggle').on('click', function() {
+                var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                var nextTheme = isDark ? 'light' : 'dark';
+                if (nextTheme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
+                }
+                localStorage.setItem('megacom_theme', nextTheme);
+                updateThemeIcon(nextTheme === 'dark');
+            });
+        });
+    </script>
+
 </body>
 
 </html>

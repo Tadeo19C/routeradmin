@@ -219,6 +219,8 @@ def view_manage_router(request):
     form = RouterForm(request.POST or None, instance=router)
     if form.is_valid():
         saved_router = form.save()
+        from backup_data.services import service_generate_backup_schedule
+        service_generate_backup_schedule()
         
         # Log the activity
         action = "Equipo Editado" if uuid else "Equipo Creado"
@@ -550,3 +552,30 @@ def view_ajax_test_connection(request):
         return JsonResponse({'status': 'success', 'message': '¡Conexión exitosa!'})
     else:
         return JsonResponse({'status': 'error', 'message': f'Error de conexión: {message}'})
+
+
+@login_required()
+def view_ajax_router_telemetry(request):
+    """
+    Endpoint AJAX para obtener telemetría en tiempo real (CPU, RAM, Uptime)
+    utilizando la API ultrarrápida de MikroTik cuando esté disponible.
+    """
+    router_uuid = request.GET.get('uuid') or request.POST.get('uuid')
+    if not router_uuid:
+        return JsonResponse({'status': 'error', 'message': 'UUID no proporcionado'}, status=400)
+    
+    router = get_object_or_404(Router, uuid=router_uuid)
+    
+    if router.router_type in ('mikrotik', 'mikrotik-branded'):
+        from routerlib.mikrotik_api import fetch_mikrotik_telemetry
+        telemetry = fetch_mikrotik_telemetry(router.address, 8728, router.username, router.password, timeout=3.0)
+        if telemetry.get('success'):
+            return JsonResponse({'status': 'success', 'telemetry': telemetry})
+        else:
+            return JsonResponse({
+                'status': 'partial',
+                'message': f'API MikroTik no disponible ({telemetry.get("error")}). El monitoreo continúa por SSH.',
+                'telemetry': None
+            })
+    
+    return JsonResponse({'status': 'unsupported', 'message': 'Telemetría por API solo soportada en MikroTik'})

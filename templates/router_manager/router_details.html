@@ -56,7 +56,7 @@
                                                             {% if router.ssh_key %}
                                                                 <i class="fas fa-key"></i> SSH Key: {{ router.ssh_key }}
                                                             {% elif router.password %}
-                                                                <span class="password-text" style="display:none">{{ router.password }}</span>
+                                                                <span class="password-text" style="display:none">{{ router.decrypted_password }}</span>
                                                                 <span class="password-masked">********</span>
                                                                 <button class="btn btn-xs btn-link p-0 ml-1 toggle-detail-password" type="button">
                                                                     <i class="fas fa-eye"></i>

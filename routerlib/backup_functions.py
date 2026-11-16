@@ -41,15 +41,20 @@ def run_scp_get(scp_client: SCPClient, remote_path: str, local_path: str, router
         raise
 
 
-def run_ssh_command(ssh_client, command: str, router_backup: Optional["RouterBackup"] = None, *, skip_stdout: bool = False,) -> Tuple[int, str, str]:
+def run_ssh_command(ssh_client, command: str, router_backup: Optional["RouterBackup"] = None, *, skip_stdout: bool = False, timeout: int = 60) -> Tuple[int, str, str]:
     # 1) Log command BEFORE executing, and persist it (so it survives failures)
     if router_backup is not None:
         if router_backup.task_console_output is None:
             router_backup.task_console_output = ""
         append_task_console_output(router_backup, f"$ {command}\n")
 
-    # 2) Execute
-    stdin, stdout, stderr = ssh_client.exec_command(command)
+    # 2) Execute with explicit timeout
+    stdin, stdout, stderr = ssh_client.exec_command(command, timeout=timeout)
+    try:
+        stdout.channel.settimeout(timeout)
+        stderr.channel.settimeout(timeout)
+    except Exception:
+        pass
 
     # 3) Wait and collect outputs
     exit_code = stdout.channel.recv_exit_status()
@@ -241,11 +246,16 @@ def retrieve_backup(router_backup: RouterBackup):
                 if not rsc_content_cleaned.strip():
                     return False, "Failed to execute backup: Retrieved empty configuration text."
                 
-                # Check for duplicate
+                from routerlib.config_normalizer import normalize_config
+                norm_current = normalize_config(rsc_content_cleaned, router.router_type)
+                
+                # Check for duplicate using normalized configuration (prevents false changes from timestamps)
                 previous_backup = RouterBackup.objects.filter(router=router, success=True).order_by('-created').first()
-                if previous_backup and previous_backup.backup_text == rsc_content_cleaned:
-                    router_backup.identical_to_previous = True
-                    append_task_console_output(router_backup, '[Deduplication] Configuration matches previous backup exactly.')
+                if previous_backup and previous_backup.backup_text:
+                    norm_prev = normalize_config(previous_backup.backup_text, router.router_type)
+                    if norm_prev == norm_current:
+                        router_backup.identical_to_previous = True
+                        append_task_console_output(router_backup, '[Deduplication] Configuration matches previous backup (normalized).')
 
                 router_backup.backup_text = rsc_content_cleaned
                 router_backup.backup_text_filename = f'{backup_name}.{file_extension["text"]}'

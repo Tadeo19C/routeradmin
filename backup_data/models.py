@@ -32,8 +32,10 @@ class RouterBackup(models.Model):
 
     def save(self, *args, **kwargs):
         if self.backup_text:
-            self.backup_text_hash = hashlib.sha256(self.backup_text.encode('utf-8')).hexdigest()
+            from routerlib.config_normalizer import normalize_config
+            r_type = getattr(self.router, 'router_type', '') if hasattr(self, 'router') and self.router else ''
+            normalized = normalize_config(self.backup_text, r_type)
+            self.backup_text_hash = hashlib.sha256(normalized.encode('utf-8')).hexdigest()
         else:
             self.backup_text_hash = ''
         super(RouterBackup, self).save(*args, **kwargs)
-

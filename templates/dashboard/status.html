@@ -3,36 +3,15 @@
 {% block content %}
 <style>
     .info-box {
-        transition: transform 0.2s;
-        min-height: 60px; /* Reduced from 80px */
-        padding: 0.25rem 0.5rem; /* Tighter padding */
-        max-width: 260px; /* Force it to be "less long" */
-        margin-left: auto;
-        margin-right: auto;
+        margin-bottom: 12px;
     }
-
-    .info-box:hover {
-        transform: scale(1.02);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .info-box-icon {
-        width: 45px; /* Reduced from 60px */
-        font-size: 1.2rem; /* Reduced from 1.5rem */
-    }
-
-    .info-box-content {
-        padding: 0 8px;
-    }
-
-    .info-box-text {
-        font-size: 0.8rem; /* Scaled down */
-        margin-bottom: 0px;
-    }
-
-    .info-box-number {
-        font-size: 1rem; /* Scaled down */
+    .section-title {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
         font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: 16px;
     }
 </style>
 <div class="row">
@@ -48,99 +27,125 @@
             </div>
             {% endif %}
             <div class="card-body">
-                <!-- Group 1: Red y Estado de Equipos -->
-                <h5 class="mb-3 text-muted text-center"><i class="fas fa-network-wired"></i> Estado de la Red</h5>
+                <!-- Group 1: Red y Estado de Equipos (ControladorGPON KPICard Layout) -->
+                <h6 class="section-title text-center"><i class="fas fa-network-wired mr-1"></i> Estado de la Red</h6>
                 <div class="row mb-4 justify-content-center">
                     <!-- Total Routers -->
-                    <div class="col-lg-3 col-md-4">
-                        <a href="{% url 'router_list' %}" class="text-decoration-none">
-                            <div class="info-box bg-primary elevation-2">
-                                <span class="info-box-icon"><i class="fas fa-server"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Total de equipos</span>
-                                    <span class="info-box-number" id="stats-routers-total">{{ total_router_count }}</span>
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <a href="{% url 'router_list' %}" class="kpi-card color-blue">
+                            <div>
+                                <div class="kpi-card-title">
+                                    <i class="fas fa-server"></i> Total de Equipos
                                 </div>
+                                <div class="kpi-card-value-row">
+                                    <span class="kpi-card-value" id="stats-routers-total">{{ total_router_count }}</span>
+                                    <span class="badge-gpon badge-gpon-info">Flota</span>
+                                </div>
+                                <div class="kpi-card-subtitle">Dispositivos gestionados en MEGACOM</div>
                             </div>
+                            <div class="kpi-card-watermark"><i class="fas fa-server"></i></div>
                         </a>
                     </div>
 
                     <!-- Online Routers -->
-                    <div class="col-lg-3 col-md-4">
-                        <a href="{% url 'router_list' %}?status=online" class="text-decoration-none">
-                            <div class="info-box bg-success elevation-2">
-                                <span class="info-box-icon"><i class="fas fa-plug"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Equipos en Línea</span>
-                                    <span class="info-box-number" id="stats-routers-online">{{ router_online_count }}</span>
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <a href="{% url 'router_list' %}?status=online" class="kpi-card color-green">
+                            <div>
+                                <div class="kpi-card-title">
+                                    <span class="status-dot online mr-1"></span> Equipos en Línea
                                 </div>
+                                <div class="kpi-card-value-row">
+                                    <span class="kpi-card-value" id="stats-routers-online">{{ router_online_count }}</span>
+                                    <span class="badge-gpon badge-gpon-success">Operativos</span>
+                                </div>
+                                <div class="kpi-card-subtitle">Conectividad de red y SSH activa</div>
                             </div>
+                            <div class="kpi-card-watermark"><i class="fas fa-check-circle"></i></div>
                         </a>
                     </div>
 
                     <!-- Offline Routers -->
-                    <div class="col-lg-3 col-md-4">
-                        <a href="{% url 'router_list' %}?status=offline" class="text-decoration-none">
-                            <div class="info-box bg-danger elevation-2">
-                                <span class="info-box-icon"><i class="fas fa-power-off"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Equipos Desconectados</span>
-                                    <span class="info-box-number" id="stats-routers-offline">{{ router_offline_count }}</span>
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <a href="{% url 'router_list' %}?status=offline" class="kpi-card color-red">
+                            <div>
+                                <div class="kpi-card-title">
+                                    <span class="status-dot offline mr-1"></span> Desconectados
                                 </div>
+                                <div class="kpi-card-value-row">
+                                    <span class="kpi-card-value" id="stats-routers-offline">{{ router_offline_count }}</span>
+                                    {% if router_offline_count > 0 %}
+                                    <span class="badge-gpon badge-gpon-error">Atención</span>
+                                    {% else %}
+                                    <span class="badge-gpon badge-gpon-success">0 Alertas</span>
+                                    {% endif %}
+                                </div>
+                                <div class="kpi-card-subtitle">Sin respuesta a sondeo o timeout</div>
                             </div>
+                            <div class="kpi-card-watermark"><i class="fas fa-times-circle"></i></div>
                         </a>
                     </div>
                 </div>
 
                 <!-- Group 2: Gestión de Respaldos y Datos -->
-                <h5 class="mb-3 text-muted text-center"><i class="fas fa-database"></i> Gestión de Respaldos</h5>
+                <h6 class="section-title text-center"><i class="fas fa-database mr-1"></i> Gestión de Respaldos</h6>
                 <div class="row mb-4 justify-content-center">
                     <!-- Almacenamiento -->
-                    <div class="col-lg-3 col-md-4">
-                        <a href="{% url 'backup_list' %}" class="text-decoration-none">
-                            <div class="info-box bg-info elevation-2">
-                                <span class="info-box-icon"><i class="fas fa-hdd"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Almacenamiento (Base de Datos)</span>
-                                    <span class="info-box-number" id="stats-storage">{{ media_root_stats.used }} en uso</span>
-                                    <div class="progress">
-                                        <div class="progress-bar" style="width: {{ media_root_stats.usage_percentage }}%">
-                                        </div>
-                                    </div>
-                                    <span class="progress-description">
-                                        {{ media_root_stats.usage_percentage }}% de {{ media_root_stats.total }}
-                                    </span>
-                                    <hr class="my-1 border-light opacity-50">
-                                    <span class="info-box-text" style="font-size: 0.75rem;">
-                                        <i class="fas fa-history"></i> BD Sistema: <span id="stats-system-backup">{{ system_db_stats.last_backup }}</span>
-                                    </span>
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <a href="{% url 'backup_list' %}" class="kpi-card color-blue">
+                            <div>
+                                <div class="kpi-card-title">
+                                    <i class="fas fa-hdd"></i> Almacenamiento
+                                </div>
+                                <div class="kpi-card-value-row">
+                                    <span class="kpi-card-value" style="font-size: 22px;" id="stats-storage">{{ media_root_stats.used }}</span>
+                                    <span class="badge-gpon badge-gpon-info">{{ media_root_stats.usage_percentage }}%</span>
+                                </div>
+                                <div class="progress mt-2">
+                                    <div class="progress-bar" style="width: {{ media_root_stats.usage_percentage }}%"></div>
+                                </div>
+                                <div class="kpi-card-subtitle mt-2">
+                                    BD Sistema: <span id="stats-system-backup">{{ system_db_stats.last_backup }}</span>
                                 </div>
                             </div>
+                            <div class="kpi-card-watermark"><i class="fas fa-database"></i></div>
                         </a>
                     </div>
 
                     <!-- Successful Backups -->
-                    <div class="col-lg-3 col-md-4">
-                        <a href="{% url 'backup_list' %}?status=success" class="text-decoration-none">
-                            <div class="info-box bg-success elevation-2">
-                                <span class="info-box-icon"><i class="fas fa-check-double"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Respaldos Exitosos (24h)</span>
-                                    <span class="info-box-number" id="stats-backups-success">{{ success_backup_last_24h }}</span>
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <a href="{% url 'backup_list' %}?status=success" class="kpi-card color-green">
+                            <div>
+                                <div class="kpi-card-title">
+                                    <i class="fas fa-check-double"></i> Respaldos Exitosos (24h)
                                 </div>
+                                <div class="kpi-card-value-row">
+                                    <span class="kpi-card-value" id="stats-backups-success">{{ success_backup_last_24h }}</span>
+                                    <span class="badge-gpon badge-gpon-success">Completados</span>
+                                </div>
+                                <div class="kpi-card-subtitle">Copias sincronizadas al día</div>
                             </div>
+                            <div class="kpi-card-watermark"><i class="fas fa-check-double"></i></div>
                         </a>
                     </div>
 
                     <!-- Failed Backups -->
-                    <div class="col-lg-3 col-md-4">
-                        <a href="{% url 'backup_list' %}?status=error" class="text-decoration-none">
-                            <div class="info-box bg-danger elevation-2">
-                                <span class="info-box-icon"><i class="fas fa-exclamation-triangle"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Respaldos Fallidos (24h)</span>
-                                    <span class="info-box-number" id="stats-backups-error">{{ error_backup_last_24h }}</span>
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <a href="{% url 'backup_list' %}?status=error" class="kpi-card color-red">
+                            <div>
+                                <div class="kpi-card-title">
+                                    <i class="fas fa-exclamation-triangle"></i> Respaldos Fallidos (24h)
                                 </div>
+                                <div class="kpi-card-value-row">
+                                    <span class="kpi-card-value" id="stats-backups-error">{{ error_backup_last_24h }}</span>
+                                    {% if error_backup_last_24h > 0 %}
+                                    <span class="badge-gpon badge-gpon-error">Fallos detectados</span>
+                                    {% else %}
+                                    <span class="badge-gpon badge-gpon-success">0 Fallos</span>
+                                    {% endif %}
+                                </div>
+                                <div class="kpi-card-subtitle">Errores en ejecución o acceso</div>
                             </div>
+                            <div class="kpi-card-watermark"><i class="fas fa-times-circle"></i></div>
                         </a>
                     </div>
                 </div>
@@ -350,4 +355,4 @@
         }
         setInterval(updateStatusSummary, 10000);
     </script>
-{% endblock %}
+{% endblock %}

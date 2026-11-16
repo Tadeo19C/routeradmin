@@ -57,8 +57,12 @@ class Command(BaseCommand):
                     self.stdout.write(f'Router type {router.router_type} unsupported for drift check.')
                     continue
 
-                # 3. Compare with latest backup
-                if rsc_content_cleaned != latest_backup.backup_text:
+                from routerlib.config_normalizer import normalize_config
+                norm_current = normalize_config(rsc_content_cleaned, router.router_type)
+                norm_latest = normalize_config(latest_backup.backup_text, router.router_type)
+
+                # 3. Compare with latest backup using normalized contents
+                if norm_current != norm_latest:
                     self.stdout.write(self.style.WARNING(f'Config Drift Detected on {router.name}'))
                     # Send Proactive Alert securely to Email
                     message = f"""

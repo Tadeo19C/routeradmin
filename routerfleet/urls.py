@@ -23,7 +23,7 @@ from monitoring.views import view_export_router_list, view_update_router_status,
 from router_manager.views import view_create_instant_backup_multiple_routers, view_router_list, view_manage_router, \
     view_router_group_list, view_manage_router_group, view_router_details, \
     view_create_instant_backup_task, view_router_availability, view_cron_update_router_information, \
-    view_manage_router_groups_multiple, view_ajax_quick_create_group, view_ajax_test_connection
+    view_manage_router_groups_multiple, view_ajax_quick_create_group, view_ajax_test_connection, view_ajax_router_telemetry
 from routerfleet_tools.views import view_cron_check_updates
 from user_manager.views import view_manage_user, view_user_list
 
@@ -51,6 +51,7 @@ urlpatterns = [
     path('router/create_instant_backup/multiple/', view_create_instant_backup_multiple_routers, name='create_instant_backup_multiple'),
     path('router/manage_groups/multiple/', view_manage_router_groups_multiple, name='manage_router_groups_multiple'),
     path('router/ajax_test_connection/', view_ajax_test_connection, name='ajax_test_connection'),
+    path('router/ajax_telemetry/', view_ajax_router_telemetry, name='ajax_router_telemetry'),
     path('router/import_tool/', view_import_tool_list, name='import_tool_list'),
     path('router/import_tool/csv/', view_import_csv_file, name='import_csv_file'),
     path('router/import_tool/details/', view_import_details, name='import_details'),

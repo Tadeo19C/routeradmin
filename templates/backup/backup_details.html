@@ -217,10 +217,8 @@
                         <h3 class="card-title">Consola de Tarea</h3>
                     </div>
 
-                    <div class="card-body row">
-                        <div class="col-lg-12">
-                            <pre>{{ backup.task_console_output|default_if_none:"" }}</pre>
-                        </div>
+                    <div class="card-body p-0">
+                        <pre class="m-0 border-0" style="border-radius: 0 0 12px 12px; max-height: 400px;">{{ backup.task_console_output|default_if_none:"" }}</pre>
                     </div>
                 </div>
             {% endif %}
@@ -238,10 +236,8 @@
                     <h3 class="card-title">Respaldo de Texto</h3>
                 </div>
 
-                <div class="card-body row">
-                    <div class="col-lg-12">
-                        <pre>{{ display_text|default_if_none:"" }}</pre>
-                    </div>
+                <div class="card-body p-0">
+                    <pre class="m-0 border-0" style="border-radius: 0 0 12px 12px; max-height: 700px;">{{ display_text|default_if_none:"" }}</pre>
                 </div>
             </div>
         </div>
