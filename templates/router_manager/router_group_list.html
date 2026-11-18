@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 
-
 {% block content %}
     <div class='row'>
         <div class='col-lg-12'>
@@ -8,43 +7,76 @@
                 {% if page_title %}
                     <div class="card-header">
                         <h3 class="card-title">{{ page_title }}</h3>
+                        <span class="text-muted small">
+                            <i class="fas fa-hand-pointer text-primary mr-1"></i>
+                            Haz clic en cualquier Nodo para ver sus equipos asignados
+                        </span>
                     </div>
                 {% endif %}
                 <div class="card-body">
                     {% include 'router_manager/router_nav_tabs.html' %}
-                    <div class="row">
+                    <div class="row mt-3">
                         <div class="col-lg-12">
-                            <table class="table table-hover datatables-no-export">
+                            <table class="table table-hover">
                                 <thead>
-                                <th>Nombre</th>
-                                <th>Por Defecto</th>
-                                <th>Notas Internas</th>
-                                <th>Equipos</th>
-                                <th></th>
+                                    <tr>
+                                        <th style="width: 32px;"></th>
+                                        <th>Nombre del Nodo</th>
+                                        <th>Por Defecto</th>
+                                        <th>Notas Internas</th>
+                                        <th>Total Equipos</th>
+                                        <th class="min-width text-right">Acciones</th>
+                                    </tr>
                                 </thead>
-
                                 <tbody>
                                 {% for router_group in router_group_list %}
-                                    <tr>
-                                        <td>{{ router_group.name }}</td>
-                                        <td>{% if router_group.default_group %}<i class="fas fa-check"></i>{% endif %}
+                                    <tr style="cursor: pointer;" onclick="$('#grp-devices-{{ router_group.id }}').fadeToggle(150);">
+                                        <td class="text-center text-primary">
+                                            <i class="fas fa-chevron-down"></i>
                                         </td>
-                                        <td>{{ router_group.internal_notes }}</td>
-                                        <td>{{ router_group.routers.count }}</td>
-                                        <td class="min-width">
-                                            <a href="/router/manage_group/?uuid={{ router_group.uuid }}"><i
-                                                    class="fas fa-edit"></i></a>
+                                        <td class="font-weight-bold">
+                                            <i class="fas fa-sitemap text-primary mr-1"></i> {{ router_group.name }}
+                                        </td>
+                                        <td>{% if router_group.default_group %}<span class="badge-gpon badge-gpon-success"><i class="fas fa-check"></i> Sí</span>{% else %}---{% endif %}</td>
+                                        <td>{{ router_group.internal_notes|default:"---" }}</td>
+                                        <td>
+                                            <span class="badge-gpon badge-gpon-info">
+                                                {{ router_group.routers.count }} equipo{{ router_group.routers.count|pluralize:"s" }}
+                                            </span>
+                                        </td>
+                                        <td class="min-width text-right" onclick="event.stopPropagation();">
+                                            <a href="/router/manage_group/?uuid={{ router_group.uuid }}" class="btn btn-xs btn-outline-primary">
+                                                <i class="fas fa-edit"></i> Editar Nodo
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr id="grp-devices-{{ router_group.id }}" style="display: none;">
+                                        <td colspan="6" class="p-3 bg-light">
+                                            {% if router_group.routers.all %}
+                                                <div class="d-flex flex-wrap" style="gap: 10px;">
+                                                    {% for r in router_group.routers.all %}
+                                                        <a href="/router/details/?uuid={{ r.uuid }}" class="card mb-0 p-2 px-3 border d-inline-flex flex-row align-items-center" style="gap: 10px; text-decoration: none;">
+                                                            <span class="status-dot {% if r.routerstatus.status_online %}online{% else %}offline{% endif %}"></span>
+                                                            <div>
+                                                                <div class="font-weight-bold">{{ r.name }}</div>
+                                                                <div class="small text-muted"><code>{{ r.address }}</code> &bull; {{ r.get_router_type_display }}</div>
+                                                            </div>
+                                                        </a>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted small">Sin equipos en este nodo.</span>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                 {% endfor %}
                                 </tbody>
                             </table>
                         </div>
-
                     </div>
-                    <div class="row">
+                    <div class="row mt-3">
                         <div class="col-lg-12">
-                            <a href="/router/manage_group/" class="btn btn-primary">Añadir Nodo</a>
+                            <a href="/router/manage_group/" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir Nodo</a>
                         </div>
                     </div>
                 </div>

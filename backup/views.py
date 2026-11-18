@@ -20,6 +20,7 @@ from django.utils import timezone
 @login_required()
 def view_backup_profile_list(request):
     default_backup_profile, _ = BackupProfile.objects.get_or_create(name='default')
+    BackupProfile.objects.filter(name__startswith='Perfil Automático -', router__isnull=True).delete()
     context = {
         'backup_profile_list': BackupProfile.objects.all().order_by('name'),
         'page_title': 'Backup Profiles'

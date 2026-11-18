@@ -1,5 +1,76 @@
 {% extends 'base.html' %}
 
+{% block page_custom_head %}
+<style>
+    .node-accordion-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        margin-bottom: 8px;
+        overflow: hidden;
+        transition: var(--transition);
+        box-shadow: var(--shadow-2xs);
+    }
+    .node-accordion-card:hover {
+        border-color: rgba(59, 130, 246, 0.45);
+    }
+    .node-accordion-card.expanded {
+        border-color: var(--primary);
+        box-shadow: var(--shadow-sm);
+    }
+    .node-accordion-header {
+        padding: 8px 12px;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        background: transparent;
+        transition: background-color 0.15s ease;
+    }
+    .node-accordion-header:hover {
+        background: var(--secondary);
+    }
+    .node-accordion-card.expanded .node-accordion-header {
+        background: var(--primary-subtle);
+        border-bottom: 1px solid var(--border);
+    }
+    .node-chevron {
+        transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+        color: var(--muted-foreground);
+        font-size: 11px;
+        width: 14px;
+        text-align: center;
+    }
+    .node-accordion-card.expanded .node-chevron {
+        transform: rotate(90deg);
+        color: var(--primary);
+    }
+    .node-icon-box {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        background: var(--primary-subtle);
+        color: var(--primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+    }
+    .node-title-text {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--foreground);
+        letter-spacing: -0.011em;
+    }
+    .node-accordion-body {
+        display: none;
+        background: var(--card);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
     <div class='row'>
@@ -8,11 +79,193 @@
                 {% if page_title %}
                     <div class="card-header">
                         <h3 class="card-title">{{ page_title }}</h3>
+                        <span class="text-muted small">
+                            <i class="fas fa-hand-pointer text-primary mr-1"></i>
+                            Toca cualquier Nodo para desplegar u ocultar sus equipos
+                        </span>
                     </div>
                 {% endif %}
                 <div class="card-body">
                     {% include 'router_manager/router_nav_tabs.html' %}
-                    <div class="row">
+
+                    <!-- Barra de Control: Buscador + Expandir/Contraer + Selector de Vista -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap mt-2 mb-2" style="gap: 8px;">
+                        <div class="d-flex align-items-center flex-wrap" style="gap: 8px; flex: 1; min-width: 260px; max-width: 460px;">
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input type="text" id="node-quick-search" class="form-control"
+                                       placeholder="Buscar nodo o equipo (ej. crucero, fw, sw, rt, IP...)">
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                            <div id="accordion-controls" class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-expand-all-nodes" title="Desplegar todos los nodos">
+                                    <i class="fas fa-angle-double-down"></i> Expandir Nodos
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-collapse-all-nodes" title="Contraer todos los nodos">
+                                    <i class="fas fa-angle-double-up"></i> Contraer Nodos
+                                </button>
+                            </div>
+
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-primary btn-sm active" id="btn-view-by-nodes">
+                                    <i class="fas fa-sitemap"></i> Por Nodos
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="btn-view-flat-table">
+                                    <i class="fas fa-table"></i> Tabla General
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- =====================================================
+                         VISTA 1: AGRUPADO POR NODOS (DESPLEGABLE AL TOCAR)
+                         ===================================================== -->
+                    <div id="nodes-accordion-view">
+                        {% if grouped_nodes %}
+                            {% for node in grouped_nodes %}
+                                <div class="node-accordion-card" data-node-name="{{ node.name|lower }}">
+                                    <!-- Cabecera del Nodo (Tocar para desplegar) -->
+                                    <div class="node-accordion-header" onclick="toggleNodeAccordion(this, event)">
+                                        <div class="d-flex align-items-center" style="gap: 12px;">
+                                            <input type="checkbox" class="node-master-checkbox"
+                                                   title="Seleccionar todos los equipos de {{ node.name }}"
+                                                   onclick="toggleNodeRoutersSelection(this, event)">
+                                            <i class="fas fa-chevron-right node-chevron"></i>
+                                            <span class="node-icon-box">
+                                                <i class="fas fa-network-wired"></i>
+                                            </span>
+                                            <div>
+                                                <span class="node-title-text">{{ node.name }}</span>
+                                                {% if node.internal_notes %}
+                                                    <span class="text-muted small ml-2">&mdash; {{ node.internal_notes }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                                            <span class="badge-gpon badge-gpon-info">
+                                                <i class="fas fa-server"></i> {{ node.total_count }} Equipo{{ node.total_count|pluralize:"s" }}
+                                            </span>
+                                            {% if node.online_count > 0 %}
+                                                <span class="badge-pill-soft success">
+                                                    <span class="status-dot online"></span> {{ node.online_count }} En Línea
+                                                </span>
+                                            {% endif %}
+                                            {% if node.offline_count > 0 %}
+                                                <span class="badge-pill-soft danger">
+                                                    <span class="status-dot offline"></span> {{ node.offline_count }} Desconectado{{ node.offline_count|pluralize:"s" }}
+                                                </span>
+                                            {% endif %}
+                                            {% if node.uuid != 'ungrouped' %}
+                                                <a href="/router/manage_group/?uuid={{ node.uuid }}"
+                                                   class="btn btn-xs btn-outline-secondary ml-1"
+                                                   title="Editar Nodo {{ node.name }}"
+                                                   onclick="event.stopPropagation();">
+                                                    <i class="fas fa-cog"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Cuerpo desplegable con los equipos del Nodo -->
+                                    <div class="node-accordion-body">
+                                        {% if node.routers %}
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th class="min-width text-center"></th>
+                                                            <th>Nombre del Equipo</th>
+                                                            <th>Fabricante / Tipo</th>
+                                                            <th>Dirección IP</th>
+                                                            <th>Modelo</th>
+                                                            <th>Estado</th>
+                                                            <th>Última Verificación</th>
+                                                            <th class="min-width">Reportes</th>
+                                                            <th class="min-width"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for router in node.routers %}
+                                                            <tr class="node-router-row"
+                                                                data-search="{{ router.name|lower }} {{ router.address|lower }} {{ router.get_router_type_display|lower }} {{ router.routerinformation.model_name|default:''|lower }} {{ node.name|lower }}"
+                                                                {% if not router.enabled %}style="text-decoration: line-through;"{% endif %}>
+                                                                <td class="min-width text-center">
+                                                                    <input type="checkbox" class="router-checkbox node-child-cb" data-uuid="{{ router.uuid }}">
+                                                                </td>
+                                                                <td class="font-weight-bold">
+                                                                    <a href="/router/details/?uuid={{ router.uuid }}">
+                                                                        <i class="fas fa-hdd text-muted mr-1"></i> {{ router.name }}
+                                                                    </a>
+                                                                </td>
+                                                                <td>{{ router.get_router_type_display }}</td>
+                                                                <td>
+                                                                    <code>{{ router.address }}:{{ router.port }}</code>
+                                                                    <span class="badge badge-secondary ml-1">{{ router.connection_protocol|upper }}</span>
+                                                                </td>
+                                                                <td>{{ router.routerinformation.model_name|default:"---" }}</td>
+                                                                <td id="node-status-{{ router.uuid }}">
+                                                                    {% if router.monitoring %}
+                                                                        {% if router.routerstatus.status_online %}
+                                                                            <span class="badge-pill-soft success"><span class="status-dot online"></span>En Línea</span>
+                                                                        {% else %}
+                                                                            <span class="badge-pill-soft danger"><span class="status-dot offline"></span>Desconectado</span>
+                                                                        {% endif %}
+                                                                    {% else %}
+                                                                        ---
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>
+                                                                    {% if router.routerstatus.last_backup %}
+                                                                        {{ router.routerstatus.last_backup|date:"d/m/Y H:i:s" }}
+                                                                    {% else %}
+                                                                        ---
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td class="min-width">
+                                                                    <div class="btn-group">
+                                                                        <a href="/router/details/?uuid={{ router.uuid }}" class="btn btn-xs btn-outline-info" title="Información">
+                                                                            <i class="fas fa-info-circle"></i> Detalles
+                                                                        </a>
+                                                                        <a href="/backup/backup_list/?router={{ router.uuid }}" class="btn btn-xs btn-outline-success" title="Historial de Respaldos y Descarga">
+                                                                            <i class="fas fa-download"></i> Historial
+                                                                        </a>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="min-width text-nowrap">
+                                                                    <a href="javascript:void(0)" class="manage-router-btn mr-2" data-uuid="{{ router.uuid }}"><i class="fas fa-edit" title="Editar Equipo"></i></a>
+                                                                    <a href="javascript:void(0)" class="text-danger" title="Eliminar Equipo" onclick="confirmDeleteRouter('{{ router.uuid }}', '{{ router.name }}')">
+                                                                        <i class="fas fa-trash"></i>
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        {% else %}
+                                            <div class="p-3 text-center text-muted small">
+                                                Este nodo aún no tiene equipos asignados.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4 text-muted">
+                                No hay nodos ni equipos registrados aún.
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- =====================================================
+                         VISTA 2: TABLA GENERAL (DATATABLES CON EXPORTACIÓN)
+                         ===================================================== -->
+                    <div class="row" id="flat-table-view" style="display: none;">
                         <div class="col-lg-12">
                             <table id="example1" class="table table-hover datatables-with-export" data-custom-export="true">
                                 <thead>
@@ -29,8 +282,6 @@
                                     {% endif %}
                                     {% if "status" in visible_columns %}
                                     <th data-column="status">Estado</th>
-                                    {% endif %}
-                                    {% if "backup" in visible_columns %}
                                     {% endif %}
                                     {% if "last_backup" in visible_columns %}
                                     <th data-column="last_backup">Último Respaldo</th>
@@ -82,11 +333,10 @@
                                 <tbody>
                                 {% for router in router_list %}
                                     <tr {% if not router.enabled %}style="text-decoration: line-through;"{% endif %}>
-                                        <td><input type="checkbox" class="router-checkbox" data-uuid="{{ router.uuid }}"></td>
+                                        <td><input type="checkbox" class="router-checkbox flat-cb" data-uuid="{{ router.uuid }}"></td>
                                         {% if "name" in visible_columns %}
                                         <td data-column="name">
                                             <a href="/router/details/?uuid={{ router.uuid }}">{{ router.name }}</a>
-                                            <!-- Hidden search blob for DataTables to find hidden data -->
                                             <span style="display:none;">
                                                 {{ router.address }} {{ router.get_router_type_display }}
                                                 {{ router.routerinformation.os_version }} {{ router.routerinformation.model_name }}
@@ -113,8 +363,6 @@
                                                 ---
                                             {% endif %}
                                         </td>
-                                        {% endif %}
-                                        {% if "backup" in visible_columns %}
                                         {% endif %}
                                         {% if "last_backup" in visible_columns %}
                                         <td data-column="last_backup">
@@ -230,10 +478,10 @@
                                         <td class="min-width">
                                             {% if router.router_type != 'monitoring' %}
                                                 <div class="btn-group">
-                                                    <a href="/router/details/?uuid={{ router.uuid }}" class="btn btn-sm btn-outline-info" title="Información">
+                                                    <a href="/router/details/?uuid={{ router.uuid }}" class="btn btn-xs btn-outline-info" title="Información">
                                                         <i class="fas fa-info-circle"></i> Detalles
                                                     </a>
-                                                    <a href="/backup/backup_list/?router={{ router.uuid }}" class="btn btn-sm btn-outline-success" title="Historial de Respaldos y Descarga">
+                                                    <a href="/backup/backup_list/?router={{ router.uuid }}" class="btn btn-xs btn-outline-success" title="Historial de Respaldos y Descarga">
                                                         <i class="fas fa-download"></i> Historial
                                                     </a>
                                                 </div>
@@ -250,27 +498,29 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="row mb-3">
-                            <div class="col-lg-12 text-right">
-                                <a href="javascript:void(0)" class="btn btn-primary" id="add-router-btn">Añadir Equipo</a>
-                                <a href="/router/import_tool/" class="btn btn-primary">Herramienta de Importación</a>
-                                <button id="select-all" class="btn btn-outline-primary" title="Seleccionar Todo"><i class="fas fa-check-square"></i></button>
-                                <button id="select-none" class="btn btn-outline-primary" title="Seleccionar Ninguno"><i class="fas fa-square"></i></button>
-                                <button id="create-backup" class="btn btn-warning" style="display: none;">Crear Tarea de Respaldo</button>
-                                <button id="run-command" class="btn btn-info" style="display: none;">Ejecutar Comando</button>
-                                <button id="manage-groups" class="btn btn-primary" style="display: none;">Nodos</button>
-                                
-                                <div class="btn-group dropup ml-1" id="export-selected-group" style="display: none;">
-                                    <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                        <i class="fas fa-file-export mr-1"></i> Exportar Seleccionados
-                                    </button>
-                                    <div class="dropdown-menu dropdown-menu-right">
-                                        <a class="dropdown-item" href="javascript:void(0)" onclick="triggerExport('excel')"><i class="far fa-file-excel mr-2 text-success"></i> Excel</a>
-                                        <a class="dropdown-item" href="javascript:void(0)" onclick="triggerExport('pdf')"><i class="far fa-file-pdf mr-2 text-danger"></i> PDF</a>
-                                        <a class="dropdown-item" href="javascript:void(0)" onclick="triggerExport('csv')"><i class="fas fa-file-csv mr-2 text-info"></i> CSV</a>
-                                        <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item" href="javascript:void(0)" onclick="triggerExport('print')"><i class="fas fa-print mr-2 text-secondary"></i> Imprimir</a>
-                                    </div>
+                    </div>
+
+                    <!-- Botones de Acción Inferiores -->
+                    <div class="row mt-3">
+                        <div class="col-lg-12 text-right">
+                            <a href="javascript:void(0)" class="btn btn-primary" id="add-router-btn"><i class="fas fa-plus"></i> Añadir Equipo</a>
+                            <a href="/router/manage_group/" class="btn btn-outline-primary"><i class="fas fa-sitemap"></i> Añadir Nodo</a>
+                            <a href="/router/import_tool/" class="btn btn-primary"><i class="fas fa-file-import"></i> Importar CSV</a>
+                            <button id="select-all" class="btn btn-outline-primary" title="Seleccionar Todo"><i class="fas fa-check-square"></i></button>
+                            <button id="select-none" class="btn btn-outline-primary" title="Seleccionar Ninguno"><i class="fas fa-square"></i></button>
+                            <button id="create-backup" class="btn btn-warning" style="display: none;">Crear Tarea de Respaldo</button>
+                            <button id="manage-groups" class="btn btn-primary" style="display: none;">Nodos</button>
+                            
+                            <div class="btn-group dropup ml-1" id="export-selected-group" style="display: none;">
+                                <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fas fa-file-export mr-1"></i> Exportar Seleccionados
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="triggerExport('excel')"><i class="far fa-file-excel mr-2 text-success"></i> Excel</a>
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="triggerExport('pdf')"><i class="far fa-file-pdf mr-2 text-danger"></i> PDF</a>
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="triggerExport('csv')"><i class="fas fa-file-csv mr-2 text-info"></i> CSV</a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="triggerExport('print')"><i class="fas fa-print mr-2 text-secondary"></i> Imprimir</a>
                                 </div>
                             </div>
                         </div>
@@ -284,7 +534,6 @@
     <div class="modal fade" id="routerManageModal" tabindex="-1" role="dialog" aria-labelledby="routerManageModalLabel" aria-hidden="true" style="z-index: 2050;">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
-                <!-- Content will be loaded via AJAX -->
                 <div class="text-center p-4">
                     <i class="fas fa-spinner fa-spin fa-2x"></i>
                     <p>Cargando formulario...</p>
@@ -304,9 +553,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div id="columnCheckboxes">
-                        <!-- Checkboxes will be added here dynamically -->
-                    </div>
+                    <div id="columnCheckboxes"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
@@ -321,7 +568,26 @@
 {% block custom_page_scripts %}
     <script>
         var last_status_change = "{{ last_status_change_timestamp }}";
-        
+
+        // Desplegar / Contraer Nodo al tocarlo
+        function toggleNodeAccordion(headerEl, event) {
+            if (event && $(event.target).is('input, a, button, .fa-cog')) {
+                return;
+            }
+            var $card = $(headerEl).closest('.node-accordion-card');
+            var $body = $card.find('.node-accordion-body');
+            $card.toggleClass('expanded');
+            $body.stop(true, true).slideToggle(200);
+        }
+
+        // Seleccionar todos los equipos de un Nodo
+        function toggleNodeRoutersSelection(checkboxEl, event) {
+            event.stopPropagation();
+            var isChecked = $(checkboxEl).prop('checked');
+            var $card = $(checkboxEl).closest('.node-accordion-card');
+            $card.find('.node-child-cb').prop('checked', isChecked).trigger('change');
+        }
+
         function confirmDeleteRouter(uuid, name) {
             if (confirm('¿Estás seguro de que deseas eliminar el equipo "' + name + '"?')) {
                 var confirmation = prompt('Por favor, escribe "borrar" para confirmar la eliminación:');
@@ -337,35 +603,11 @@
         var status_online_text = '<span style="display: none">online</span><span class="badge-pill-soft success" title="Host is Online"><span class="status-dot online"></span>En Línea</span>';
         var status_offline_text = '<span style="display: none">offline</span><span class="badge-pill-soft danger" title="Host is unavailable"><span class="status-dot offline"></span>Desconectado</span>';
 
-        // Column definitions for the router table
-        var columnDefinitions = [
-            { name: "name", label: "Name", default: true },
-            { name: "type", label: "Type", default: true },
-            { name: "address", label: "Dirección IP", default: true },
-            { name: "status", label: "Status", default: true },
-            { name: "backup", label: "Backup", default: true },
-            { name: "last_backup", label: "Last Backup", default: false },
-            { name: "next_daily_backup", label: "Next Daily Backup", default: false },
-            { name: "next_weekly_backup", label: "Next Weekly Backup", default: false },
-            { name: "next_monthly_backup", label: "Next Monthly Backup", default: false },
-            { name: "lock_information", label: "Router Lock Information", default: false },
-            { name: "groups", label: "Nodos", default: true },
-            { name: "auth", label: "Auth", default: false },
-            { name: "os_version", label: "OS Version", default: false },
-            { name: "model_name", label: "Model Name", default: false },
-            { name: "model_version", label: "Model Version", default: false },
-            { name: "serial_number", label: "Serial Number", default: false },
-            { name: "firmware_version", label: "Firmware Version", default: false },
-            { name: "architecture", label: "Architecture", default: false },
-            { name: "cpu", label: "CPU", default: false }
-        ];
-
         function checkStatusChange() {
             $.ajax({
                 url: "/monitoring/last_status_change/",
                 success: function(data) {
                     if (data.last_status_change !== last_status_change) {
-                        // Update last_status_change and fetch new router list
                         last_status_change = data.last_status_change;
                         fetchRouterList();
                     }
@@ -382,42 +624,85 @@
                 }
             });
         }
+
         function updateRouterStatuses(routerList) {
             for (var uuid in routerList) {
                 var router = routerList[uuid];
-                var cells = dataTable.$('td#status-' + uuid);
-
-                if (cells.length) {
-                    cells.each(function () {
-                        var $cell = $(this);
-                        var currentStatusContent = $cell.html(); 
-                        var $currentSpan = $cell.find('span');
-                        var currentStatus = $currentSpan.length ? $currentSpan.text().trim() : '';
-
-                        var newStatus = router.online ? 'online' : 'offline';
-                        var newStatusHtml = router.online ? status_online_text : status_offline_text;
-
-                        if (currentStatus !== newStatus) {
-                            $cell.html(newStatusHtml);
-
-                            $(document).Toasts('create', {
-                                class: router.online ? 'bg-success' : 'bg-danger',
-                                title: 'Host status updated',
-                                body: 'Host ' + router.name + ' is now ' + newStatus,
-                                delay: 10000,
-                                autohide: true
-                            });
-                        }
-                    });
+                var newStatusHtml = router.online ? status_online_text : status_offline_text;
+                $('#node-status-' + uuid).html(newStatusHtml);
+                if (dataTable) {
+                    var cells = dataTable.$('td#status-' + uuid);
+                    if (cells.length) {
+                        cells.html(newStatusHtml);
+                    }
                 }
             }
-
-            // No need to reapply column visibility as it's now handled by Django template tags
         }
 
         setInterval(checkStatusChange, 30000);
         $(document).ready(function() {
             checkStatusChange();
+
+            // Expandir / Contraer todos los nodos
+            $('#btn-expand-all-nodes').on('click', function() {
+                $('.node-accordion-card').addClass('expanded');
+                $('.node-accordion-body').slideDown(200);
+            });
+            $('#btn-collapse-all-nodes').on('click', function() {
+                $('.node-accordion-card').removeClass('expanded');
+                $('.node-accordion-body').slideUp(200);
+            });
+
+            // Cambiar entre Vista Por Nodos y Vista Tabla General
+            $('#btn-view-by-nodes').on('click', function() {
+                $(this).addClass('btn-primary active').removeClass('btn-outline-primary');
+                $('#btn-view-flat-table').removeClass('btn-primary active').addClass('btn-outline-primary');
+                $('#flat-table-view').hide();
+                $('#nodes-accordion-view').fadeIn(150);
+                $('#accordion-controls, #node-quick-search').closest('div').show();
+            });
+            $('#btn-view-flat-table').on('click', function() {
+                $(this).addClass('btn-primary active').removeClass('btn-outline-primary');
+                $('#btn-view-by-nodes').removeClass('btn-primary active').addClass('btn-outline-primary');
+                $('#nodes-accordion-view').hide();
+                $('#accordion-controls').hide();
+                $('#flat-table-view').fadeIn(150);
+                if (dataTable) {
+                    dataTable.columns.adjust().responsive.recalc();
+                }
+            });
+
+            // Buscador instantáneo por Nodo / Equipo
+            $('#node-quick-search').on('input', function() {
+                var term = ($(this).val() || '').toLowerCase().trim();
+                if (!term) {
+                    $('.node-accordion-card').show();
+                    $('.node-router-row').show();
+                    return;
+                }
+                $('.node-accordion-card').each(function() {
+                    var $card = $(this);
+                    var nodeName = ($card.data('node-name') || '').toString();
+                    var anyRowMatch = false;
+
+                    $card.find('.node-router-row').each(function() {
+                        var rowSearch = ($(this).data('search') || '').toString();
+                        if (rowSearch.indexOf(term) !== -1 || nodeName.indexOf(term) !== -1) {
+                            $(this).show();
+                            anyRowMatch = true;
+                        } else {
+                            $(this).hide();
+                        }
+                    });
+
+                    if (anyRowMatch || nodeName.indexOf(term) !== -1) {
+                        $card.show().addClass('expanded');
+                        $card.find('.node-accordion-body').slideDown(150);
+                    } else {
+                        $card.hide();
+                    }
+                });
+            });
         });
     </script>
 
@@ -425,132 +710,46 @@
 $(document).ready(function() {
     var table = dataTable;
 
-    // Column visibility functions
-    function getCookie(name) {
-        var cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            var cookies = document.cookie.split(';');
-            for (var i = 0; i < cookies.length; i++) {
-                var cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+    function getSelectedRouterUuids() {
+        var uuids = [];
+        $('.router-checkbox:checked').each(function() {
+            var u = $(this).data('uuid');
+            if (u && uuids.indexOf(u) === -1) {
+                uuids.push(u);
             }
-        }
-        return cookieValue;
-    }
-
-    function setCookie(name, value, days) {
-        let expires = "";
-        if (days) {
-            const date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            expires = "; expires=" + date.toUTCString();
-        }
-        document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
-    }
-
-    function getVisibleColumns() {
-        var cookieValue = getCookie('router_visible_columns');
-        if (cookieValue) {
-            return JSON.parse(cookieValue);
-        }
-        // Default columns if cookie doesn't exist
-        return columnDefinitions.filter(function(col) {
-            return col.default;
-        }).map(function(col) {
-            return col.name;
         });
+        return uuids;
     }
 
-    // No need for applyColumnVisibility function as column visibility is now handled by Django template tags
-
-    function populateColumnModal() {
-        var visibleColumns = getVisibleColumns();
-        var $container = $('#columnCheckboxes');
-        $container.empty();
-
-        columnDefinitions.forEach(function(col) {
-            var isChecked = visibleColumns.includes(col.name);
-            var $div = $('<div class="form-check">');
-            var $input = $('<input class="form-check-input" type="checkbox" id="col-' + col.name + '" value="' + col.name + '"' + (isChecked ? ' checked' : '') + '>');
-            var $label = $('<label class="form-check-label" for="col-' + col.name + '">' + col.label + '</label>');
-
-            $div.append($input).append($label);
-            $container.append($div);
-        });
-    }
-
-    // No need to initialize column visibility as it's now handled by Django template tags
-
-    // Show/Hide Columns button click handler
-    $('#showHideColumnsBtn').on('click', function(e) {
-        e.preventDefault();
-        populateColumnModal();
-        var modal = $('#columnVisibilityModal');
-        modal.appendTo("body");
-        modal.modal('show');
-    });
-
-    // Apply button click handler
-    $('#applyColumnVisibility').on('click', function() {
-        var selectedColumns = [];
-        $('#columnCheckboxes input:checked').each(function() {
-            selectedColumns.push($(this).val());
-        });
-
-        // Save to cookie
-        setCookie('router_visible_columns', JSON.stringify(selectedColumns), 365);
-
-        // Reload the page with the same GET parameters
-        var currentUrl = window.location.href;
-        window.location.href = currentUrl;
-    });
-
-    // Function to delete a cookie
-    function deleteCookie(name) {
-        document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    }
-
-    // Reset button click handler
-    $('#resetColumnVisibility').on('click', function() {
-        // Delete the router_visible_columns cookie
-        deleteCookie('router_visible_columns');
-
-        // Reload the page with the same GET parameters
-        var currentUrl = window.location.href;
-        window.location.href = currentUrl;
-    });
-
-    // Router selection functions
     function updateCheckboxes(checked) {
-         table.$('.router-checkbox').prop('checked', checked).trigger('change');
+        $('.router-checkbox, .node-master-checkbox').prop('checked', checked);
+        if (table) {
+            table.$('.router-checkbox').prop('checked', checked);
+        }
+        $('.router-checkbox').first().trigger('change');
     }
 
     $('#select-all').on('click', function(e) {
-         e.preventDefault();
-         updateCheckboxes(true);
+        e.preventDefault();
+        updateCheckboxes(true);
     });
 
     $('#select-none').on('click', function(e) {
-         e.preventDefault();
-         updateCheckboxes(false);
+        e.preventDefault();
+        updateCheckboxes(false);
     });
 
     $(document).on('change', '.router-checkbox', function() {
-         var checkedCount = table.$('.router-checkbox:checked').length;
-          if (checkedCount >= 1) {
-              $('#create-backup').show();
-              $('#run-command').show();
-              $('#manage-groups').show();
-              $('#export-selected-group').show();
-          } else {
-              $('#create-backup').hide();
-              $('#run-command').hide();
-              $('#manage-groups').hide();
-              $('#export-selected-group').hide();
-          }
+        var selected = getSelectedRouterUuids();
+        if (selected.length >= 1) {
+            $('#create-backup').show();
+            $('#manage-groups').show();
+            $('#export-selected-group').show();
+        } else {
+            $('#create-backup').hide();
+            $('#manage-groups').hide();
+            $('#export-selected-group').hide();
+        }
     });
 
     window.triggerExport = function(format) {
@@ -570,9 +769,7 @@ $(document).ready(function() {
 
     $('#create-backup').on('click', function(e) {
          e.preventDefault();
-         var selectedRouters = table.$('.router-checkbox:checked').map(function() {
-              return $(this).data('uuid');
-         }).get();
+         var selectedRouters = getSelectedRouterUuids();
 
          $.ajax({
               url: '/router/create_instant_backup/multiple/',
@@ -596,8 +793,8 @@ $(document).ready(function() {
                    if (successRouters.length > 0) {
                          $(document).Toasts('create', {
                               class: 'bg-success',
-                              title: 'Backup Started',
-                              body: 'Backup started for:<br>' + successRouters.join('<br>'),
+                              title: 'Respaldo Iniciado',
+                              body: 'Respaldo iniciado para:<br>' + successRouters.join('<br>'),
                               delay: 10000,
                               autohide: true
                          });
@@ -606,8 +803,8 @@ $(document).ready(function() {
                    if (errorMessages.length > 0) {
                          $(document).Toasts('create', {
                               class: 'bg-danger',
-                              title: 'Backup Errors',
-                              body: 'Problems:<br>' + errorMessages.join('<br>'),
+                              title: 'Avisos de Respaldo',
+                              body: 'Detalles:<br>' + errorMessages.join('<br>'),
                               delay: 10000,
                               autohide: true
                          });
@@ -619,7 +816,7 @@ $(document).ready(function() {
                    $(document).Toasts('create', {
                         class: 'bg-danger',
                         title: 'Error',
-                        body: 'Error: ' + xhr.responseJSON.error,
+                        body: 'Error: ' + (xhr.responseJSON ? xhr.responseJSON.error : 'Fallo de red'),
                         delay: 10000,
                         autohide: true
                    });
@@ -630,21 +827,8 @@ $(document).ready(function() {
 
     $('#manage-groups').on('click', function(e) {
          e.preventDefault();
-         var selectedRouters = table.$('.router-checkbox:checked').map(function() {
-              return $(this).data('uuid');
-         }).get();
-
-         // Redirect to the manage groups page with the selected routers
+         var selectedRouters = getSelectedRouterUuids();
          window.location.href = '/router/manage_groups/multiple/?routers[]=' + selectedRouters.join('&routers[]=');
-    });
-
-    $('#run-command').on('click', function (e) {
-        e.preventDefault();
-        var selectedRouters = table.$('.router-checkbox:checked').map(function () {
-            return $(this).data('uuid');
-        }).get();
-
-        window.location.href = '/fleet_commander/command/execute_multiple/?routers[]=' + selectedRouters.join('&routers[]=');
     });
 
     // Router Modal Logic & State Restoration
@@ -653,15 +837,12 @@ $(document).ready(function() {
         $('#routerManageModal .modal-content').load(url, function() {
             $('#routerManageModal').appendTo("body").modal('show');
             
-            // Resume/Restore state from sessionStorage if context is 'new'
             const savedData = sessionStorage.getItem('pending_router_form');
             if (savedData && !uuid) {
                 try {
                     const formData = JSON.parse(savedData);
                     formData.forEach(field => {
-                        // Skip CSRF token
                         if (field.name === 'csrfmiddlewaretoken') return;
-                        
                         const $el = $(`[name="${field.name}"]`);
                         if ($el.length) {
                              if ($el.is(':checkbox') || $el.is(':radio')) {
@@ -671,21 +852,12 @@ $(document).ready(function() {
                              }
                         }
                     });
-                    
-                    $(document).Toasts('create', {
-                        class: 'bg-info',
-                        title: 'Formulario Recuperado',
-                        body: 'Se han restaurado los datos previamente ingresados.',
-                        delay: 4000,
-                        autohide: true
-                    });
                     sessionStorage.removeItem('pending_router_form');
                 } catch(e) { console.error("Restore failed", e); }
             }
         });
     }
 
-    // Check for Resume Action on Page Load
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('action') === 'resume_create') {
         openRouterModal(null);
@@ -701,6 +873,4 @@ $(document).ready(function() {
     });
 });
 </script>
-
-
 {% endblock %}

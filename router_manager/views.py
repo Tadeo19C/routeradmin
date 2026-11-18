@@ -107,10 +107,51 @@ def view_router_list(request):
         # Default columns if cookie doesn't exist
         visible_columns = ["name", "type", "address", "status", "backup", "groups"]
 
+    all_groups = list(RouterGroup.objects.all().order_by('name'))
+    routers_eval = list(router_list)
+    grouped_nodes = []
+    for grp in all_groups:
+        grp_routers = [r for r in routers_eval if grp in r.routergroup_set.all()]
+        if not grp_routers and (request.GET.get('q') or request.GET.get('status')):
+            continue
+        online_cnt = sum(
+            1 for r in grp_routers
+            if not r.monitoring or (getattr(r, 'routerstatus', None) and r.routerstatus.status_online)
+        )
+        offline_cnt = len(grp_routers) - online_cnt
+        grouped_nodes.append({
+            'group': grp,
+            'name': grp.name,
+            'uuid': str(grp.uuid),
+            'internal_notes': grp.internal_notes or '',
+            'routers': grp_routers,
+            'total_count': len(grp_routers),
+            'online_count': online_cnt,
+            'offline_count': offline_cnt,
+        })
+
+    ungrouped_routers = [r for r in routers_eval if not r.routergroup_set.all()]
+    if ungrouped_routers:
+        online_cnt = sum(
+            1 for r in ungrouped_routers
+            if not r.monitoring or (getattr(r, 'routerstatus', None) and r.routerstatus.status_online)
+        )
+        grouped_nodes.append({
+            'group': None,
+            'name': 'Equipos Sin Nodo Asignado',
+            'uuid': 'ungrouped',
+            'internal_notes': '',
+            'routers': ungrouped_routers,
+            'total_count': len(ungrouped_routers),
+            'online_count': online_cnt,
+            'offline_count': len(ungrouped_routers) - online_cnt,
+        })
+
     context = {
-        'router_list': router_list,
+        'router_list': routers_eval,
+        'grouped_nodes': grouped_nodes,
         'page_title': 'Directorio de Equipos',
-        'filter_group_list': RouterGroup.objects.all().order_by('name'),
+        'filter_group_list': all_groups,
         'filter_group': filter_group,
         'last_status_change_timestamp': last_status_change_timestamp,
         'visible_columns': visible_columns,
@@ -263,8 +304,11 @@ def view_manage_router(request):
 
 @login_required()
 def view_router_group_list(request):
+    groups = RouterGroup.objects.prefetch_related(
+        'routers', 'routers__routerstatus', 'routers__routerinformation'
+    ).all().order_by('name')
     context = {
-        'router_group_list': RouterGroup.objects.all().order_by('name'),
+        'router_group_list': groups,
         'page_title': 'Listado de Nodos',
     }
     return render(request, 'router_manager/router_group_list.html', context=context)

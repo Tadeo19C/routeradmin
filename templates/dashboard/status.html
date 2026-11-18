@@ -3,15 +3,15 @@
 {% block content %}
 <style>
     .info-box {
-        margin-bottom: 12px;
+        margin-bottom: 8px;
     }
     .section-title {
-        font-size: 13px;
+        font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.06em;
         font-weight: 700;
-        color: var(--text-muted);
-        margin-bottom: 16px;
+        color: var(--muted-foreground);
+        margin-bottom: 10px;
     }
 </style>
 <div class="row">
@@ -29,9 +29,9 @@
             <div class="card-body">
                 <!-- Group 1: Red y Estado de Equipos (ControladorGPON KPICard Layout) -->
                 <h6 class="section-title text-center"><i class="fas fa-network-wired mr-1"></i> Estado de la Red</h6>
-                <div class="row mb-4 justify-content-center">
+                <div class="row mb-2 justify-content-center">
                     <!-- Total Routers -->
-                    <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="col-lg-4 col-md-6 mb-2">
                         <a href="{% url 'router_list' %}" class="kpi-card color-blue">
                             <div>
                                 <div class="kpi-card-title">
@@ -48,7 +48,7 @@
                     </div>
 
                     <!-- Online Routers -->
-                    <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="col-lg-4 col-md-6 mb-2">
                         <a href="{% url 'router_list' %}?status=online" class="kpi-card color-green">
                             <div>
                                 <div class="kpi-card-title">
@@ -65,7 +65,7 @@
                     </div>
 
                     <!-- Offline Routers -->
-                    <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="col-lg-4 col-md-6 mb-2">
                         <a href="{% url 'router_list' %}?status=offline" class="kpi-card color-red">
                             <div>
                                 <div class="kpi-card-title">
@@ -88,16 +88,16 @@
 
                 <!-- Group 2: Gestión de Respaldos y Datos -->
                 <h6 class="section-title text-center"><i class="fas fa-database mr-1"></i> Gestión de Respaldos</h6>
-                <div class="row mb-4 justify-content-center">
+                <div class="row mb-2 justify-content-center">
                     <!-- Almacenamiento -->
-                    <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="col-lg-4 col-md-6 mb-2">
                         <a href="{% url 'backup_list' %}" class="kpi-card color-blue">
                             <div>
                                 <div class="kpi-card-title">
                                     <i class="fas fa-hdd"></i> Almacenamiento
                                 </div>
                                 <div class="kpi-card-value-row">
-                                    <span class="kpi-card-value" style="font-size: 22px;" id="stats-storage">{{ media_root_stats.used }}</span>
+                                    <span class="kpi-card-value" style="font-size: 18px;" id="stats-storage">{{ media_root_stats.used }}</span>
                                     <span class="badge-gpon badge-gpon-info">{{ media_root_stats.usage_percentage }}%</span>
                                 </div>
                                 <div class="progress mt-2">
@@ -112,7 +112,7 @@
                     </div>
 
                     <!-- Successful Backups -->
-                    <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="col-lg-4 col-md-6 mb-2">
                         <a href="{% url 'backup_list' %}?status=success" class="kpi-card color-green">
                             <div>
                                 <div class="kpi-card-title">
@@ -129,7 +129,7 @@
                     </div>
 
                     <!-- Failed Backups -->
-                    <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="col-lg-4 col-md-6 mb-2">
                         <a href="{% url 'backup_list' %}?status=error" class="kpi-card color-red">
                             <div>
                                 <div class="kpi-card-title">

@@ -99,33 +99,75 @@
             border-color: #1e293b !important;
             font-family: ui-monospace, monospace;
         }
+        /* 1. Líneas Agregadas (Verde) */
         [data-theme="dark"] .d2h-ins {
-            background: rgba(16, 185, 129, 0.16) !important;
+            background: rgba(16, 185, 129, 0.15) !important;
             border-color: rgba(16, 185, 129, 0.3) !important;
         }
         [data-theme="dark"] .d2h-ins .d2h-code-line-ctn,
         [data-theme="dark"] .d2h-ins.d2h-code-side-line {
             color: #34d399 !important;
         }
-        [data-theme="dark"] .d2h-ins .d2h-code-line-ctn mark,
-        [data-theme="dark"] ins.d2h-ins-mark {
-            background: rgba(16, 185, 129, 0.4) !important;
-            color: #a7f3d0 !important;
-            border-radius: 2px;
+        [data-theme="dark"] .d2h-ins .d2h-code-line-ctn ins,
+        [data-theme="dark"] .d2h-ins.d2h-code-side-line ins {
+            background: rgba(16, 185, 129, 0.38) !important;
+            color: #ecfdf5 !important;
+            border-radius: 3px;
+            padding: 0 2px;
         }
-        [data-theme="dark"] .d2h-del {
+
+        /* 2. Líneas Eliminadas Puras (Rojo - Solo cuando se borra sin modificar) */
+        [data-theme="dark"] .d2h-del:not(.d2h-change) {
             background: rgba(239, 68, 68, 0.16) !important;
             border-color: rgba(239, 68, 68, 0.3) !important;
         }
-        [data-theme="dark"] .d2h-del .d2h-code-line-ctn,
-        [data-theme="dark"] .d2h-del.d2h-code-side-line {
+        [data-theme="dark"] .d2h-del:not(.d2h-change) .d2h-code-line-ctn,
+        [data-theme="dark"] .d2h-del:not(.d2h-change).d2h-code-side-line {
             color: #f87171 !important;
         }
-        [data-theme="dark"] .d2h-del .d2h-code-line-ctn mark,
-        [data-theme="dark"] del.d2h-del-mark {
+        [data-theme="dark"] .d2h-del:not(.d2h-change) .d2h-code-line-ctn del,
+        [data-theme="dark"] .d2h-del:not(.d2h-change).d2h-code-side-line del {
             background: rgba(239, 68, 68, 0.4) !important;
-            color: #fecaca !important;
-            border-radius: 2px;
+            color: #fee2e2 !important;
+            border-radius: 3px;
+            padding: 0 2px;
+        }
+
+        /* 3. Líneas Modificadas / Editadas (Amarillo/Ámbar en el lado modificado izquierdo) */
+        .d2h-del.d2h-change,
+        .d2h-file-diff .d2h-del.d2h-change {
+            background-color: #fef9c3 !important;
+            border-color: #fde047 !important;
+        }
+        .d2h-del.d2h-change .d2h-code-line-ctn,
+        .d2h-del.d2h-change.d2h-code-side-line {
+            color: #854d0e !important;
+        }
+        .d2h-del.d2h-change .d2h-code-line-ctn del,
+        .d2h-del.d2h-change.d2h-code-side-line del {
+            background-color: #fde047 !important;
+            color: #713f12 !important;
+            font-weight: 700;
+            border-radius: 3px;
+            padding: 0 3px;
+        }
+
+        [data-theme="dark"] .d2h-del.d2h-change,
+        [data-theme="dark"] .d2h-file-diff .d2h-del.d2h-change {
+            background: rgba(245, 158, 11, 0.16) !important;
+            border-color: rgba(245, 158, 11, 0.35) !important;
+        }
+        [data-theme="dark"] .d2h-del.d2h-change .d2h-code-line-ctn,
+        [data-theme="dark"] .d2h-del.d2h-change.d2h-code-side-line {
+            color: #fbbf24 !important;
+        }
+        [data-theme="dark"] .d2h-del.d2h-change .d2h-code-line-ctn del,
+        [data-theme="dark"] .d2h-del.d2h-change.d2h-code-side-line del {
+            background: rgba(245, 158, 11, 0.42) !important;
+            color: #fef3c7 !important;
+            font-weight: 700;
+            border-radius: 3px;
+            padding: 0 3px;
         }
 
         /* Identical Config Banner (High contrast in Light & Dark Mode) */
