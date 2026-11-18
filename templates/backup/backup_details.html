@@ -170,17 +170,14 @@
                             <li class="list-group-item">
                                  <b>Descargar Archivos</b>
                                  <span class="float-right">
-                                 {% if backup.backup_text %}
-                                     <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" download title="Descargar archivo de texto (RSC)">
-                                      Texto (.rsc)
-                                 </a>
-                                     {% if backup.backup_binary %} - {% endif %}
+                                 {% if backup.success or backup.backup_text %}
+                                     <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" class="btn btn-xs btn-outline-primary mr-1" download title="Descargar configuración en texto">
+                                         <i class="fas fa-file-code"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
+                                     </a>
+                                     <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" class="btn btn-xs btn-outline-info" download title="Descargar respaldo binario (.backup)">
+                                         <i class="fas fa-file-archive"></i> Binario (.backup)
+                                     </a>
                                  {% endif %}
-                                     {% if backup.backup_binary %}
-                                         <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" download title="Descargar respaldo binario (BACKUP)">
-                                      Binario (.backup)
-                                 </a>
-                                     {% endif %}
                                  </span>
                              </li>
 

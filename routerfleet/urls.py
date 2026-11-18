@@ -4,7 +4,7 @@ from django.urls import path
 from accounts.views import view_login, view_logout, view_create_first_user
 from backup.views import view_backup_profile_list, view_manage_backup_profile, view_backup_list, view_backup_details, \
     view_debug_run_backups, view_compare_backups, view_backup_download, view_backup_delete, \
-    view_get_backup_profile_details
+    view_get_backup_profile_details, view_config_search
 from backup_data.views import view_cron_generate_backup_schedule, view_cron_create_backup_tasks, \
     view_cron_perform_backup_tasks, view_cron_housekeeping, view_cron_system_self_backup
 from dashboard.views import view_dashboard, view_status, view_activity_logs, backup_statistics_data, router_status_data, view_status_summary
@@ -61,6 +61,7 @@ urlpatterns = [
     path('backup/backup_list/', view_backup_list, name='backup_list'),
     path('backup/backup_details/', view_backup_details, name='backup_info'),
     path('backup/compare/', view_compare_backups, name='compare_backups'),
+    path('backup/search/', view_config_search, name='config_search'),
     path('backup/download/', view_backup_download, name='download_backup'),
     path('backup/delete/', view_backup_delete, name='delete_backup'),
     path('backup/get_profile_details/', view_get_backup_profile_details, name='get_backup_profile_details'),

@@ -19,40 +19,27 @@ from .models import Command, CommandVariant, CommandSchedule, CommandJob, Comman
 
 
 def create_default_commands():
-    new_command = Command.objects.create(
-        name='Show Version',
-        description = "Collects and displays version information for your routers. This command is commonly used to gather details about the router model, software version, uptime, and hardware.",
-        enabled=True,
-        capture_output=True,
-        max_retry=3,
-        retry_interval=30,
+    new_command, _ = Command.objects.get_or_create(
+        name='Consultar Versión y Recursos',
+        defaults={
+            'description': 'Obtiene información detallada de modelo, versión de sistema operativo, uptime y estado general en equipos MikroTik, Cisco IOS, Huawei VRP y ZTE.',
+            'enabled': True,
+            'capture_output': True,
+            'max_retry': 3,
+            'retry_interval': 30,
+        }
     )
-    for router_type in ['mikrotik', 'mikrotik-branded']:
-        CommandVariant.objects.create(
-            command=new_command, router_type=router_type, enabled=True,
-            payload='/system resource print\n/system package print'
-        )
-    CommandVariant.objects.create(
-        command=new_command, router_type='openwrt', enabled=True,
-        payload='uname -a\ncat /etc/openwrt_release\nubus call system board'
-    )
-    CommandVariant.objects.create(
-        command=new_command, router_type='ubiquiti-airos', enabled=True,
-        payload='uname -a\ncat /etc/version\ncat /proc/uptime'
-    )
-
-    new_command = Command.objects.create(
-        name='Update Router Firmware',
-        description = "Updates the router's firmware to the latest version. This command is essential for maintaining security and performance by ensuring that your routers are running the most recent software.",
-        enabled=True,
-        capture_output=True,
-        max_retry=3,
-        retry_interval=30,
-    )
-    for router_type in ['mikrotik', 'mikrotik-branded']:
-        CommandVariant.objects.create(
-            command=new_command, router_type=router_type, enabled=True,
-            payload='/system/package/update/set channel=long-term\n/system/package/update/install'
+    default_variants = {
+        'mikrotik': '/system resource print\n/system routerboard print',
+        'cisco-ios': 'show version\nshow ip interface brief',
+        'huawei': 'display version\ndisplay ip interface brief',
+        'zte': 'show version\nshow ip interface brief',
+    }
+    for r_type, payload in default_variants.items():
+        CommandVariant.objects.get_or_create(
+            command=new_command,
+            router_type=r_type,
+            defaults={'enabled': True, 'payload': payload}
         )
     return
 

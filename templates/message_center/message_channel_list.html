@@ -22,6 +22,7 @@
                                 <th style="text-decoration: underline" title="Cambio de estado a En Línea">En Línea</th>
                                 <th style="text-decoration: underline" title="Cambio de estado a Fuera de Línea">Fuera de Línea</th>
                                 <th style="text-decoration: underline" title="Falla de respaldo">Respaldo</th>
+                                <th style="text-decoration: underline" title="Alerta cuando se detecta un cambio de configuración">Cambio Config</th>
                                 <th style="text-decoration: underline" title="Reporte diario de estado de equipos">Reporte Estado</th>
                                 <th style="text-decoration: underline" title="Reporte diario de respaldos">Reporte Respaldo</th>
                             </tr>
@@ -60,6 +61,13 @@
                                     </td>
                                 <td>
                                         {% if channel.backup_fail %}
+                                            <span style="display: none">enabled</span><i class="far fa-check-circle text-success"></i>
+                                        {% else %}
+                                            <span style="display: none">disabled</span><i class="far fa-times-circle text-danger"></i>
+                                        {% endif %}
+                                    </td>
+                                <td>
+                                        {% if channel.config_change %}
                                             <span style="display: none">enabled</span><i class="far fa-check-circle text-success"></i>
                                         {% else %}
                                             <span style="display: none">disabled</span><i class="far fa-times-circle text-danger"></i>

@@ -5,7 +5,7 @@ import uuid
 
 
 class Notification(models.Model):
-    notification_type = models.CharField(choices=(('status_online', 'Status change: Online'), ('status_offline', 'Status change: Offline'), ('backup_fail', 'Backup failed'), ('task_lock_expired', 'Task Lock Expired')), max_length=32)
+    notification_type = models.CharField(choices=(('status_online', 'Status change: Online'), ('status_offline', 'Status change: Offline'), ('backup_fail', 'Backup failed'), ('config_change', 'Configuration changed'), ('task_lock_expired', 'Task Lock Expired')), max_length=32)
     router = models.ForeignKey(Router, on_delete=models.CASCADE, blank=True, null=True)
     router_backup = models.ForeignKey(RouterBackup, on_delete=models.CASCADE, blank=True, null=True)
 
@@ -28,6 +28,7 @@ class MessageChannel(models.Model):
     status_change_offline = models.BooleanField(default=True)
     status_change_online = models.BooleanField(default=True)
     backup_fail = models.BooleanField(default=True)
+    config_change = models.BooleanField(default=True)
     daily_status_report = models.BooleanField(default=True)
     daily_backup_report = models.BooleanField(default=True)
 

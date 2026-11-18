@@ -124,8 +124,9 @@ def wrap_perform_backup(backup_id: int) -> bool:
         
         perform_backup(backup)
         
-        backup.task_lock = None
-        backup.save(update_fields=["task_lock"])
+        if backup.pk:
+            backup.task_lock = None
+            backup.save(update_fields=["task_lock"])
         return True
     except Exception:
         return False
@@ -205,12 +206,19 @@ def service_generate_backup_schedule() -> Dict[str, Any]:
         if backup_profile.hourly_backup:
             hourly_schedule_list = backup_schedule_list.filter(next_hourly_backup__isnull=True)
             for schedule in hourly_schedule_list:
-                # Si nunca se ha respaldado o el último respaldo fue hace más tiempo que el intervalo, programar de inmediato
-                last_backup = RouterBackup.objects.filter(router=schedule.router, success=True).order_by('-created').first()
-                if not last_backup or (timezone.now() - last_backup.created).total_seconds() >= (backup_profile.hourly_interval * 3600):
+                if RouterBackup.objects.filter(router=schedule.router, success=False, error=False).exists():
+                    continue
+                router_status = getattr(schedule.router, 'routerstatus', None)
+                last_check = router_status.last_backup if router_status else None
+                if not last_check:
+                    last_backup_obj = RouterBackup.objects.filter(router=schedule.router, success=True).order_by('-created').first()
+                    if last_backup_obj:
+                        last_check = last_backup_obj.updated or last_backup_obj.created
+
+                if not last_check or (timezone.now() - last_check).total_seconds() >= (backup_profile.hourly_interval * 3600):
                     schedule.next_hourly_backup = timezone.now()
                 else:
-                    schedule.next_hourly_backup = last_backup.created + timedelta(hours=backup_profile.hourly_interval)
+                    schedule.next_hourly_backup = last_check + timedelta(hours=backup_profile.hourly_interval)
                 schedule.save()
                 data['hourly_backup_schedule_created'] += 1
         else:

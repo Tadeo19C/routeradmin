@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 
-
 {% block content %}
     <div class='row'>
         <div class='col-lg-12'>
@@ -8,105 +7,127 @@
                 {% if page_title %}
                     <div class="card-header">
                         <h3 class="card-title">{{ page_title }}</h3>
+                        <span class="text-muted small">
+                            <i class="fas fa-shield-alt text-primary mr-1"></i>
+                            Optimización activa: Solo se almacenan respaldos iniciales o con cambios reales de configuración
+                        </span>
                     </div>
                 {% endif %}
                 <div class="card-body">
                     {% include 'backup/backup_nav_tabs.html' %}
-                            <div class="mb-3 d-flex justify-content-between align-items-center">
-                                <div>
-                                    <button id="compare-backups-btn" class="btn btn-primary btn-sm" disabled title="Selecciona exactamente 2 respaldos para comparar">
-                                        <i class="fas fa-columns mr-1"></i> Comparar Seleccionados
-                                    </button>
-                                </div>
-                            </div>
-                            <table class="table table-hover datatables-no-export" id="backup-list-table">
-                                <thead>
+                    <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <button id="compare-backups-btn" class="btn btn-primary btn-sm" disabled title="Selecciona exactamente 2 respaldos para comparar">
+                                <i class="fas fa-columns mr-1"></i> Comparar Seleccionados
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover datatables-no-export" id="backup-list-table">
+                            <thead>
+                            <tr>
+                                <th class="min-width text-center"><i class="fas fa-check-square"></i></th>
+                                <th class="min-width">ID</th>
+                                <th>Nodo / Equipo</th>
+                                <th>Dirección IP</th>
+                                <th>Frecuencia</th>
+                                <th>Fecha de Respaldo</th>
+                                <th>Última Verificación</th>
+                                <th class="min-width text-center">Estado</th>
+                                <th class="min-width text-center">Descargar Archivos</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for backup in backup_list %}
                                 <tr>
-                                    <th class="min-width text-center"><i class="fas fa-check-square"></i></th>
-                                    <th class="min-width">ID</th>
-                                    <th>Nodo</th>
-                                    <th>Dirección IP</th>
-                                    <th>Frecuencia</th>
-                                    <th>Tarea Creada</th>
-                                    <th>Finalizado</th>
-                                    <th class="min-width">Estado</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {% for backup in backup_list %}
-                                    <tr class="{% if backup.identical_to_previous %}duplicate-backup{% endif %}">
-                                        <td class="text-center">
-                                            {% if backup.success %}
-                                            <input type="checkbox" class="backup-select" data-uuid="{{ backup.uuid }}">
-                                            {% endif %}
-                                        </td>
-                                        <td class="min-width">
-                                            <a href="/backup/backup_details/?uuid={{ backup.uuid }}">
-                                            {{ backup.id }}
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <a href="/router/details/?uuid={{ backup.router.uuid }}">
-                                                {{ backup.router.name }}
-                                            </a>
-                                        </td>
-                                    <td>{{ backup.router.address }}</td>
-                                    <td>{{ backup.get_schedule_type_display }}</td>
-                                    <td>{{ backup.created|default_if_none:"" }}</td>
-                                    <td>{% if backup.finish_time %}{{ backup.finish_time }}{% else %}
-                                        <i class="far fa-clock text-warning"></i>{% endif %}</td>
-
-                                    
-                                    <td class="min-width" style="text-align: center;">
+                                    <td class="text-center">
                                         {% if backup.success %}
-                                            {% if backup.identical_to_previous %}
-                                                <span class="badge badge-secondary" title="Idéntico al anterior">Sin Cambios</span>
-                                            {% else %}
-                                                <i class="far fa-check-circle text-success"></i>
-                                            {% endif %}
-                                        {% elif backup.error %}
-                                            <i class="far fa-times-circle text-danger"
-                                               title="{{ backup.error_message }}"></i>
-                                        {% elif backup.backup_pending_retrieval %}
-                                            <i class="fas fa-cloud-download-alt text-info"
-                                               title="Respaldo pendiente de recuperación"></i>
-                                        {% else %}
-                                            <i class="far fa-clock text-warning"></i>
+                                        <input type="checkbox" class="backup-select" data-uuid="{{ backup.uuid }}">
                                         {% endif %}
                                     </td>
-                                    </tr>
-                                {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-
+                                    <td class="min-width font-weight-bold">
+                                        <a href="/backup/backup_details/?uuid={{ backup.uuid }}">
+                                            #{{ backup.id }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="/router/details/?uuid={{ backup.router.uuid }}" class="font-weight-bold">
+                                            {{ backup.router.name }}
+                                        </a>
+                                    </td>
+                                    <td><code>{{ backup.router.address }}</code></td>
+                                    <td>{{ backup.get_schedule_type_display }}</td>
+                                    <td>{{ backup.created|date:"d/m/Y H:i:s" }}</td>
+                                    <td>
+                                        {% if backup.router.routerstatus.last_backup %}
+                                            {{ backup.router.routerstatus.last_backup|date:"d/m/Y H:i:s" }}
+                                        {% elif backup.finish_time %}
+                                            {{ backup.finish_time|date:"d/m/Y H:i:s" }}
+                                        {% else %}
+                                            <i class="far fa-clock text-warning"></i> Pendiente
+                                        {% endif %}
+                                    </td>
+                                    <td class="min-width text-center">
+                                        {% if backup.success %}
+                                            <span class="badge-gpon badge-gpon-success" title="Respaldo verificado correctamente">
+                                                <i class="fas fa-check-circle"></i> Exitoso
+                                            </span>
+                                        {% elif backup.error %}
+                                            <span class="badge-gpon badge-gpon-error" title="{{ backup.error_message }}">
+                                                <i class="fas fa-times-circle"></i> Error
+                                            </span>
+                                        {% elif backup.backup_pending_retrieval %}
+                                            <span class="badge-gpon badge-gpon-info" title="Recuperando archivos">
+                                                <i class="fas fa-cloud-download-alt"></i> Descargando
+                                            </span>
+                                        {% else %}
+                                            <span class="badge-gpon badge-gpon-warning">
+                                                <i class="far fa-clock"></i> En Cola
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="min-width text-nowrap text-center">
+                                        {% if backup.success %}
+                                            <a href="/backup/download/?uuid={{ backup.uuid }}&type=text"
+                                               class="btn btn-xs btn-outline-primary mr-1"
+                                               title="Descargar configuración en texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})">
+                                                <i class="fas fa-file-code"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
+                                            </a>
+                                            <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary"
+                                               class="btn btn-xs btn-outline-info"
+                                               title="Descargar archivo binario (.backup)">
+                                                <i class="fas fa-file-archive"></i> Binario (.backup)
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">---</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                    
-                    <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            const checkboxes = document.querySelectorAll('.backup-select');
-                            const compareBtn = document.getElementById('compare-backups-btn');
-
-                            checkboxes.forEach(cb => {
-                                cb.addEventListener('change', function() {
-                                    const selected = document.querySelectorAll('.backup-select:checked');
-                                    compareBtn.disabled = selected.length !== 2;
-                                });
-                            });
-
-                            compareBtn.addEventListener('click', function() {
-                                const selected = document.querySelectorAll('.backup-select:checked');
-                                if (selected.length === 2) {
-                                    const uuid1 = selected[0].getAttribute('data-uuid');
-                                    const uuid2 = selected[1].getAttribute('data-uuid');
-                                    window.location.href = `/backup/compare/?uuid=${uuid1}&compare_uuid=${uuid2}`;
-                                }
-                            });
-                        });
-                    </script>
-                    
-
                 </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const compareBtn = document.getElementById('compare-backups-btn');
+
+                        $(document).on('change', '.backup-select', function() {
+                            const selected = document.querySelectorAll('.backup-select:checked');
+                            compareBtn.disabled = selected.length !== 2;
+                        });
+
+                        compareBtn.addEventListener('click', function() {
+                            const selected = document.querySelectorAll('.backup-select:checked');
+                            if (selected.length === 2) {
+                                const uuid1 = selected[0].getAttribute('data-uuid');
+                                const uuid2 = selected[1].getAttribute('data-uuid');
+                                window.location.href = `/backup/compare/?uuid=${uuid1}&compare_uuid=${uuid2}`;
+                            }
+                        });
+                    });
+                </script>
             </div>
         </div>
     </div>

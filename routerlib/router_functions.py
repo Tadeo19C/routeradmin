@@ -3,7 +3,13 @@ import datetime
 import re
 from django.utils import timezone
 from router_manager.models import RouterInformation, Router
-from routerlib.functions import connect_to_ssh
+from routerlib.functions import (
+    connect_to_ssh,
+    execute_cisco_commands,
+    execute_huawei_commands,
+    execute_zte_commands,
+    execute_mikrotik_telnet_commands,
+)
 
 
 def _parse_routeros_key_value_output(output: str) -> dict:
@@ -12,10 +18,8 @@ def _parse_routeros_key_value_output(output: str) -> dict:
     Skip blank lines or lines starting with '[' (the prompt).
     """
     data = {}
-    # Normalize and split
     for raw_line in output.replace('\r', '').splitlines():
         line = raw_line.strip()
-        # skip empty or prompt lines
         if not line or line.startswith('['):
             continue
         if ':' not in line:
@@ -25,16 +29,194 @@ def _parse_routeros_key_value_output(output: str) -> dict:
     return data
 
 
+def _parse_cisco_information(raw_version: str, raw_inventory: str = '', field_max_length: int = 100) -> dict:
+    """
+    Extrae Modelo, Versión de Modelo, Número de Serie, Versión de OS, Firmware,
+    Arquitectura y CPU desde la salida de 'show version' y 'show inventory' de Cisco IOS.
+    Soporta Catalyst, ME3400, ISR, ASR, CSR1000v, IOSv e IOS-XE.
+    """
+    info = {
+        'model_name': '',
+        'model_version': '',
+        'serial_number': '',
+        'os_version': '',
+        'firmware_version': '',
+        'architecture': '',
+        'cpu': '',
+    }
+
+    ver_match = re.search(r'Version\s+([^\s,]+)', raw_version, re.IGNORECASE)
+    if ver_match:
+        info['os_version'] = ver_match.group(1).strip()[:field_max_length]
+
+    model_num_match = re.search(r'Model\s+number\s*:\s*(\S+)', raw_version, re.IGNORECASE)
+    proc_line_match = re.search(
+        r'^[Cc]isco\s+(\S+)\s+(?:\(([^\)]+)\)\s+)?(?:processor\s+)?(?:\(revision\s+([^\)]+)\))?',
+        raw_version,
+        re.MULTILINE
+    )
+    inv_pid_match = re.search(r'PID:\s*(\S+)', raw_inventory) if raw_inventory else None
+
+    if model_num_match:
+        info['model_name'] = model_num_match.group(1).strip()[:field_max_length]
+    elif proc_line_match:
+        info['model_name'] = proc_line_match.group(1).strip()[:field_max_length]
+    elif inv_pid_match:
+        info['model_name'] = inv_pid_match.group(1).strip().rstrip(',')[:field_max_length]
+
+    rev_num_match = re.search(r'Model\s+revision\s+number\s*:\s*(\S+)', raw_version, re.IGNORECASE)
+    rev_inline_match = re.search(r'\(revision\s+([^\)]+)\)', raw_version, re.IGNORECASE)
+    if rev_num_match:
+        info['model_version'] = rev_num_match.group(1).strip()[:field_max_length]
+    elif rev_inline_match:
+        info['model_version'] = rev_inline_match.group(1).strip()[:field_max_length]
+
+    sys_sn_match = re.search(r'System\s+serial\s+number\s*:\s*(\S+)', raw_version, re.IGNORECASE)
+    proc_board_match = re.search(r'Processor\s+board\s+ID\s+(\S+)', raw_version, re.IGNORECASE)
+    inv_sn_match = re.search(r'SN:\s*(\S+)', raw_inventory) if raw_inventory else None
+
+    if sys_sn_match:
+        info['serial_number'] = sys_sn_match.group(1).strip()[:field_max_length]
+    elif proc_board_match:
+        info['serial_number'] = proc_board_match.group(1).strip()[:field_max_length]
+    elif inv_sn_match:
+        info['serial_number'] = inv_sn_match.group(1).strip()[:field_max_length]
+
+    arch_match = re.search(r'^[Cc]isco\s+\S+\s+\(([^\)]+)\)\s+processor', raw_version, re.MULTILINE)
+    if arch_match:
+        arch = arch_match.group(1).strip()
+        info['architecture'] = arch[:field_max_length]
+        info['cpu'] = arch[:field_max_length]
+    else:
+        cpu_match = re.search(r'CPU\s+at\s+\S+', raw_version, re.IGNORECASE)
+        if cpu_match:
+            info['cpu'] = cpu_match.group(0).strip()[:field_max_length]
+
+    sw_img_match = re.search(r'Cisco\s+IOS\s+Software,\s+[^,]+?\(([^\)]+)\)', raw_version, re.IGNORECASE)
+    sys_img_match = re.search(r'System\s+image\s+file\s+is\s+"([^"]+)"', raw_version, re.IGNORECASE)
+    if sw_img_match:
+        info['firmware_version'] = sw_img_match.group(1).strip()[:field_max_length]
+    elif sys_img_match:
+        info['firmware_version'] = sys_img_match.group(1).strip()[:field_max_length]
+
+    return info
+
+
+def _parse_huawei_information(raw_version: str, raw_esn: str = '', raw_device: str = '', field_max_length: int = 100) -> dict:
+    """
+    Extrae Modelo, Serie (ESN), Versión VRP, Firmware y Arquitectura desde
+    'display version', 'display esn' y 'display device' en equipos Huawei VRP.
+    """
+    info = {
+        'model_name': '',
+        'model_version': '',
+        'serial_number': '',
+        'os_version': '',
+        'firmware_version': '',
+        'architecture': 'VRP',
+        'cpu': '',
+    }
+
+    # 1. OS Version: "VRP (R) software, Version 5.170 (S5720 V200R011C10SPC600)"
+    vrp_ver = re.search(r'VRP\s*\(R\)\s*[Ss]oftware,\s*Version\s+([^\r\n,]+)', raw_version, re.IGNORECASE)
+    generic_ver = re.search(r'Version\s+([\d\.]+(?:\s*\([^\)]+\))?)', raw_version, re.IGNORECASE)
+    if vrp_ver:
+        info['os_version'] = vrp_ver.group(1).strip()[:field_max_length]
+    elif generic_ver:
+        info['os_version'] = generic_ver.group(1).strip()[:field_max_length]
+
+    # 2. Firmware Release (ej. V200R011C10SPC600 o V800R011C00SPC607B607)
+    fw_match = re.search(r'\b(V\d{3}R\d{3}[A-Za-z0-9]+)\b', raw_version)
+    if fw_match:
+        info['firmware_version'] = fw_match.group(1).strip()[:field_max_length]
+
+    # 3. Model Name: "HUAWEI S5720-28X-LI-AC Routing Switch uptime is..." o "Quidway S5700-28C-HI..."
+    model_match = re.search(
+        r'^\s*(?:HUAWEI|Quidway)\s+(?!Versatile)([A-Za-z0-9\-\_\/]+).*?\buptime\s+is\b',
+        raw_version,
+        re.MULTILINE | re.IGNORECASE
+    )
+    if not model_match:
+        model_match = re.search(
+            r'^\s*(?:HUAWEI|Quidway)\s+(?!Versatile)([A-Za-z0-9\-\_\/]+)',
+            raw_version,
+            re.MULTILINE | re.IGNORECASE
+        )
+    if model_match:
+        info['model_name'] = model_match.group(1).strip()[:field_max_length]
+
+    # 4. Serial Number (ESN)
+    esn_match = re.search(r'(?:ESN[^:]*:|BarCode=)\s*([A-Za-z0-9\-]{8,})', raw_esn or raw_version, re.IGNORECASE)
+    if esn_match:
+        info['serial_number'] = esn_match.group(1).strip()[:field_max_length]
+
+    pcb_match = re.search(r'Pcb\s+Version\s*:\s*([^\r\n]+)', raw_version, re.IGNORECASE)
+    if pcb_match:
+        info['model_version'] = pcb_match.group(1).strip()[:field_max_length]
+
+    # 5. CPU / Board processor
+    cpu_match = re.search(r'([A-Za-z0-9\-\_]+\s+processor)', raw_version, re.IGNORECASE)
+    if cpu_match:
+        info['cpu'] = cpu_match.group(1).strip()[:field_max_length]
+        info['architecture'] = cpu_match.group(1).strip()[:field_max_length]
+
+    return info
+
+
+def _parse_zte_information(raw_version: str, raw_card: str = '', field_max_length: int = 100) -> dict:
+    """
+    Extrae Modelo, Serie, Versión de Software y Arquitectura desde 'show version' y 'show card'
+    en equipos ZTE (switches/routers ZXR10 y OLTs ZXA10 C300/C320/C600).
+    """
+    info = {
+        'model_name': '',
+        'model_version': '',
+        'serial_number': '',
+        'os_version': '',
+        'firmware_version': '',
+        'architecture': 'ZXROS',
+        'cpu': '',
+    }
+
+    # 1. Model Name: "ZXR10 5950-36TM-H", "ZXA10 C320", "ZXR10 8900E", etc.
+    model_match = re.search(r'\b(ZX[RA]10\s+[A-Za-z0-9\-\_]+|C300|C320|C600|C620|C650)\b', raw_version, re.IGNORECASE)
+    if model_match:
+        info['model_name'] = model_match.group(1).strip()[:field_max_length]
+
+    # 2. OS Version: "Version: V3.00.11..." o "Software, Version V2.1.0"
+    ver_match = re.search(r'Version\s*:?\s*(V?[\d\.]+[A-Za-z0-9\.\-\(\)]*)', raw_version, re.IGNORECASE)
+    if ver_match:
+        info['os_version'] = ver_match.group(1).strip().rstrip(',')[:field_max_length]
+
+    # 3. Firmware / Bootrom
+    boot_match = re.search(r'Bootrom\s+Version\s*:?\s*([^\r\n,]+)', raw_version, re.IGNORECASE)
+    if boot_match:
+        info['firmware_version'] = boot_match.group(1).strip()[:field_max_length]
+
+    # 4. Serial Number
+    sn_match = re.search(r'(?:Serial\s+Number|System\s+serial\s+number|SN)\s*:?\s*([A-Za-z0-9\-]{5,})', raw_version + '\n' + raw_card, re.IGNORECASE)
+    if sn_match:
+        info['serial_number'] = sn_match.group(1).strip()[:field_max_length]
+
+    # 5. CPU / Architecture
+    cpu_match = re.search(r'([^\r\n,]+)\s+processor', raw_version, re.IGNORECASE)
+    if cpu_match:
+        info['cpu'] = cpu_match.group(1).strip()[:field_max_length]
+        info['architecture'] = cpu_match.group(1).strip()[:field_max_length]
+
+    return info
+
+
 def get_router_information(router_information: RouterInformation):
     """
     Connect to the router, retrieve info, and store it in RouterInformation.
-    Utiliza enfoque híbrido: intenta primero la API ultrarrápida de MikroTik (8728)
-    y si no está disponible, conmuta transparentemente a SSH con timeouts estrictos.
+    Soporta SSH y Telnet para MikroTik, Cisco IOS, Huawei VRP y ZTE, además de API MikroTik.
     """
     router = router_information.router
     field_max_length = 100
     success = False
     error_message = ''
+    protocol = (getattr(router, 'connection_protocol', 'ssh') or 'ssh').lower()
 
     # 1. Intento por API MikroTik (Ultrarrápido: ~50ms)
     if router.router_type in ('mikrotik', 'mikrotik-branded'):
@@ -49,12 +231,189 @@ def get_router_information(router_information: RouterInformation):
                 router_information.model_version = telemetry.get('model', '')[:field_max_length]
                 router_information.serial_number = telemetry.get('serial_number', '')[:field_max_length]
                 router_information.firmware_version = telemetry.get('current_firmware', '')[:field_max_length]
+                router_information.success = True
+                router_information.error = False
+                router_information.retry_count = 0
+                router_information.next_retry = None
+                router_information.error_message = ''
+                router_information.last_retrieval = timezone.now()
                 router_information.json_data = json.dumps(telemetry)
+                router_information.save()
                 return True, ''
         except Exception:
-            pass  # Falla silenciosamente a SSH si el puerto API está cerrado
+            pass  # Falla silenciosamente a SSH/Telnet si el puerto API está cerrado
 
-    # 2. Conexión por SSH (con reintentos y timeouts)
+    # 2. Equipos Cisco IOS (SSH interactivo o Telnet con soporte enable)
+    if router.router_type == 'cisco-ios':
+        try:
+            outputs = execute_cisco_commands(
+                router.address,
+                router.port,
+                router.username,
+                router.password,
+                ['show version', 'show inventory'],
+                protocol=protocol,
+                sshkey=router.ssh_key,
+                enable_password=router.enable_password,
+                timeout=25
+            )
+            raw_version = outputs.get('show version', '')
+            raw_inventory = outputs.get('show inventory', '')
+
+            if not raw_version or not any(k in raw_version.lower() for k in ['cisco', 'version', 'ios']):
+                return False, 'No se pudo obtener la salida de show version del equipo Cisco'
+
+            parsed_info = _parse_cisco_information(raw_version, raw_inventory, field_max_length)
+            router_information.model_name = parsed_info['model_name']
+            router_information.model_version = parsed_info['model_version']
+            router_information.serial_number = parsed_info['serial_number']
+            router_information.os_version = parsed_info['os_version']
+            router_information.firmware_version = parsed_info['firmware_version']
+            router_information.architecture = parsed_info['architecture']
+            router_information.cpu = parsed_info['cpu']
+
+            router_information.success = True
+            router_information.error = False
+            router_information.retry_count = 0
+            router_information.next_retry = None
+            router_information.error_message = ''
+            router_information.last_retrieval = timezone.now()
+            router_information.json_data = json.dumps({
+                'show version': raw_version,
+                'show inventory': raw_inventory,
+            })
+            router_information.save()
+            return True, ''
+        except Exception as e:
+            return False, str(e)
+
+    # 3. Equipos Huawei VRP (SSH o Telnet)
+    if router.router_type == 'huawei':
+        try:
+            outputs = execute_huawei_commands(
+                router.address,
+                router.port,
+                router.username,
+                router.password,
+                ['display version', 'display esn', 'display elabel', 'display device'],
+                protocol=protocol,
+                sshkey=router.ssh_key,
+                enable_password=router.enable_password,
+                timeout=25
+            )
+            raw_version = outputs.get('display version', '')
+            raw_esn = outputs.get('display esn', '') + '\n' + outputs.get('display elabel', '')
+            raw_device = outputs.get('display device', '')
+
+            if not raw_version or not any(k in raw_version.lower() for k in ['huawei', 'vrp', 'version', 'quidway']):
+                return False, 'No se pudo obtener la salida de display version del equipo Huawei'
+
+            parsed_info = _parse_huawei_information(raw_version, raw_esn, raw_device, field_max_length)
+            router_information.model_name = parsed_info['model_name']
+            router_information.model_version = parsed_info['model_version']
+            router_information.serial_number = parsed_info['serial_number']
+            router_information.os_version = parsed_info['os_version']
+            router_information.firmware_version = parsed_info['firmware_version']
+            router_information.architecture = parsed_info['architecture']
+            router_information.cpu = parsed_info['cpu']
+
+            router_information.success = True
+            router_information.error = False
+            router_information.retry_count = 0
+            router_information.next_retry = None
+            router_information.error_message = ''
+            router_information.last_retrieval = timezone.now()
+            router_information.json_data = json.dumps({
+                'display version': raw_version,
+                'display esn': raw_esn,
+                'display device': raw_device,
+            })
+            router_information.save()
+            return True, ''
+        except Exception as e:
+            return False, str(e)
+
+    # 4. Equipos ZTE ZXR10 / ZXA10 (SSH o Telnet)
+    if router.router_type == 'zte':
+        try:
+            outputs = execute_zte_commands(
+                router.address,
+                router.port,
+                router.username,
+                router.password,
+                ['show version', 'show card'],
+                protocol=protocol,
+                sshkey=router.ssh_key,
+                enable_password=router.enable_password,
+                timeout=25
+            )
+            raw_version = outputs.get('show version', '')
+            raw_card = outputs.get('show card', '')
+
+            if not raw_version or not any(k in raw_version.lower() for k in ['zte', 'zxr10', 'zxa10', 'zxan', 'version']):
+                return False, 'No se pudo obtener la salida de show version del equipo ZTE'
+
+            parsed_info = _parse_zte_information(raw_version, raw_card, field_max_length)
+            router_information.model_name = parsed_info['model_name']
+            router_information.model_version = parsed_info['model_version']
+            router_information.serial_number = parsed_info['serial_number']
+            router_information.os_version = parsed_info['os_version']
+            router_information.firmware_version = parsed_info['firmware_version']
+            router_information.architecture = parsed_info['architecture']
+            router_information.cpu = parsed_info['cpu']
+
+            router_information.success = True
+            router_information.error = False
+            router_information.retry_count = 0
+            router_information.next_retry = None
+            router_information.error_message = ''
+            router_information.last_retrieval = timezone.now()
+            router_information.json_data = json.dumps({
+                'show version': raw_version,
+                'show card': raw_card,
+            })
+            router_information.save()
+            return True, ''
+        except Exception as e:
+            return False, str(e)
+
+    # 5. MikroTik por Telnet
+    if router.router_type in ('mikrotik', 'mikrotik-branded') and protocol == 'telnet':
+        try:
+            cmds = ['/system resource print without-paging', '/system routerboard print without-paging']
+            outputs = execute_mikrotik_telnet_commands(
+                router.address, router.port, router.username, router.password, cmds, timeout=20
+            )
+            sr = _parse_routeros_key_value_output(outputs.get(cmds[0], ''))
+            rb = _parse_routeros_key_value_output(outputs.get(cmds[1], ''))
+            if sr:
+                router_information.model_name = sr.get('board-name', '')[:field_max_length]
+                router_information.os_version = sr.get('version', '')[:field_max_length]
+                router_information.architecture = sr.get('architecture-name', '')[:field_max_length]
+                router_information.cpu = sr.get('cpu', '')[:field_max_length]
+                success = True
+            if rb:
+                router_information.model_version = rb.get('model', '')[:field_max_length]
+                router_information.serial_number = rb.get('serial-number', '')[:field_max_length]
+                router_information.firmware_version = rb.get('current-firmware', '')[:field_max_length]
+                success = True
+            if not success:
+                return False, 'Failed to retrieve MikroTik information via Telnet'
+
+            router_information.success = True
+            router_information.error = False
+            router_information.retry_count = 0
+            router_information.next_retry = None
+            router_information.error_message = ''
+            router_information.last_retrieval = timezone.now()
+            router_information.json_data = json.dumps({'resource': sr, 'routerboard': rb})
+            router_information.save()
+            return True, ''
+        except Exception as e:
+            return False, str(e)
+
+    # 6. Conexión estándar por SSH (MikroTik, OpenWrt, Ubiquiti airOS)
+    ssh = None
     try:
         ssh = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)
         json_data = {}
@@ -92,28 +451,25 @@ def get_router_information(router_information: RouterInformation):
                     osrel[k] = v.strip().strip('"')
             json_data['cat /etc/os-release'] = osrel
 
-            # hostname
             stdin, stdout, stderr = ssh.exec_command('uci get system.@system[0].hostname')
             hostname = stdout.read().decode('utf-8').strip()
             json_data['uci get system.@system[0].hostname'] = hostname
 
-            # architecture
             stdin, stdout, stderr = ssh.exec_command('uname -m')
             arch = stdout.read().decode('utf-8').strip()
             json_data['uname -m'] = arch
 
-            # fallback serial (MAC of eth0)
             stdin, stdout, stderr = ssh.exec_command('cat /sys/class/net/eth0/address')
             mac = stdout.read().decode('utf-8').strip()
             json_data['cat /sys/class/net/eth0/address'] = mac
 
             if osrel:
-                router_information.model_name       = osrel.get('OPENWRT_DEVICE_MODEL', '')[:field_max_length]
-                router_information.model_version    = osrel.get('VERSION_ID', '')[:field_max_length]
-                router_information.serial_number    = mac[:field_max_length]
-                router_information.os_version       = osrel.get('VERSION', '')[:field_max_length]
+                router_information.model_name = osrel.get('OPENWRT_DEVICE_MODEL', '')[:field_max_length]
+                router_information.model_version = osrel.get('VERSION_ID', '')[:field_max_length]
+                router_information.serial_number = mac[:field_max_length]
+                router_information.os_version = osrel.get('VERSION', '')[:field_max_length]
                 router_information.firmware_version = osrel.get('OPENWRT_RELEASE', '')[:field_max_length]
-                router_information.architecture     = arch[:field_max_length]
+                router_information.architecture = arch[:field_max_length]
                 success = True
             if not success:
                 return False, 'Failed to retrieve router information'
@@ -152,11 +508,10 @@ def get_router_information(router_information: RouterInformation):
 
             router_information.model_name = board.get('board.name', '')[:field_max_length]
             router_information.model_version = (
-                    board.get('board.model', '') or board.get('board.shortname', '')
+                board.get('board.model', '') or board.get('board.shortname', '')
             )[:field_max_length]
-
             router_information.serial_number = (
-                    board.get('board.device_id', '') or board.get('board.hwaddr', '')
+                board.get('board.device_id', '') or board.get('board.hwaddr', '')
             )[:field_max_length]
             router_information.firmware_version = version_raw[:field_max_length]
             router_information.os_version = kernel_version[:field_max_length]
@@ -165,48 +520,19 @@ def get_router_information(router_information: RouterInformation):
                 cpu_model.split()[0] if cpu_model else ''
             )[:field_max_length]
             router_information.cpu = (
-                    cpuinfo.get('system type', '')
-                    or cpu_model
-                    or board.get('board.cpurevision', '')
+                cpuinfo.get('system type', '')
+                or cpu_model
+                or board.get('board.cpurevision', '')
             )[:field_max_length]
             success = True
-        elif router.router_type == 'cisco-ios':
-            # 1) Get Version & Model
-            stdin, stdout, stderr = ssh.exec_command('show version')
-            raw_version = stdout.read().decode('utf-8', errors='ignore')
-            json_data['show version'] = raw_version
-            
-            # Simple regex search
-            # Version: "Cisco IOS Software, ... Version 15.1(4)M4, ..."
-            ver_match = re.search(r'Version ([^,]+)', raw_version)
-            if ver_match:
-                router_information.os_version = ver_match.group(1)[:field_max_length]
-            
-            # Model: "Cisco CISCO2901/K9 (revision 1.0) with ..."
-            model_match = re.search(r'Cisco (\S+) \(revision', raw_version)
-            if model_match:
-                router_information.model_name = model_match.group(1)[:field_max_length]
-
-            # 2) Get Inventory & Serial
-            stdin, stdout, stderr = ssh.exec_command('show inventory')
-            raw_inventory = stdout.read().decode('utf-8', errors='ignore')
-            json_data['show inventory'] = raw_inventory
-            
-            # SN: "SN: PID00000000"
-            sn_match = re.search(r'SN: (\S+)', raw_inventory)
-            if sn_match:
-                router_information.serial_number = sn_match.group(1)[:field_max_length]
-            
-            success = True
-
         else:
             return False, f"Router type not supported: {router.get_router_type_display()}"
 
         if success:
-            router_information.success        = True
-            router_information.error          = False
-            router_information.retry_count    = 0
-            router_information.next_retry     = None
+            router_information.success = True
+            router_information.error = False
+            router_information.retry_count = 0
+            router_information.next_retry = None
             router_information.error_message = ''
             router_information.last_retrieval = timezone.now()
             router_information.json_data = json.dumps(json_data)
@@ -217,10 +543,11 @@ def get_router_information(router_information: RouterInformation):
         error_message = str(e)
 
     finally:
-        try:
-            ssh.close()
-        except:
-            pass
+        if ssh:
+            try:
+                ssh.close()
+            except Exception:
+                pass
 
     return success, error_message
 

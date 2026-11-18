@@ -72,29 +72,26 @@ def view_manage_backup_profile(request):
 
 @login_required()
 def view_backup_list(request):
-    backup_list = RouterBackup.objects.all().order_by('-created')
-    filter_mode = request.GET.get('filter')
-    
+    backup_list = RouterBackup.objects.select_related('router', 'router__routerstatus').all().order_by('-created')
+    router_uuid = request.GET.get('router')
+    if router_uuid:
+        backup_list = backup_list.filter(router__uuid=router_uuid)
+
     if request.GET.get('type') == 'queue':
         backup_list = backup_list.filter(error=False, success=False).order_by('next_retry')
         view_type = 'queue'
     elif request.GET.get('type') == 'errors' or request.GET.get('status') == 'error':
         backup_list = backup_list.filter(error=True).order_by('-created')
         view_type = 'errors'
-    elif filter_mode == 'changes':
-        # Mostrar únicamente respaldos donde hubo cambio respecto al previo
-        backup_list = backup_list.filter(success=True, identical_to_previous=False).order_by('-created')
-        view_type = 'changes'
     else:
-        # Por defecto mostrar TODOS los respaldos exitosos (incluyendo idénticos) para auditoría completa
-        backup_list = backup_list.filter(success=True).order_by('-created')
-        view_type = 'all'
+        # Mostrar solo respaldos reales (iniciales o con cambios reales detectados)
+        backup_list = backup_list.filter(success=True, identical_to_previous=False).order_by('-created')
+        view_type = 'success'
 
     context = {
         'backup_list': backup_list,
         'page_title': 'Lista de Respaldos',
         'view_type': view_type,
-        'filter_mode': filter_mode
     }
     return render(request, 'backup/backup_list.html', context)
 
@@ -265,18 +262,28 @@ def view_backup_download(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=20).exists():
         return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
     backup = get_object_or_404(RouterBackup, uuid=request.GET.get('uuid'))
+    ext_map = get_router_backup_file_extension(backup.router.router_type)
     if request.GET.get('type') == 'text':
-        response = HttpResponse(backup.backup_text, content_type='text/plain')
+        content = backup.backup_text or ''
+        response = HttpResponse(content, content_type='text/plain; charset=utf-8')
         if backup.backup_text_filename:
             filename = backup.backup_text_filename
         else:
-            filename = gen_backup_name(backup)
-            filename += f'.missing_backup_name.{get_router_backup_file_extension(backup.router.router_type)["text"]}'
-        print(filename)
-        response['Content-Disposition'] = f'attachment; filename={filename}'
+            filename = f'{gen_backup_name(backup)}.{ext_map["text"]}'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
     elif request.GET.get('type') == 'binary':
-        response = FileResponse(backup.backup_binary, as_attachment=True)
+        if backup.backup_binary and backup.backup_binary.name:
+            try:
+                return FileResponse(backup.backup_binary.open('rb'), as_attachment=True)
+            except Exception:
+                pass
+        # Fallback binario a partir de la configuración si el archivo físico no existe por separado
+        bin_ext = ext_map.get('binary') or 'backup'
+        filename = f'{gen_backup_name(backup)}.{bin_ext}'
+        content = (backup.backup_text or '').encode('utf-8')
+        response = HttpResponse(content, content_type='application/octet-stream')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
     else:
         raise Http404
@@ -319,3 +326,97 @@ def view_get_backup_profile_details(request):
         # Add other fields if needed for the UI
     }
     return JsonResponse(data)
+
+
+@login_required()
+def view_config_search(request):
+    """
+    Buscador Global de Configuraciones (Network-Wide Config Search).
+    Busca texto o expresiones regulares a través del último respaldo exitoso
+    de todos los equipos activos (MikroTik, Cisco IOS, Huawei VRP, ZTE).
+    """
+    import time
+    import re
+    from router_manager.models import RouterGroup, SUPPORTED_ROUTER_TYPES
+
+    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=20).exists():
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
+
+    q = (request.GET.get('q') or '').strip()
+    router_type = (request.GET.get('router_type') or '').strip()
+    group_uuid = (request.GET.get('group') or '').strip()
+    use_regex = request.GET.get('regex') == '1'
+    case_sensitive = request.GET.get('case') == '1'
+
+    results = []
+    total_matches = 0
+    scanned_routers_count = 0
+    elapsed_ms = 0
+    regex_error = None
+
+    routers_qs = Router.objects.filter(enabled=True).exclude(router_type='monitoring').prefetch_related('routergroup_set')
+    if router_type:
+        routers_qs = routers_qs.filter(router_type=router_type)
+    if group_uuid:
+        routers_qs = routers_qs.filter(routergroup__uuid=group_uuid)
+
+    if q:
+        t0 = time.perf_counter()
+        flags = 0 if case_sensitive else re.IGNORECASE
+        pattern = None
+        if use_regex:
+            try:
+                pattern = re.compile(q, flags)
+            except re.error as e:
+                regex_error = f"Expresión regular inválida: {e}"
+        else:
+            pattern = re.compile(re.escape(q), flags)
+
+        if pattern:
+            for r in routers_qs.order_by('name'):
+                latest_b = (
+                    RouterBackup.objects.filter(router=r, success=True, backup_text__isnull=False)
+                    .exclude(backup_text='')
+                    .order_by('-created')
+                    .first()
+                )
+                if not latest_b or not latest_b.backup_text:
+                    continue
+                scanned_routers_count += 1
+                matched_lines = []
+                for idx, line in enumerate(latest_b.backup_text.splitlines(), 1):
+                    if pattern.search(line):
+                        matched_lines.append({
+                            'line_number': idx,
+                            'line_text': line,
+                        })
+                        total_matches += 1
+                        if len(matched_lines) >= 100:
+                            break
+                if matched_lines:
+                    results.append({
+                        'router': r,
+                        'backup': latest_b,
+                        'matches': matched_lines,
+                        'match_count': len(matched_lines),
+                    })
+        elapsed_ms = round((time.perf_counter() - t0) * 1000, 1)
+
+    context = {
+        'page_title': 'Buscador Global de Configuraciones',
+        'q': q,
+        'router_type': router_type,
+        'group_uuid': group_uuid,
+        'use_regex': use_regex,
+        'case_sensitive': case_sensitive,
+        'results': results,
+        'total_matches': total_matches,
+        'matched_routers_count': len(results),
+        'scanned_routers_count': scanned_routers_count,
+        'elapsed_ms': elapsed_ms,
+        'regex_error': regex_error,
+        'router_types': SUPPORTED_ROUTER_TYPES,
+        'router_groups': RouterGroup.objects.all().order_by('name'),
+        'view_type': 'search',
+    }
+    return render(request, 'backup/config_search.html', context)

@@ -72,6 +72,11 @@
 {% tag_webadmin_version as webadmin_version %}
 
 <body class="hold-transition layout-top-nav">
+    <script>
+        if (document.documentElement.getAttribute('data-theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
     <div class="wrapper">
 
         <!-- Navbar -->
@@ -425,6 +430,9 @@
             }
 
             var currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            if (currentTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
             updateThemeIcon(currentTheme === 'dark');
 
             $('#themeToggle').on('click', function() {
@@ -432,8 +440,10 @@
                 var nextTheme = isDark ? 'light' : 'dark';
                 if (nextTheme === 'dark') {
                     document.documentElement.setAttribute('data-theme', 'dark');
+                    document.body.classList.add('dark-mode');
                 } else {
                     document.documentElement.removeAttribute('data-theme');
+                    document.body.classList.remove('dark-mode');
                 }
                 localStorage.setItem('megacom_theme', nextTheme);
                 updateThemeIcon(nextTheme === 'dark');

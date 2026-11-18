@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-search text-primary"></i>
+                    Buscador Global de Configuraciones de Red
+                </h3>
+                <span class="text-muted small">
+                    Audita direcciones IP, VLANs, rutas, interfaces, SNMP o clientes en toda la flota simultáneamente
+                </span>
+            </div>
+
+            <div class="card-body">
+                {% include 'backup/backup_nav_tabs.html' %}
+
+                <!-- Search Form -->
+                <form method="get" action="/backup/search/" class="mb-4">
+                    <div class="form-row align-items-end">
+                        <div class="form-group col-md-5 mb-2">
+                            <label for="id_q">Texto o Comando a Buscar</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-terminal"></i></span>
+                                </div>
+                                <input type="text" name="q" id="id_q" value="{{ q }}"
+                                       class="form-control"
+                                       placeholder="Ej: 172.20.250.2, vlan 55, interface, snmp-server, ether1..."
+                                       autofocus>
+                            </div>
+                        </div>
+
+                        <div class="form-group col-md-2 mb-2">
+                            <label for="id_router_type">Fabricante / Tipo</label>
+                            <select name="router_type" id="id_router_type" class="form-control">
+                                <option value="">-- Todos --</option>
+                                {% for code, label in router_types %}
+                                    <option value="{{ code }}" {% if router_type == code %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-3 mb-2">
+                            <label for="id_group">Nodo / Grupo</label>
+                            <select name="group" id="id_group" class="form-control">
+                                <option value="">-- Todos los Nodos --</option>
+                                {% for grp in router_groups %}
+                                    <option value="{{ grp.uuid }}" {% if group_uuid == grp.uuid|stringformat:"s" %}selected{% endif %}>{{ grp.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-2 mb-2">
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <i class="fas fa-search mr-1"></i> Buscar en Red
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between flex-wrap mt-2">
+                        <div class="d-flex align-items-center flex-wrap" style="gap: 16px;">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="id_regex" name="regex" value="1" {% if use_regex %}checked{% endif %}>
+                                <label class="custom-control-label small text-muted" for="id_regex">Usar Expresión Regular (Regex)</label>
+                            </div>
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="id_case" name="case" value="1" {% if case_sensitive %}checked{% endif %}>
+                                <label class="custom-control-label small text-muted" for="id_case">Distinguir Mayúsculas/Minúsculas</label>
+                            </div>
+                        </div>
+
+                        <!-- Quick Filter Chips -->
+                        <div class="small text-muted mt-1 mt-md-0">
+                            <span class="mr-1">Búsquedas rápidas:</span>
+                            <a href="?q=interface" class="badge badge-secondary mr-1">interface</a>
+                            <a href="?q=vlan" class="badge badge-secondary mr-1">vlan</a>
+                            <a href="?q=address" class="badge badge-secondary mr-1">address</a>
+                            <a href="?q=snmp" class="badge badge-secondary mr-1">snmp</a>
+                            <a href="?q=ntp" class="badge badge-secondary mr-1">ntp</a>
+                            <a href="?q=username" class="badge badge-secondary">username</a>
+                        </div>
+                    </div>
+                </form>
+
+                {% if regex_error %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle mr-1"></i> {{ regex_error }}
+                    </div>
+                {% endif %}
+
+                {% if q and not regex_error %}
+                    <!-- Search Summary Banner -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap p-3 mb-3 rounded border bg-light">
+                        <div>
+                            <i class="fas fa-bolt text-warning mr-1"></i>
+                            Se encontraron <strong>{{ total_matches }}</strong> coincidencias en
+                            <strong>{{ matched_routers_count }}</strong> de <strong>{{ scanned_routers_count }}</strong> equipos analizados
+                            para <code>{{ q }}</code>
+                        </div>
+                        <span class="badge-gpon badge-gpon-info">
+                            <i class="far fa-clock mr-1"></i> {{ elapsed_ms }} ms
+                        </span>
+                    </div>
+
+                    {% if results %}
+                        {% for item in results %}
+                            <div class="card mb-3 border">
+                                <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap">
+                                    <div class="d-flex align-items-center" style="gap: 10px;">
+                                        <span class="badge-gpon badge-gpon-info">{{ item.router.get_router_type_display }}</span>
+                                        <a href="/router/details/?uuid={{ item.router.uuid }}" class="font-weight-bold" style="font-size: 14.5px;">
+                                            {{ item.router.name }}
+                                        </a>
+                                        <code>{{ item.router.address }}</code>
+                                        <span class="text-muted small">
+                                            (Respaldo #{{ item.backup.id }} &bull; {{ item.backup.created|date:"d/m/Y H:i" }})
+                                        </span>
+                                    </div>
+                                    <div class="d-flex align-items-center" style="gap: 6px;">
+                                        <span class="badge-gpon badge-gpon-success">
+                                            {{ item.match_count }} coincidencia{{ item.match_count|pluralize:"s" }}
+                                        </span>
+                                        <a href="/backup/backup_details/?uuid={{ item.backup.uuid }}" class="btn btn-xs btn-outline-primary">
+                                            <i class="fas fa-file-code"></i> Ver Respaldo #{{ item.backup.id }}
+                                        </a>
+                                        <a href="/backup/download/?uuid={{ item.backup.uuid }}&type=text" class="btn btn-xs btn-outline-info">
+                                            <i class="fas fa-download"></i> Descargar
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <pre class="m-0 border-0" style="border-radius: 0 0 12px 12px; max-height: 280px; padding: 12px 16px !important;">{% for m in item.matches %}<span class="text-muted select-none">Línea {{ m.line_number|stringformat:"4d" }}: </span>{{ m.line_text }}
+{% endfor %}</pre>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search-minus fa-3x text-muted mb-3"></i>
+                            <h6 class="font-weight-bold">No se encontraron coincidencias para "{{ q }}"</h6>
+                            <p class="text-muted small mb-0">
+                                Se analizaron las últimas configuraciones de {{ scanned_routers_count }} equipos activos sin resultados.
+                            </p>
+                        </div>
+                    {% endif %}
+                {% elif not q %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-network-wired fa-3x mb-3" style="opacity: 0.35;"></i>
+                        <h6 class="font-weight-bold">Ingresa un término o comando para auditar toda la red</h6>
+                        <p class="small mb-0">
+                            Busca al instante en los respaldos de equipos <strong>Cisco IOS, MikroTik RouterOS, Huawei VRP y ZTE</strong>.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

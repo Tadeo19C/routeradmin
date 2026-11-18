@@ -219,8 +219,6 @@ def view_manage_router(request):
     form = RouterForm(request.POST or None, instance=router)
     if form.is_valid():
         saved_router = form.save()
-        from backup_data.services import service_generate_backup_schedule
-        service_generate_backup_schedule()
         
         # Log the activity
         action = "Equipo Editado" if uuid else "Equipo Creado"
@@ -233,17 +231,20 @@ def view_manage_router(request):
 
         # Handle group assignment (M2M)
         selected_group = form.cleaned_data.get('router_group')
-        # Remove router from all current groups
         for group in RouterGroup.objects.filter(routers=saved_router):
             group.routers.remove(saved_router)
-        # Add to selected group if one was chosen
         if selected_group:
             selected_group.routers.add(saved_router)
-        messages.success(request, 'Equipo guardado correctamente|Puede tomar unos minutos hasta que inicie el monitoreo para este equipo.')
+        messages.success(request, 'Equipo guardado correctamente|Sincronizando información y calendario del equipo.')
         router_status, router_status_created = RouterStatus.objects.get_or_create(router=saved_router)
         BackupSchedule.objects.filter(router=saved_router).delete()
+        from backup_data.services import service_generate_backup_schedule
+        service_generate_backup_schedule()
         if saved_router.router_type == 'monitoring':
             RouterInformation.objects.filter(router=saved_router).delete()
+        else:
+            ri, _ = RouterInformation.objects.get_or_create(router=saved_router)
+            threading.Thread(target=update_router_information, args=(ri,), daemon=True).start()
         webadmin_settings.router_config_last_updated = timezone.now()
         webadmin_settings.save()
         if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax'):
@@ -534,19 +535,27 @@ def view_ajax_test_connection(request):
     address = request.POST.get('address')
     username = request.POST.get('username')
     password = request.POST.get('password')
+    enable_password = request.POST.get('enable_password')
     port = request.POST.get('port')
     router_type = request.POST.get('router_type')
+    connection_protocol = request.POST.get('connection_protocol', 'ssh')
     
     if not all([address, username, port, router_type]):
         return JsonResponse({'status': 'error', 'message': 'Faltan datos requeridos (IP, Usuario, Puerto, Tipo)'})
 
-    # If it's an existing router and password is empty, fetch existing one
     uuid = request.POST.get('uuid')
-    if not password and uuid:
+    if uuid:
         router = get_object_or_404(Router, uuid=uuid)
-        password = router.password
+        if not password:
+            password = router.password
+        if not enable_password and router.enable_password:
+            enable_password = router.enable_password
 
-    success, message = test_authentication(router_type, address, port, username, password)
+    success, message = test_authentication(
+        router_type, address, port, username, password,
+        connection_protocol=connection_protocol,
+        enable_password=enable_password
+    )
     
     if success:
         return JsonResponse({'status': 'success', 'message': '¡Conexión exitosa!'})

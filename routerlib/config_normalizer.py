@@ -14,33 +14,26 @@ def normalize_routeros_config(text: str) -> str:
     """
     if not text:
         return ""
-    
+
     lines = []
     for raw_line in text.replace('\r\n', '\n').split('\n'):
         line = raw_line.rstrip()
         stripped = line.strip()
-        
-        # Omitir comentarios de cabecera con timestamps volátiles
-        # Ejemplos comunes:
-        # # 2026-11-16 09:00:00 by RouterOS 7.15
-        # # software id = XXXX-XXXX
-        # # model = RB750Gr3
-        # # serial number = XXXXXXXXXX
+
         if stripped.startswith('#'):
             lower = stripped.lower()
             if any(marker in lower for marker in [
-                'by routeros', 'software id', 'serial number', 'model =', 
-                'jan/', 'feb/', 'mar/', 'apr/', 'may/', 'jun/', 
+                'by routeros', 'software id', 'serial number', 'model =',
+                'jan/', 'feb/', 'mar/', 'apr/', 'may/', 'jun/',
                 'jul/', 'aug/', 'sep/', 'oct/', 'nov/', 'dec/'
             ]):
                 continue
-            # Si es solo una línea vacía de comentario '#'
             if stripped == '#':
                 continue
-        
-        if stripped:  # Omitir líneas completamente en blanco
+
+        if stripped:
             lines.append(line)
-            
+
     return '\n'.join(lines).strip()
 
 
@@ -51,13 +44,12 @@ def normalize_cisco_config(text: str) -> str:
     """
     if not text:
         return ""
-    
+
     lines = []
     for raw_line in text.replace('\r\n', '\n').split('\n'):
         line = raw_line.rstrip()
         stripped = line.strip()
-        
-        # Ignorar comentarios volátiles de Cisco
+
         if any(stripped.startswith(prefix) for prefix in [
             'Building configuration...',
             'Current configuration :',
@@ -66,10 +58,68 @@ def normalize_cisco_config(text: str) -> str:
             'ntp clock-period',
         ]):
             continue
-            
+
         if stripped:
             lines.append(line)
-            
+
+    return '\n'.join(lines).strip()
+
+
+def normalize_huawei_config(text: str) -> str:
+    """
+    Normaliza configuraciones de Huawei VRP (display current-configuration).
+    Elimina marcas de tiempo volátiles (!Last configuration was updated/saved at...).
+    """
+    if not text:
+        return ""
+
+    lines = []
+    for raw_line in text.replace('\r\n', '\n').split('\n'):
+        line = raw_line.rstrip()
+        stripped = line.strip()
+
+        if any(stripped.lower().startswith(prefix) for prefix in [
+            '!software version',
+            '!last configuration was updated at',
+            '!last configuration was saved at',
+            '!time:',
+            'current configuration :',
+        ]):
+            continue
+
+        if stripped == '#':
+            continue
+
+        if stripped:
+            lines.append(line)
+
+    return '\n'.join(lines).strip()
+
+
+def normalize_zte_config(text: str) -> str:
+    """
+    Normaliza configuraciones de ZTE ZXR10 / ZXA10 (show running-config).
+    Elimina cabeceras de construcción y marcas de tiempo volátiles.
+    """
+    if not text:
+        return ""
+
+    lines = []
+    for raw_line in text.replace('\r\n', '\n').split('\n'):
+        line = raw_line.rstrip()
+        stripped = line.strip()
+
+        if any(stripped.lower().startswith(prefix) for prefix in [
+            'building configuration',
+            'current configuration',
+            '! last configuration',
+            '!<last',
+        ]):
+            continue
+
+        if stripped:
+            lines.append(line)
+
     return '\n'.join(lines).strip()
 
 
@@ -79,13 +129,13 @@ def normalize_openwrt_config(text: str) -> str:
     """
     if not text:
         return ""
-    
+
     lines = []
     for raw_line in text.replace('\r\n', '\n').split('\n'):
         line = raw_line.rstrip()
         if line.strip():
             lines.append(line)
-            
+
     return '\n'.join(lines).strip()
 
 
@@ -95,14 +145,17 @@ def normalize_config(text: str, router_type: str = 'mikrotik') -> str:
     """
     if not text:
         return ""
-    
+
     r_type = (router_type or '').lower()
     if 'mikrotik' in r_type:
         return normalize_routeros_config(text)
     elif 'cisco' in r_type:
         return normalize_cisco_config(text)
+    elif 'huawei' in r_type:
+        return normalize_huawei_config(text)
+    elif 'zte' in r_type:
+        return normalize_zte_config(text)
     elif 'openwrt' in r_type:
         return normalize_openwrt_config(text)
     else:
-        # Normalización estándar para airOS u otros
         return '\n'.join(line.rstrip() for line in text.replace('\r\n', '\n').split('\n') if line.strip()).strip()

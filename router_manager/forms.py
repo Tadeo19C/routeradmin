@@ -20,6 +20,11 @@ HOUR_CHOICES_12H = (
 
 class RouterForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput, required=False)
+    enable_password = forms.CharField(
+        widget=forms.PasswordInput,
+        required=False,
+        label='Clave Enable / Super (Opcional)',
+    )
     router_group = forms.ModelChoiceField(
         queryset=RouterGroup.objects.all().order_by('name'),
         required=True,
@@ -54,7 +59,7 @@ class RouterForm(forms.ModelForm):
 
     class Meta:
         model = Router
-        fields = ['name', 'router_type', 'connection_protocol', 'address', 'port', 'username', 'password', 'monitoring', 'enabled']
+        fields = ['name', 'router_type', 'connection_protocol', 'address', 'port', 'username', 'password', 'enable_password', 'monitoring', 'enabled']
         labels = {
             'name': 'Nombre',
             'router_type': 'Tipo de Equipo',
@@ -87,6 +92,8 @@ class RouterForm(forms.ModelForm):
             delete_html = "<a href='javascript:void(0)' class='btn btn-outline-danger' data-command='delete' onclick='openCommandDialog(this)'>Borrar</a>"
             if self.instance.password:
                 self.fields['password'].widget.attrs['placeholder'] = '************'
+            if self.instance.enable_password:
+                self.fields['enable_password'].widget.attrs['placeholder'] = '************'
             # Pre-select the current group if the router belongs to one
             current_group = self.instance.routergroup_set.first()
             if current_group:
@@ -137,11 +144,12 @@ class RouterForm(forms.ModelForm):
                 css_class='form-row'
             ),
             Row(
-                Column('username', css_class='form-group col-md-4 mb-2'),
-                Column('password', css_class='form-group col-md-4 mb-2'),
+                Column('username', css_class='form-group col-md-3 mb-2'),
+                Column('password', css_class='form-group col-md-3 mb-2'),
+                Column('enable_password', css_class='form-group col-md-3 mb-2'),
                 Column(
                     HTML('<div class="form-group mb-2"><label>&nbsp;</label><div><button type="button" id="btn-test-connection" class="btn btn-outline-info btn-sm btn-block"><i class="fas fa-plug"></i> Probar Conexión</button></div></div>'),
-                    css_class='col-md-4'
+                    css_class='col-md-3'
                 ),
                 css_class='form-row align-items-end'
             ),
@@ -214,9 +222,15 @@ class RouterForm(forms.ModelForm):
 
         if not password and self.instance.password:
             cleaned_data['password'] = self.instance.password
+        enable_password = cleaned_data.get('enable_password')
+        if not enable_password and self.instance.enable_password:
+            cleaned_data['enable_password'] = self.instance.enable_password
 
+        connection_protocol = cleaned_data.get('connection_protocol') or 'ssh'
         test_authentication_success, test_authentication_message = test_authentication(
-            router_type, cleaned_data['address'], port, username, cleaned_data['password']
+            router_type, cleaned_data['address'], port, username, cleaned_data['password'],
+            connection_protocol=connection_protocol,
+            enable_password=cleaned_data.get('enable_password')
         )
         if not test_authentication_success:
             if test_authentication_message:

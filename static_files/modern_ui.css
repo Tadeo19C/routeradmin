@@ -732,3 +732,346 @@ body.dark-mode .alert-warning {
     border-color: rgba(245, 158, 11, 0.3) !important;
     color: #fbbf24 !important;
 }
+
+
+/* ========================================================
+   Comprehensive Dark Mode & Component Coverage
+   (Modals, Tabs, DataTables, Pagination, Chosen, Badges)
+   ======================================================== */
+
+textarea.form-control {
+    height: auto !important;
+    min-height: 90px;
+}
+
+/* Soft Pill Badges (used in router_list.html) */
+.badge-pill-soft {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 11.5px;
+    font-weight: 600;
+}
+.badge-pill-soft.success {
+    background-color: var(--success-subtle);
+    color: var(--success);
+}
+.badge-pill-soft.danger {
+    background-color: var(--error-subtle);
+    color: var(--error);
+}
+.badge-pill-soft.warning {
+    background-color: var(--warning-subtle);
+    color: var(--warning);
+}
+.badge-pill-soft.info {
+    background-color: var(--info-subtle);
+    color: var(--info);
+}
+
+/* Nav Tabs (Light & Dark) */
+.nav-tabs {
+    border-bottom: 1px solid var(--border) !important;
+    gap: 4px;
+}
+.nav-tabs .nav-link {
+    color: var(--muted-foreground) !important;
+    background-color: transparent !important;
+    border: 1px solid transparent !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: var(--radius) var(--radius) 0 0 !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    padding: 8px 14px !important;
+    transition: var(--transition);
+}
+.nav-tabs .nav-link:hover {
+    color: var(--foreground) !important;
+    background-color: var(--secondary) !important;
+}
+.nav-tabs .nav-link.active,
+.card-primary.card-outline-tabs > .card-header a.active {
+    color: var(--primary) !important;
+    background-color: var(--primary-subtle) !important;
+    border-bottom: 2px solid var(--primary) !important;
+    font-weight: 700 !important;
+}
+
+/* Modals (Light & Dark) */
+.modal-content {
+    background-color: var(--card) !important;
+    color: var(--foreground) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+.modal-header {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--border) !important;
+    color: var(--foreground) !important;
+    padding: 14px 20px !important;
+}
+.modal-title {
+    color: var(--foreground) !important;
+    font-weight: 700 !important;
+    font-size: 15px !important;
+}
+.modal-body {
+    background-color: var(--card) !important;
+    color: var(--foreground) !important;
+    padding: 20px !important;
+}
+.modal-footer {
+    background-color: transparent !important;
+    border-top: 1px solid var(--border) !important;
+    padding: 12px 20px !important;
+}
+.modal-header .close {
+    color: var(--muted-foreground) !important;
+    text-shadow: none !important;
+    opacity: 0.8;
+}
+.modal-header .close:hover {
+    color: var(--foreground) !important;
+    opacity: 1;
+}
+
+/* Pagination & DataTables Controls */
+.page-item .page-link {
+    background-color: var(--card) !important;
+    border-color: var(--border) !important;
+    color: var(--foreground) !important;
+    font-size: 12.5px !important;
+    padding: 6px 12px !important;
+}
+.page-item .page-link:hover {
+    background-color: var(--secondary) !important;
+    color: var(--primary) !important;
+}
+.page-item.active .page-link {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+.page-item.disabled .page-link {
+    background-color: var(--secondary) !important;
+    border-color: var(--border) !important;
+    color: var(--muted-foreground) !important;
+    opacity: 0.55;
+}
+.dataTables_info,
+.dataTables_length label,
+.dataTables_filter label {
+    color: var(--muted-foreground) !important;
+    font-size: 12.5px !important;
+}
+.dt-buttons .btn {
+    background-color: var(--secondary) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--foreground) !important;
+    font-size: 12px !important;
+    padding: 5px 11px !important;
+}
+.dt-buttons .btn:hover {
+    background-color: var(--primary-subtle) !important;
+    color: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+/* Input Groups & Addons */
+.input-group-text {
+    background-color: var(--secondary) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--muted-foreground) !important;
+}
+
+/* Chosen Select Plugin Dark Mode */
+[data-theme="dark"] .chosen-container-single .chosen-single,
+body.dark-mode .chosen-container-single .chosen-single,
+[data-theme="dark"] .chosen-container-multi .chosen-choices,
+body.dark-mode .chosen-container-multi .chosen-choices {
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--foreground) !important;
+    box-shadow: none !important;
+    border-radius: var(--radius) !important;
+}
+[data-theme="dark"] .chosen-container .chosen-drop,
+body.dark-mode .chosen-container .chosen-drop {
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--foreground) !important;
+}
+[data-theme="dark"] .chosen-container .chosen-results li,
+body.dark-mode .chosen-container .chosen-results li {
+    color: var(--foreground) !important;
+}
+[data-theme="dark"] .chosen-container .chosen-results li.highlighted,
+body.dark-mode .chosen-container .chosen-results li.highlighted {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+}
+[data-theme="dark"] .chosen-container-multi .chosen-choices li.search-choice,
+body.dark-mode .chosen-container-multi .chosen-choices li.search-choice {
+    background: var(--secondary) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--foreground) !important;
+    box-shadow: none !important;
+}
+[data-theme="dark"] .chosen-container-multi .chosen-choices li.search-field input[type="text"],
+body.dark-mode .chosen-container-multi .chosen-choices li.search-field input[type="text"] {
+    color: var(--foreground) !important;
+}
+
+/* Dark Mode Specific Overrides for Badges, Buttons, Alerts & Surfaces */
+[data-theme="dark"] .bg-light,
+body.dark-mode .bg-light {
+    background-color: var(--secondary) !important;
+    color: var(--foreground) !important;
+}
+[data-theme="dark"] .badge-light,
+body.dark-mode .badge-light {
+    background-color: var(--secondary) !important;
+    color: var(--foreground) !important;
+    border-color: var(--border) !important;
+}
+[data-theme="dark"] .btn-outline-secondary,
+body.dark-mode .btn-outline-secondary {
+    color: #cbd5e1 !important;
+    border-color: #334155 !important;
+}
+[data-theme="dark"] .btn-outline-secondary:hover,
+body.dark-mode .btn-outline-secondary:hover {
+    background-color: #1e293b !important;
+    color: #ffffff !important;
+}
+[data-theme="dark"] .btn-outline-dark,
+body.dark-mode .btn-outline-dark {
+    color: #cbd5e1 !important;
+    border-color: #475569 !important;
+}
+[data-theme="dark"] .btn-outline-dark:hover,
+body.dark-mode .btn-outline-dark:hover {
+    background-color: #334155 !important;
+    color: #ffffff !important;
+}
+[data-theme="dark"] .dropdown-divider,
+body.dark-mode .dropdown-divider,
+[data-theme="dark"] hr,
+body.dark-mode hr {
+    border-color: var(--border) !important;
+}
+[data-theme="dark"] code,
+body.dark-mode code {
+    color: #38bdf8 !important;
+    background-color: rgba(56, 189, 248, 0.12) !important;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+[data-theme="dark"] .alert-info,
+body.dark-mode .alert-info {
+    background-color: rgba(56, 189, 248, 0.12) !important;
+    border-color: rgba(56, 189, 248, 0.3) !important;
+    color: #7dd3fc !important;
+}
+[data-theme="dark"] .alert-success,
+body.dark-mode .alert-success {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+    color: #6ee7b7 !important;
+}
+[data-theme="dark"] .alert-danger,
+body.dark-mode .alert-danger {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    color: #fca5a5 !important;
+}
+
+
+/* ========================================================
+   Antigravity Design Expert Enhancements
+   (Weightlessness, Spatial Depth, Glassmorphism & Staggered Motion)
+   ======================================================== */
+
+.content-wrapper {
+    background-image:
+        radial-gradient(at 15% 10%, rgba(59, 130, 246, 0.05) 0px, transparent 45%),
+        radial-gradient(at 85% 5%, rgba(38, 64, 146, 0.04) 0px, transparent 45%) !important;
+}
+
+[data-theme="dark"] .content-wrapper,
+body.dark-mode .content-wrapper {
+    background-image:
+        radial-gradient(at 15% 10%, rgba(59, 130, 246, 0.09) 0px, transparent 50%),
+        radial-gradient(at 85% 15%, rgba(16, 185, 129, 0.05) 0px, transparent 45%) !important;
+}
+
+/* Weightless Floating Cards & Glassmorphic Rim */
+.card {
+    box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.05), 0 4px 10px -2px rgba(15, 23, 42, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"] .card,
+body.dark-mode .card {
+    background: rgba(20, 30, 51, 0.88) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 18px 36px -8px rgba(0, 0, 0, 0.45), 0 4px 12px -2px rgba(0, 0, 0, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.kpi-card {
+    box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.05), 0 4px 10px -2px rgba(15, 23, 42, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease, box-shadow 0.22s ease !important;
+}
+
+[data-theme="dark"] .kpi-card,
+body.dark-mode .kpi-card {
+    background: rgba(20, 30, 51, 0.88) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 20px 38px -10px rgba(59, 130, 246, 0.16), 0 8px 16px -4px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Glassmorphic Modals & Dropdowns */
+[data-theme="dark"] .modal-content,
+body.dark-mode .modal-content,
+[data-theme="dark"] .dropdown-menu,
+body.dark-mode .dropdown-menu {
+    background: rgba(20, 30, 51, 0.94) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Staggered Entrance Animations (Disabled on reduced-motion) */
+@keyframes agyFloatIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .content-wrapper .card,
+    .content-wrapper .kpi-card {
+        animation: agyFloatIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .row > [class*="col-"]:nth-child(1) .kpi-card { animation-delay: 0.02s; }
+    .row > [class*="col-"]:nth-child(2) .kpi-card { animation-delay: 0.07s; }
+    .row > [class*="col-"]:nth-child(3) .kpi-card { animation-delay: 0.12s; }
+    .row > [class*="col-"]:nth-child(4) .kpi-card { animation-delay: 0.17s; }
+}

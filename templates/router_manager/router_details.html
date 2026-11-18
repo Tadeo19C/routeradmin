@@ -42,8 +42,8 @@
                                                     </span>
                                                 </li>
                                                 <li class="list-group-item">
-                                                    <b>Dirección IP</b>
-                                                    <span class="float-right">{{ router.address }}</span>
+                                                    <b>Dirección IP / Puerto</b>
+                                                    <span class="float-right"><code>{{ router.address }}:{{ router.port }}</code> <span class="badge badge-secondary ml-1">{{ router.connection_protocol|upper }}</span></span>
                                                 </li>
                                                 {% if router.router_type != 'monitoring' %}
                                                     <li class="list-group-item">
@@ -134,44 +134,58 @@
                                                 <ul class="list-group list-group-unbordered mb-3">
                                                     <li class="list-group-item">
                                                         <b>Modelo</b>
-                                                        <span class="float-right">{{ router_information.model_name|default_if_none:"" }}</span>
+                                                        <span class="float-right font-weight-bold">{{ router_information.model_name|default:"---" }}</span>
                                                     </li>
+                                                    {% if router_information.model_version %}
                                                     <li class="list-group-item">
-                                                        <b>Serie</b>
-                                                        <span class="float-right">{{ router_information.serial_number|default_if_none:"" }}</span>
+                                                        <b>Revisión Hardware</b>
+                                                        <span class="float-right">{{ router_information.model_version }}</span>
+                                                    </li>
+                                                    {% endif %}
+                                                    <li class="list-group-item">
+                                                        <b>Número de Serie</b>
+                                                        <span class="float-right"><code>{{ router_information.serial_number|default:"---" }}</code></span>
                                                     </li>
                                                     <li class="list-group-item">
                                                         <b>Versión de OS</b>
-                                                        <span class="float-right">{{ router_information.os_version|default_if_none:"" }}</span>
+                                                        <span class="float-right"><span class="badge-gpon badge-gpon-info">{{ router_information.os_version|default:"---" }}</span></span>
                                                     </li>
+                                                    {% if router_information.firmware_version %}
                                                     <li class="list-group-item">
-                                                        <b>Arquitectura</b>
-                                                        <span class="float-right">{{ router_information.architecture|default_if_none:"" }}</span>
+                                                        <b>Firmware / Imagen</b>
+                                                        <span class="float-right">{{ router_information.firmware_version }}</span>
+                                                    </li>
+                                                    {% endif %}
+                                                    <li class="list-group-item">
+                                                        <b>Arquitectura / CPU</b>
+                                                        <span class="float-right">{{ router_information.architecture|default:"---" }}</span>
                                                     </li>
                                                     <li class="list-group-item">
                                                         <b>Última Actualización</b>
                                                         <span class="float-right">
                                                             {% if router_information.success %}
-                                                                {{ router_information.last_retrieval }}
+                                                                <i class="far fa-check-circle text-success mr-1"></i>{{ router_information.last_retrieval|date:"d/m/Y H:i:s" }}
                                                             {% elif router_information.error %}
-                                                                <i class="far fa-times-circle text-danger" title="Fallo en última actualización: {{ router_information.error_message }}"></i>
+                                                                <span class="text-danger" title="{{ router_information.error_message }}">
+                                                                    <i class="far fa-times-circle mr-1"></i>Error: {{ router_information.error_message|truncatechars:40 }}
+                                                                </span>
                                                             {% else %}
-                                                                <i class="far fa-clock" title="Obteniendo información en el próximo cron"></i>
+                                                                <i class="far fa-clock text-warning mr-1"></i>Pendiente de sincronización
                                                             {% endif %}
                                                         </span>
                                                     </li>
                                                     <li class="list-group-item">
                                                         <div>
-                                                            <b>Datos de Origen</b>
+                                                            <b>Datos Crudos del Equipo</b>
                                                             <span class="float-right">
-                                                                <a href="#" onclick="$('#router_information_json').slideToggle()">
-                                                                    <i class="far fa-eye"></i>
+                                                                <a href="javascript:void(0)" onclick="$('#router_information_json').slideToggle()">
+                                                                    <i class="far fa-eye"></i> Mostrar / Ocultar
                                                                 </a>
                                                             </span>
                                                         </div>
-                                                        <span id="router_information_json" style="display: none;">
-                                                            {{ router_information.json_data|default_if_none:"" }}
-                                                        </span>
+                                                        <div id="router_information_json" style="display: none;" class="mt-2">
+                                                            <pre class="m-0 p-3" style="max-height: 280px; font-size: 11.5px;">{{ router_information.json_data|default_if_none:"" }}</pre>
+                                                        </div>
                                                     </li>
                                                 </ul>
                                             </div>
@@ -242,8 +256,8 @@
                                                     </td>
                                                     <td class="min-width text-nowrap">
                                                         {% if backup.success %}
-                                                            <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" class="btn btn-xs btn-outline-primary" title="Descargar Configuración (Texto)"><i class="fas fa-file-alt"></i> RSC</a>
-                                                            <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" class="btn btn-xs btn-outline-info" title="Descargar Respaldo (Binario)"><i class="fas fa-file-archive"></i> Backup</a>
+                                                            <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" class="btn btn-xs btn-outline-primary mr-1" title="Descargar Configuración (Texto)"><i class="fas fa-file-code"></i> Texto ({% if router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})</a>
+                                                            <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" class="btn btn-xs btn-outline-info" title="Descargar Respaldo (Binario)"><i class="fas fa-file-archive"></i> Binario (.backup)</a>
                                                         {% endif %}
                                                     </td>
                                                 </tr>

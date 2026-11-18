@@ -6,26 +6,26 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {% if view_type == 'all' %}active{% endif %}" href="/backup/backup_list/" role="tab">
-            <i class="fas fa-list mr-1"></i> Todos los Respaldos
+        <a class="nav-link {% if view_type == 'success' or view_type == 'all' %}active{% endif %}" href="/backup/backup_list/" role="tab">
+            <i class="fas fa-list mr-1"></i> Lista de Respaldos
         </a>
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {% if view_type == 'changes' %}active{% endif %}" href="/backup/backup_list/?filter=changes" role="tab">
-            <i class="fas fa-code-branch mr-1"></i> Solo con Cambios
+        <a class="nav-link {% if view_type == 'search' or request.path == '/backup/search/' %}active{% endif %}" href="/backup/search/" role="tab">
+            <i class="fas fa-search mr-1"></i> Buscador en Configuraciones
         </a>
     </li>
 
     <li class="nav-item">
         <a class="nav-link {% if view_type == 'queue' %}active{% endif %}" href="/backup/backup_list/?type=queue" role="tab">
-            <i class="fas fa-hourglass-half mr-1"></i> Cola Pendiente
+            <i class="fas fa-hourglass-half mr-1"></i> Cola de Respaldos
         </a>
     </li>
 
     <li class="nav-item">
         <a class="nav-link {% if view_type == 'errors' %}active{% endif %}" href="/backup/backup_list/?type=errors" role="tab">
-            <i class="fas fa-exclamation-triangle mr-1 text-danger"></i> Errores
+            <i class="fas fa-exclamation-triangle mr-1 text-danger"></i> Errores de Respaldo
         </a>
     </li>
 </ul>

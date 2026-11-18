@@ -3,6 +3,7 @@ import datetime
 from router_manager.models import Router
 from .models import MessageChannel, Notification, MessageSettings, Message
 from backup_data.models import RouterBackup
+from dashboard.models import ActivityLog
 import requests
 from django.core.mail import send_mail
 from django.conf import settings
@@ -25,6 +26,10 @@ def concatenate_notifications(notification_type: str):
         notification_text = 'Reporte de fallo de respaldo\n'
         notification_list = Notification.objects.filter(notification_type='backup_fail')
         message_channel_list = message_channel_list.filter(backup_fail=True)
+    elif notification_type == 'config_change':
+        notification_text = 'Cambio de configuración detectado\n'
+        notification_list = Notification.objects.filter(notification_type='config_change')
+        message_channel_list = message_channel_list.filter(config_change=True)
     else:
         return 0
 
@@ -32,7 +37,7 @@ def concatenate_notifications(notification_type: str):
     for notification in notification_list:
         notification_text_temp = notification_text
         if notification.router_backup:
-            notification_text_temp += f'\n- Respaldo: {notification.router_backup.id} para el equipo {notification.router_backup.router.name} '
+            notification_text_temp += f'\n- Respaldo #{notification.router_backup.id} en equipo {notification.router_backup.router.name} ({notification.router_backup.router.address})'
         elif notification.router:
             notification_text_temp += f'\n- Equipo {notification.router.name} ({notification.router.address})'
         if len(notification_text_temp) < message_settings.max_length:
@@ -42,13 +47,53 @@ def concatenate_notifications(notification_type: str):
         else:
             break
 
-    for message_channel in message_channel_list:
-        Message.objects.create(
-            channel=message_channel,
-            subject=notification_text.split('\n')[0],
-            message=notification_text
-        )
+    if concatenate_count > 0:
+        for message_channel in message_channel_list:
+            Message.objects.create(
+                channel=message_channel,
+                subject=notification_text.split('\n')[0],
+                message=notification_text
+            )
     return concatenate_count
+
+
+def notify_config_change(router_backup: RouterBackup, previous_backup: RouterBackup, added_lines: int = 0, removed_lines: int = 0):
+    """
+    Registra en bitácora y envía alerta a los canales activos cuando se detecta
+    una modificación real en la configuración de un equipo respecto a la versión previa.
+    """
+    router = router_backup.router
+    summary_str = (
+        f"Equipo '{router.name}' ({router.address}) | "
+        f"Rev #{previous_backup.id} -> Rev #{router_backup.id} "
+        f"(+{added_lines} líneas agregadas, -{removed_lines} eliminadas)"
+    )
+    try:
+        ActivityLog.objects.create(
+            user=None,
+            action="Cambio de Configuración",
+            details=summary_str,
+            router=router,
+        )
+    except Exception:
+        pass
+
+    message_channel_list = MessageChannel.objects.filter(enabled=True, config_change=True)
+    if not message_channel_list.exists():
+        return
+
+    msg_body = (
+        f"⚠️ Cambio de configuración detectado en {router.name} ({router.address})\n"
+        f"Revisión: #{previous_backup.id} -> #{router_backup.id}\n"
+        f"Resumen Diff: +{added_lines} líneas agregadas, -{removed_lines} líneas eliminadas.\n"
+        f"Fecha: {timezone.localtime(timezone.now()).strftime('%d/%m/%Y %H:%M:%S')}"
+    )
+    for channel in message_channel_list:
+        Message.objects.create(
+            channel=channel,
+            subject=f"Cambio de configuración: {router.name} (Rev #{router_backup.id})",
+            message=msg_body,
+        )
 
 
 def generate_backup_report(data):
@@ -61,8 +106,8 @@ def generate_backup_report(data):
         message_text = 'Advertencia: Error al calcular la hora del reporte, por favor verifique la configuración de zona horaria.\n\n'
     else:
         message_text = ''
-    message_text = 'Reporte diario de respaldos de Routerfleet:\n'
-    message_text += f'Respaldos completados: {success_backup_list.count()}\n'
+    message_text += 'Reporte diario de respaldos de MEGACOM:\n'
+    message_text += f'Nuevas versiones respaldadas: {success_backup_list.count()}\n'
     message_text += f'Respaldos fallidos: {failed_backup_list.count()}\n'
     message_text += f'Respaldos pendientes: {pending_backup_list.count()}\n'
 
@@ -96,7 +141,7 @@ def generate_status_report(data):
         message_text = 'Advertencia: Error al calcular la hora del reporte, por favor verifique la configuración de zona horaria.\n\n'
     else:
         message_text = ''
-    message_text += 'Reporte diario de estado de Routerfleet:\n'
+    message_text += 'Reporte diario de estado de MEGACOM:\n'
     message_text += f'Equipos monitoreados: {router_list.count()}\n'
     message_text += f'En línea: {router_list.filter(routerstatus__status_online=True).count()}\n'
     message_text += f'Fuera de línea: {offline_count}\n'
@@ -136,7 +181,7 @@ def send_notification_message(message: Message):
         return
 
     message_response = {'status': 'pending', 'error_message': '', 'error_status_code': 0}
-    
+
     url = ''
     method = 'GET'
     headers = {}
@@ -149,13 +194,13 @@ def send_notification_message(message: Message):
         method = 'POST'
         data = message.message.encode('utf-8')
         if message.subject:
-             headers = {'Title': message.subject}
+            headers = {'Title': message.subject}
     elif message.channel.channel_type == 'email':
         try:
             send_mail(
-                subject=message.subject or 'Routerfleet Notification',
+                subject=message.subject or 'MEGACOM Notification',
                 message=message.message,
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@routerfleet.local'),
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@megacom.local'),
                 recipient_list=[message.channel.destination],
                 fail_silently=False,
             )
@@ -172,10 +217,10 @@ def send_notification_message(message: Message):
     if message_response['status'] == 'pending':
         try:
             if method == 'GET':
-                response = requests.get(url)
+                response = requests.get(url, timeout=15)
             elif method == 'POST':
-                response = requests.post(url, data=data, headers=headers)
-            
+                response = requests.post(url, data=data, headers=headers, timeout=15)
+
             if response.status_code == 200:
                 message_response['status'] = 'sent'
             else:
@@ -250,14 +295,13 @@ def notify_backup_fail(router_backup: RouterBackup):
             )
     return
 
-def notify_backup_task_lock_expired(router_backup: RouterBackup):
-    message_settings, _ = MessageSettings.objects.get_or_create(name='message_settings')
-    message_channel_list = MessageChannel.objects.filter(enabled=True)
 
+def notify_backup_task_lock_expired(router_backup: RouterBackup):
+    message_channel_list = MessageChannel.objects.filter(enabled=True)
     if not message_channel_list:
         return
 
-    error_message = f'BLOQUEO DE TAREA EXPIRADO: El bloqueo de tarea de respaldo expiró para el respaldo {router_backup.id} del equipo {router_backup.router.name} ({router_backup.router.address}). Esto probablemente significa que la tarea de respaldo se ha estado ejecutando durante demasiado tiempo y se ha marcado como fallida. Por favor, verifique el equipo y la tarea de respaldo para más detalles.'
+    error_message = f'BLOQUEO DE TAREA EXPIRADO: El bloqueo de tarea de respaldo expiró para el respaldo {router_backup.id} del equipo {router_backup.router.name} ({router_backup.router.address}).'
     if router_backup.error_message:
         error_message += f'\n\nMensaje de error: {router_backup.error_message}'
     for message_channel in message_channel_list:

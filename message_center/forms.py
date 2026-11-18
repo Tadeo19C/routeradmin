@@ -92,7 +92,7 @@ class MessageChannelForm(forms.ModelForm):
         model = MessageChannel
         fields = [
             'name', 'enabled', 'channel_type', 'destination', 'token', 'status_change_offline', 'status_change_online',
-            'backup_fail', 'daily_status_report', 'daily_backup_report'
+            'backup_fail', 'config_change', 'daily_status_report', 'daily_backup_report'
         ]
 
     def __init__(self, *args, **kwargs):
@@ -107,6 +107,7 @@ class MessageChannelForm(forms.ModelForm):
         self.fields['daily_status_report'].label = 'REPORTE ESTADO DIARIO'
         self.fields['daily_backup_report'].label = 'REPORTE RESPALDO DIARIO'
         self.fields['backup_fail'].label = 'FALLA DE RESPALDO'
+        self.fields['config_change'].label = 'CAMBIO DE CONFIGURACIÓN'
         self.fields['enabled'].label = 'CANAL HABILITADO'
         self.helper.layout = Layout(
             Fieldset(
@@ -130,6 +131,7 @@ class MessageChannelForm(forms.ModelForm):
                     Div(Field('daily_status_report'), css_class='col-md-6'),
                     Div(Field('daily_backup_report'), css_class='col-md-6'),
                     Div(Field('backup_fail'), css_class='col-md-6'),
+                    Div(Field('config_change'), css_class='col-md-6'),
                     Div(Field('enabled'), css_class='col-md-6'),
                     css_class='row'),
                 Div(

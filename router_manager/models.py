@@ -7,6 +7,8 @@ from backup.models import BackupProfile
 SUPPORTED_ROUTER_TYPES = (
     ('cisco-ios', 'Cisco (IOS)'),
     ('mikrotik', 'Mikrotik (RouterOS)'),
+    ('huawei', 'Huawei (VRP)'),
+    ('zte', 'ZTE (ZXR10 / ZXA10)'),
 )
 
 
@@ -23,6 +25,7 @@ class Router(models.Model):
     port = models.IntegerField(default=22)
     username = models.CharField(max_length=100, default='admin')
     password = models.CharField(max_length=255, null=True, blank=True)
+    enable_password = models.CharField(max_length=255, null=True, blank=True)
     ssh_key = models.TextField(null=True, blank=True)
     monitoring = models.BooleanField(default=True)
     backup_profile = models.ForeignKey(BackupProfile, on_delete=models.SET_NULL, null=True, blank=True)
@@ -38,6 +41,11 @@ class Router(models.Model):
         return decrypt_credential(self.password)
 
     @property
+    def decrypted_enable_password(self):
+        from routerlib.crypto import decrypt_credential
+        return decrypt_credential(self.enable_password) if self.enable_password else self.decrypted_password
+
+    @property
     def decrypted_ssh_key(self):
         from routerlib.crypto import decrypt_credential
         return decrypt_credential(self.ssh_key)
@@ -46,6 +54,8 @@ class Router(models.Model):
         from routerlib.crypto import encrypt_credential
         if self.password and not str(self.password).startswith('enc::'):
             self.password = encrypt_credential(self.password)
+        if self.enable_password and not str(self.enable_password).startswith('enc::'):
+            self.enable_password = encrypt_credential(self.enable_password)
         if self.ssh_key and not str(self.ssh_key).startswith('enc::'):
             self.ssh_key = encrypt_credential(self.ssh_key)
         super(Router, self).save(*args, **kwargs)
