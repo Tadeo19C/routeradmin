@@ -5,6 +5,8 @@ class AuditMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Allow requests from any LAN IP / custom port (80, 81, 8080, etc.) without Origin header mismatch
+        request.META.pop('HTTP_ORIGIN', None)
         response = self.get_response(request)
 
         # Solo loguear acciones que modifican datos (POST, DELETE, PUT) o logins/logouts

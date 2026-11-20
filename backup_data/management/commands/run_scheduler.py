@@ -1,22 +1,30 @@
 import time
 from django.core.management.base import BaseCommand
+from django.db import connections
 from backup_data.scheduler import run_scheduler_loop
 
+
 class Command(BaseCommand):
-    help = 'Ejecuta el motor de tareas programadas y respaldos continuos de RouterFleet'
+    help = 'Inicia el planificador en segundo plano de MEGACOM (monitoreo activo, respaldos programados y notificaciones).'
 
     def add_arguments(self, parser):
         parser.add_argument(
             '--interval',
             type=int,
-            default=60,
-            help='Intervalo de chequeo en segundos (por defecto 60)'
+            default=45,
+            help='Intervalo en segundos entre cada ciclo del planificador (por defecto: 45s).'
         )
 
     def handle(self, *args, **options):
         interval = options['interval']
-        self.stdout.write(self.style.SUCCESS(f'Iniciando RouterFleet Scheduler cada {interval} segundos...'))
-        try:
-            run_scheduler_loop(interval_seconds=interval)
-        except KeyboardInterrupt:
-            self.stdout.write(self.style.WARNING('Scheduler detenido por el usuario.'))
+        # Wait for database and migrations to be ready
+        for _ in range(30):
+            try:
+                connections['default'].ensure_connection()
+                from router_manager.models import Router
+                Router.objects.exists()
+                break
+            except Exception:
+                time.sleep(2)
+        self.stdout.write(self.style.SUCCESS(f'[SCHEDULER] Iniciando planificador MEGACOM cada {interval}s...'))
+        run_scheduler_loop(interval_seconds=interval)
