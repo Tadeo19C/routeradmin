@@ -14,8 +14,20 @@ class MessageSettingsForm(forms.ModelForm):
         model = MessageSettings
         fields = [
             'max_length', 'max_retry', 'retry_interval', 'concatenate_status_change', 'status_change_delay',
-            'concatenate_backup_fails', 'backup_fails_delay', 'daily_report_time'
+            'concatenate_backup_fails', 'backup_fails_delay', 'daily_report_time',
+            'smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_use_tls', 'attach_backup_on_email'
         ]
+        widgets = {
+            'smtp_password': forms.PasswordInput(render_value=True),
+        }
+        labels = {
+            'smtp_host': 'Servidor SMTP (ej. smtp.gmail.com)',
+            'smtp_port': 'Puerto SMTP (ej. 587)',
+            'smtp_user': 'Correo Remitente (Usuario SMTP)',
+            'smtp_password': 'Contraseña de Aplicación SMTP',
+            'smtp_use_tls': 'Usar conexión segura TLS',
+            'attach_backup_on_email': 'Adjuntar archivo de respaldo (.rsc / .cfg / .backup) en alertas de correo',
+        }
 
     def __init__(self, *args, **kwargs):
         super(MessageSettingsForm, self).__init__(*args, **kwargs)
@@ -45,6 +57,21 @@ class MessageSettingsForm(forms.ModelForm):
                         Div(Field('backup_fails_delay'), css_class='col-md-12'),
                         css_class='row'),
                     css_class='col-md-6'),
+                css_class='row'),
+            Fieldset(
+                'Configuración de Correo SMTP (Envío de Respaldos Importantes por Email)',
+            ),
+            Div(
+                Div(Field('smtp_host'), css_class='col-md-8'),
+                Div(Field('smtp_port'), css_class='col-md-4'),
+                css_class='row'),
+            Div(
+                Div(Field('smtp_user'), css_class='col-md-6'),
+                Div(Field('smtp_password'), css_class='col-md-6'),
+                css_class='row'),
+            Div(
+                Div(Field('smtp_use_tls'), css_class='col-md-6'),
+                Div(Field('attach_backup_on_email'), css_class='col-md-6'),
                 css_class='row'),
             Div(
                 Div(

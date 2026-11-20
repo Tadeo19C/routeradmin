@@ -8,7 +8,7 @@ from scp import SCPClient
 from django.core.files.base import ContentFile
 
 import difflib
-from message_center.functions import notify_backup_fail, notify_config_change
+from message_center.functions import notify_backup_fail, notify_config_change, notify_important_backup_email, send_notification_message
 from routerlib.functions import (
     gen_backup_name,
     connect_to_ssh,
@@ -143,7 +143,8 @@ def perform_backup(router_backup: RouterBackup):
             router = router_backup.router
 
             # Si NO hubo cambio real respecto al último respaldo exitoso,
-            # actualizamos la marca de tiempo de verificación y descartamos el registro duplicado.
+            # actualizamos la marca de tiempo de verificación y descartamos el registro duplicado en BD.
+            # PERO si el usuario configuró respaldo Diario o Semanal (no por hora), le enviamos su respaldo programado por correo.
             if router_backup.identical_to_previous:
                 router.routerstatus.last_backup = timezone.now()
                 router.routerstatus.last_backup_failed = None
@@ -159,6 +160,12 @@ def perform_backup(router_backup: RouterBackup):
                 if prev:
                     prev.updated = timezone.now()
                     prev.save(update_fields=['updated'])
+                    if router_backup.schedule_type in ('daily', 'weekly'):
+                        try:
+                            sched_label = 'Respaldo Diario Programado' if router_backup.schedule_type == 'daily' else 'Respaldo Semanal Programado'
+                            notify_important_backup_email(prev, reason=f"{sched_label} (Configuración verificada sin cambios)")
+                        except Exception:
+                            pass
 
                 if router_backup.backup_binary:
                     try:
@@ -199,6 +206,14 @@ def perform_backup(router_backup: RouterBackup):
                     removed = sum(1 for l in diff_lines if l.startswith('-') and not l.startswith('---'))
                     if added > 0 or removed > 0:
                         notify_config_change(router_backup, prev_backup, added_lines=added, removed_lines=removed)
+                        from message_center.models import Message
+                        for pending_msg in Message.objects.filter(status='pending', router_backup=router_backup):
+                            send_notification_message(pending_msg)
+                except Exception:
+                    pass
+            elif router_backup.backup_text:
+                try:
+                    notify_important_backup_email(router_backup, reason="Primer Respaldo / Respaldo Base")
                 except Exception:
                     pass
         else:

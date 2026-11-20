@@ -421,3 +421,46 @@ def view_config_search(request):
         'view_type': 'search',
     }
     return render(request, 'backup/config_search.html', context)
+
+
+@login_required()
+def view_send_backup_email_now(request):
+    """Envía bajo demanda un respaldo específico al canal de correo configurado."""
+    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=20).exists():
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
+
+    backup = get_object_or_404(RouterBackup, uuid=request.GET.get('uuid'))
+    from message_center.models import MessageChannel, Message
+    from message_center.functions import send_notification_message
+
+    email_channels = MessageChannel.objects.filter(channel_type='email', enabled=True)
+    if not email_channels.exists():
+        messages.warning(request, 'Correo no configurado|Primero configure su correo destinatario y SMTP en la pestaña "Correo de Respaldos".')
+        return redirect('/message_center/email_backups/')
+
+    sent_to = []
+    for ch in email_channels:
+        msg_body = (
+            f"📦 Respaldo enviado desde MEGACOM\n"
+            f"Equipo: {backup.router.name} ({backup.router.address})\n"
+            f"Fabricante / Tipo: {backup.router.get_router_type_display()}\n"
+            f"Revisión: #{backup.id} ({backup.created.strftime('%d/%m/%Y %H:%M:%S')})\n\n"
+            f"Se adjunta el archivo de configuración de este respaldo."
+        )
+        msg = Message.objects.create(
+            channel=ch,
+            router_backup=backup,
+            subject=f"[MEGACOM] Respaldo #{backup.id} - {backup.router.name}",
+            message=msg_body,
+        )
+        send_notification_message(msg)
+        if msg.status == 'sent':
+            sent_to.append(ch.destination)
+        else:
+            messages.warning(request, f'Error al enviar a {ch.destination}|{msg.error_message}')
+
+    if sent_to:
+        messages.success(request, f'Respaldo enviado por correo|Se envió el respaldo #{backup.id} de {backup.router.name} a {", ".join(sent_to)}.')
+
+    next_url = request.META.get('HTTP_REFERER') or '/backup/backup_list/'
+    return redirect(next_url)

@@ -42,8 +42,8 @@
                                                     </span>
                                                 </li>
                                                 <li class="list-group-item">
-                                                    <b>Dirección IP / Puerto</b>
-                                                    <span class="float-right"><code>{{ router.address }}:{{ router.port }}</code> <span class="badge badge-secondary ml-1">{{ router.connection_protocol|upper }}</span></span>
+                                                    <b>Dirección IP</b>
+                                                    <span class="float-right"><code>{{ router.address }}</code> <span class="badge badge-secondary ml-1">{{ router.connection_protocol|upper }}</span></span>
                                                 </li>
                                                 {% if router.router_type != 'monitoring' %}
                                                     <li class="list-group-item">

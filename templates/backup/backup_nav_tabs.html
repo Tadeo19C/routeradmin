@@ -28,4 +28,9 @@
             <i class="fas fa-exclamation-triangle mr-1 text-danger"></i> Errores de Respaldo
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {% if request.path == '/message_center/email_backups/' %}active{% endif %}" href="/message_center/email_backups/" role="tab">
+            <i class="fas fa-envelope text-primary mr-1"></i> Correo de Respaldos
+        </a>
+    </li>
 </ul>

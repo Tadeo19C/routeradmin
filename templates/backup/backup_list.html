@@ -94,9 +94,14 @@
                                                 <i class="fas fa-file-code"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
                                             </a>
                                             <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary"
-                                               class="btn btn-xs btn-outline-info"
+                                               class="btn btn-xs btn-outline-info mr-1"
                                                title="Descargar archivo binario (.backup)">
                                                 <i class="fas fa-file-archive"></i> Binario (.backup)
+                                            </a>
+                                            <a href="/backup/send_email/?uuid={{ backup.uuid }}"
+                                               class="btn btn-xs btn-outline-secondary"
+                                               title="Enviar este respaldo por correo electrónico ahora">
+                                                <i class="fas fa-envelope"></i>
                                             </a>
                                         {% else %}
                                             <span class="text-muted">---</span>

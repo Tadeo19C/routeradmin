@@ -295,3 +295,92 @@ def view_manage_message_channel(request):
         },
     }
     return render(request, 'generic_form.html', context=context)
+
+
+@login_required()
+def view_email_backups_config(request):
+    """
+    Panel dedicado y simplificado para configurar el envío de respaldos relevantes por correo
+    (solo cambios reales de configuración, primer respaldo base, o fallas críticas).
+    """
+    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=30).exists():
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
+
+    message_settings, _ = MessageSettings.objects.get_or_create(name='message_settings')
+    email_channel = MessageChannel.objects.filter(channel_type='email').first()
+
+    if request.method == 'POST':
+        action = request.POST.get('action', 'save')
+        attach_backup = request.POST.get('attach_backup_on_email') == 'on'
+        recipient_email = (request.POST.get('recipient_email') or '').strip()
+        channel_enabled = request.POST.get('channel_enabled') == 'on'
+        send_on_config_change = request.POST.get('send_on_config_change') == 'on'
+        send_on_backup_fail = request.POST.get('send_on_backup_fail') == 'on'
+        send_on_offline = request.POST.get('send_on_offline') == 'on'
+        send_daily_report = request.POST.get('send_daily_report') == 'on'
+        daily_report_time = (request.POST.get('daily_report_time') or '07:00').strip()
+
+        if request.POST.get('smtp_host'):
+            message_settings.smtp_host = request.POST.get('smtp_host').strip()
+        if request.POST.get('smtp_port'):
+            message_settings.smtp_port = int(request.POST.get('smtp_port') or 587)
+        if request.POST.get('smtp_user'):
+            message_settings.smtp_user = request.POST.get('smtp_user').strip()
+        if request.POST.get('smtp_password'):
+            message_settings.smtp_password = request.POST.get('smtp_password').replace(' ', '').strip()
+
+        message_settings.attach_backup_on_email = attach_backup
+        message_settings.daily_report_time = daily_report_time
+        message_settings.save()
+
+        if recipient_email:
+            if not email_channel:
+                email_channel = MessageChannel(name='Correo de Respaldos Relevantes', channel_type='email')
+            email_channel.destination = recipient_email
+            email_channel.enabled = channel_enabled
+            email_channel.config_change = send_on_config_change
+            email_channel.backup_fail = send_on_backup_fail
+            email_channel.status_change_offline = send_on_offline
+            email_channel.status_change_online = send_on_offline
+            email_channel.daily_backup_report = send_daily_report
+            email_channel.daily_status_report = send_daily_report
+            email_channel.save()
+
+        if action == 'test_email':
+            if not recipient_email:
+                messages.warning(request, 'Correo destinatario faltante|Ingrese el correo donde desea recibir los respaldos.')
+            else:
+                latest_b = RouterBackup.objects.filter(success=True, backup_text__isnull=False).exclude(backup_text='').order_by('-created').first()
+                test_body = (
+                    "✅ Prueba exitosa de Correo de Respaldos Relevantes (MEGACOM)\n\n"
+                    "Su configuración SMTP funciona correctamente.\n"
+                    "El sistema NO enviará correos repetitivos cuando la configuración sea idéntica: "
+                    "solo recibirá correos cuando se detecte un cambio real en algún equipo, en el primer respaldo base o ante una falla."
+                )
+                if latest_b:
+                    test_body += f"\n\nSe adjunta como demostración el último respaldo relevante de '{latest_b.router.name}' (Rev #{latest_b.id})."
+                test_msg = Message.objects.create(
+                    channel=email_channel,
+                    router_backup=latest_b,
+                    subject='[MEGACOM] Prueba de Envío de Respaldo Relevante por Correo',
+                    message=test_body,
+                )
+                send_notification_message(test_msg)
+                if test_msg.status == 'sent':
+                    messages.success(request, f'Correo enviado con éxito|Se envió el correo de prueba (con respaldo adjunto) a {recipient_email}.')
+                else:
+                    messages.warning(request, f'Error al enviar correo|{test_msg.error_message}')
+        else:
+            messages.success(request, 'Configuración guardada|Preferencias de envío de respaldos relevantes por correo actualizadas.')
+
+        return redirect('/message_center/email_backups/')
+
+    recent_email_messages = Message.objects.filter(channel__channel_type='email').select_related('router_backup', 'router_backup__router').order_by('-created')[:15]
+
+    context = {
+        'page_title': 'Envío de Respaldos Relevantes por Correo',
+        'message_settings': message_settings,
+        'email_channel': email_channel,
+        'recent_email_messages': recent_email_messages,
+    }
+    return render(request, 'message_center/email_backups_config.html', context)

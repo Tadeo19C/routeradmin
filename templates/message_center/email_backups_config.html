@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-envelope-open-text text-primary mr-1"></i> {{ page_title }}
+                </h3>
+                <span class="badge-gpon badge-gpon-success">
+                    <i class="fas fa-bolt"></i> Motor de Correo MEGACOM preconfigurado y listo
+                </span>
+            </div>
+            <div class="card-body">
+                {% include 'message_center/message_center_nav_tabs.html' %}
+
+                <form method="post" class="mt-3">
+                    {% csrf_token %}
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8">
+                            <div class="card border mb-2">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-paper-plane text-primary"></i> Configurar Recepción Automática de Respaldos
+                                    </h3>
+                                    <span class="badge-gpon badge-gpon-info">
+                                        <i class="fas fa-filter"></i> Cero Spam: Solo cambios reales
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label>¿A qué correo(s) deseas que lleguen los respaldos importantes?</label>
+                                        <input type="text" name="recipient_email" class="form-control"
+                                               placeholder="ejemplo@tuempresa.com (puedes separar varios con coma)"
+                                               value="{{ email_channel.destination|default:'' }}" required>
+                                        <small class="text-muted">
+                                            Solo ingresa tu correo y guarda. El servidor de envío de MEGACOM ya está autenticado internamente en segundo plano.
+                                        </small>
+                                    </div>
+
+                                    <div class="custom-control custom-switch mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="channel_enabled" name="channel_enabled"
+                                               {% if not email_channel or email_channel.enabled %}checked{% endif %}>
+                                        <label class="custom-control-label font-weight-bold" for="channel_enabled">
+                                            Activar envío automático de respaldos por correo
+                                        </label>
+                                    </div>
+
+                                    <hr class="my-2">
+
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="send_on_config_change" name="send_on_config_change"
+                                               {% if not email_channel or email_channel.config_change %}checked{% endif %}>
+                                        <label class="custom-control-label font-weight-bold text-primary" for="send_on_config_change">
+                                            Enviar correo cuando se detecte un Cambio Real de Configuración (+X / -Y líneas) o en el Primer Respaldo Base
+                                        </label>
+                                    </div>
+
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="attach_backup_on_email" name="attach_backup_on_email"
+                                               {% if message_settings.attach_backup_on_email %}checked{% endif %}>
+                                        <label class="custom-control-label font-weight-bold" for="attach_backup_on_email">
+                                            Adjuntar el archivo de configuración (<code>.rsc</code> / <code>.cfg</code>) directamente en el correo
+                                        </label>
+                                    </div>
+
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="send_on_backup_fail" name="send_on_backup_fail"
+                                               {% if not email_channel or email_channel.backup_fail %}checked{% endif %}>
+                                        <label class="custom-control-label" for="send_on_backup_fail">
+                                            Notificar si falla un respaldo (equipo inaccesible o error de credenciales)
+                                        </label>
+                                    </div>
+
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="send_on_offline" name="send_on_offline"
+                                               {% if email_channel and email_channel.status_change_offline %}checked{% endif %}>
+                                        <label class="custom-control-label" for="send_on_offline">
+                                            Notificar cuando un equipo quede Desconectado (Fuera de Línea)
+                                        </label>
+                                    </div>
+
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap mt-2 pt-2 border-top">
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" id="send_daily_report" name="send_daily_report"
+                                                   {% if email_channel and email_channel.daily_backup_report %}checked{% endif %}>
+                                            <label class="custom-control-label" for="send_daily_report">
+                                                Enviar reporte resumen diario de respaldos a las:
+                                            </label>
+                                        </div>
+                                        <input type="text" name="daily_report_time" class="form-control" style="width: 85px;"
+                                               value="{{ message_settings.daily_report_time|default:'07:00' }}" placeholder="07:00">
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap mt-3 pt-2 border-top" style="gap: 8px;">
+                                        <button type="submit" name="action" value="test_email" class="btn btn-outline-info">
+                                            <i class="fas fa-paper-plane"></i> Enviar Correo de Prueba Ahora
+                                        </button>
+                                        <button type="submit" name="action" value="save" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Guardar Correo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                {% if recent_email_messages %}
+                <hr class="my-3">
+                <h6 class="font-weight-bold mb-2"><i class="fas fa-history text-muted mr-1"></i> Últimos Respaldos Relevantes enviados por Correo</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Destinatario</th>
+                                <th>Asunto</th>
+                                <th>Respaldo Adjunto</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for msg in recent_email_messages %}
+                            <tr>
+                                <td>{{ msg.created|date:"d/m/Y H:i:s" }}</td>
+                                <td><code>{{ msg.channel.destination }}</code></td>
+                                <td>{{ msg.subject }}</td>
+                                <td>
+                                    {% if msg.router_backup %}
+                                        <a href="/backup/backup_details/?uuid={{ msg.router_backup.uuid }}">
+                                            <i class="fas fa-paperclip"></i> {{ msg.router_backup.router.name }} (#{{ msg.router_backup.id }})
+                                        </a>
+                                    {% else %}
+                                        ---
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if msg.status == 'sent' %}
+                                        <span class="badge-gpon badge-gpon-success"><i class="fas fa-check"></i> Enviado</span>
+                                    {% elif msg.status == 'failed' %}
+                                        <span class="badge-gpon badge-gpon-error" title="{{ msg.error_message }}"><i class="fas fa-times"></i> Error</span>
+                                    {% else %}
+                                        <span class="badge-gpon badge-gpon-warning">Pendiente</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

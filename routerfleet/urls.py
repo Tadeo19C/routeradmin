@@ -4,7 +4,7 @@ from django.urls import path
 from accounts.views import view_login, view_logout, view_create_first_user
 from backup.views import view_backup_profile_list, view_manage_backup_profile, view_backup_list, view_backup_details, \
     view_debug_run_backups, view_compare_backups, view_backup_download, view_backup_delete, \
-    view_get_backup_profile_details, view_config_search
+    view_get_backup_profile_details, view_config_search, view_send_backup_email_now
 from backup_data.views import view_cron_generate_backup_schedule, view_cron_create_backup_tasks, \
     view_cron_perform_backup_tasks, view_cron_housekeeping, view_cron_system_self_backup
 from dashboard.views import view_dashboard, view_status, view_activity_logs, backup_statistics_data, router_status_data, view_status_summary
@@ -12,12 +12,12 @@ from fleet_commander.views import view_command_list, view_command_details, view_
     view_manage_command_variant, view_manage_command_schedule, view_job_list, view_job_details, view_task_details, \
     view_cron_create_command_jobs, view_cron_perform_command_tasks, view_execute_command, view_run_command_multiple, \
     view_broadcast_command
-from import_tool.views import view_import_tool_list, view_import_csv_file, view_import_details, run_import_task
+from import_tool.views import view_import_tool_list, view_import_csv_file, view_import_details, run_import_task, view_download_csv_template, view_export_routers_csv
 from integration_manager.views import view_wireguard_webadmin_launcher, view_manage_wireguard_integration, \
     view_launch_wireguard_webadmin
 from message_center.views import view_message_channel_list, view_manage_message_settings, view_manage_message_channel, \
     view_debug_test_messages, view_cron_concatenate_notifications, view_cron_send_messages, view_cron_daily_reports, \
-    view_message_history
+    view_message_history, view_email_backups_config
 from monitoring.views import view_export_router_list, view_update_router_status, view_router_config_timestamp, \
     view_router_last_status_change
 from router_manager.views import view_create_instant_backup_multiple_routers, view_router_list, view_manage_router, \
@@ -56,6 +56,8 @@ urlpatterns = [
     path('router/import_tool/csv/', view_import_csv_file, name='import_csv_file'),
     path('router/import_tool/details/', view_import_details, name='import_details'),
     path('router/import_tool/run_import_task/', run_import_task, name='run_import_task'),
+    path('router/import_tool/template_csv/', view_download_csv_template, name='download_csv_template'),
+    path('router/import_tool/export_csv/', view_export_routers_csv, name='export_routers_csv'),
     path('backup/profile_list/', view_backup_profile_list, name='backup_profile_list'),
     path('backup/manage_profile/', view_manage_backup_profile, name='manage_backup_profile'),
     path('backup/backup_list/', view_backup_list, name='backup_list'),
@@ -63,6 +65,7 @@ urlpatterns = [
     path('backup/compare/', view_compare_backups, name='compare_backups'),
     path('backup/search/', view_config_search, name='config_search'),
     path('backup/download/', view_backup_download, name='download_backup'),
+    path('backup/send_email/', view_send_backup_email_now, name='send_backup_email_now'),
     path('backup/delete/', view_backup_delete, name='delete_backup'),
     path('backup/get_profile_details/', view_get_backup_profile_details, name='get_backup_profile_details'),
     path('monitoring/export_router_list/', view_export_router_list, name='export_router_list'),
@@ -82,6 +85,7 @@ urlpatterns = [
     path('wireguard_webadmin/', view_wireguard_webadmin_launcher, name='wireguard_webadmin_launcher'),
     path('wireguard_webadmin/manage/', view_manage_wireguard_integration, name='manage_wireguard_integration'),
     path('wireguard_webadmin/launch/', view_launch_wireguard_webadmin, name='launch_wireguard_webadmin'),
+    path('message_center/email_backups/', view_email_backups_config, name='email_backups_config'),
     path('message_center/channel_list/', view_message_channel_list, name='message_channel_list'),
     path('message_center/manage_settings/', view_manage_message_settings, name='manage_message_settings'),
     path('message_center/manage_channel/', view_manage_message_channel, name='manage_message_channel'),

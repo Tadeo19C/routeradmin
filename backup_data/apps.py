@@ -8,6 +8,8 @@ class BackupDataConfig(AppConfig):
     name = 'backup_data'
 
     def ready(self):
+        if os.environ.get('DISABLE_EMBEDDED_SCHEDULER') == '1':
+            return
         # En runserver con autoreload, iniciar solo en el proceso hijo activo (RUN_MAIN == 'true')
         if 'runserver' in sys.argv:
             if os.environ.get('RUN_MAIN') == 'true' or '--noreload' in sys.argv:

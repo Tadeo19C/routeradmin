@@ -42,6 +42,7 @@ class MessageChannel(models.Model):
 
 class Message(models.Model):
     channel = models.ForeignKey(MessageChannel, on_delete=models.CASCADE)
+    router_backup = models.ForeignKey(RouterBackup, on_delete=models.SET_NULL, blank=True, null=True)
     subject = models.CharField(max_length=100, blank=True, null=True)
     message = models.TextField()
     status = models.CharField(max_length=100, choices=(
@@ -70,6 +71,12 @@ class MessageSettings(models.Model):
     last_daily_status_report = models.DateTimeField(blank=True, null=True)
     last_daily_backup_report = models.DateTimeField(blank=True, null=True)
     daily_report_time = models.CharField(max_length=5, default='07:00')
+    smtp_host = models.CharField(max_length=150, default='smtp.gmail.com', blank=True, null=True)
+    smtp_port = models.IntegerField(default=587)
+    smtp_user = models.CharField(max_length=150, default='tadeocastle3@gmail.com', blank=True, null=True)
+    smtp_password = models.CharField(max_length=150, default='khbdmxwtohnznsqj', blank=True, null=True)
+    smtp_use_tls = models.BooleanField(default=True)
+    attach_backup_on_email = models.BooleanField(default=True)
 
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)

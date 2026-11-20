@@ -16,12 +16,17 @@ if [ ! -f .env ]; then
     cp .env.example .env
 fi
 
+DOCKER_CMD="docker"
+if ! docker info &> /dev/null; then
+    DOCKER_CMD="sudo docker"
+fi
+
 echo "[*] Levantando contenedores con Docker Compose..."
-docker compose -f docker-compose.megacom.yml up -d --build
+$DOCKER_CMD compose -f docker-compose.megacom.yml up -d --build --remove-orphans
 
 echo ""
 echo "==================================================="
 echo "  SISTEMA INSTALADO Y CORRIENDO EXITOSAMENTE!"
 echo "==================================================="
-echo "  Acceso Web: http://localhost:8080 (o http://IP-DEL-SERVIDOR)"
+echo "  Acceso Web: http://$(hostname -I | awk '{print $1}')"
 echo "==================================================="

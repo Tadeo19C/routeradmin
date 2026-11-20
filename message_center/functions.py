@@ -5,7 +5,7 @@ from .models import MessageChannel, Notification, MessageSettings, Message
 from backup_data.models import RouterBackup
 from dashboard.models import ActivityLog
 import requests
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage, get_connection
 from django.conf import settings
 from django.utils import timezone
 
@@ -91,7 +91,8 @@ def notify_config_change(router_backup: RouterBackup, previous_backup: RouterBac
     for channel in message_channel_list:
         Message.objects.create(
             channel=channel,
-            subject=f"Cambio de configuración: {router.name} (Rev #{router_backup.id})",
+            router_backup=router_backup,
+            subject=f"[MEGACOM] Respaldo Importante / Cambio en {router.name} (Rev #{router_backup.id})",
             message=msg_body,
         )
 
@@ -197,13 +198,44 @@ def send_notification_message(message: Message):
             headers = {'Title': message.subject}
     elif message.channel.channel_type == 'email':
         try:
-            send_mail(
-                subject=message.subject or 'MEGACOM Notification',
-                message=message.message,
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@megacom.local'),
-                recipient_list=[message.channel.destination],
+            import os
+            DEFAULT_SYS_SMTP_USER = os.environ.get('EMAIL_HOST_USER', 'tadeocastle3@gmail.com')
+            DEFAULT_SYS_SMTP_PASS = os.environ.get('EMAIL_HOST_PASSWORD', 'khbdmxwtohnznsqj')
+            smtp_host = (message_settings.smtp_host or os.environ.get('EMAIL_HOST', 'smtp.gmail.com')).strip()
+            smtp_port = message_settings.smtp_port or int(os.environ.get('EMAIL_PORT', 587))
+            smtp_user = (message_settings.smtp_user or DEFAULT_SYS_SMTP_USER).strip()
+            raw_pass = message_settings.smtp_password or DEFAULT_SYS_SMTP_PASS
+            smtp_pass = raw_pass.replace(' ', '').strip() if raw_pass else ''
+            smtp_tls = message_settings.smtp_use_tls
+
+            connection = get_connection(
+                backend='django.core.mail.backends.smtp.EmailBackend',
+                host=smtp_host,
+                port=smtp_port,
+                username=smtp_user or None,
+                password=smtp_pass or None,
+                use_tls=smtp_tls,
                 fail_silently=False,
             )
+            from_addr = f"MEGACOM Respaldos <{smtp_user}>" if smtp_user else getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@megacom.local')
+            dest_list = [d.strip() for d in (message.channel.destination or '').split(',') if d.strip()]
+            email_msg = EmailMessage(
+                subject=message.subject or 'Notificación MEGACOM',
+                body=message.message,
+                from_email=from_addr,
+                to=dest_list,
+                connection=connection,
+            )
+
+            # Adjuntar el archivo de configuración en texto plano (.rsc / .cfg) para entrega instantánea sin bloqueo de antivirus de Gmail
+            rb = message.router_backup
+            if rb and message_settings.attach_backup_on_email and rb.backup_text:
+                ext = 'rsc' if rb.router.router_type in ('mikrotik', 'mikrotik-branded') else 'cfg'
+                safe_router_name = rb.router.name.replace(' ', '_')
+                fname = f"{safe_router_name}_rev{rb.id}.{ext}"
+                email_msg.attach(fname, rb.backup_text, 'text/plain; charset=utf-8')
+
+            email_msg.send(fail_silently=False)
             message_response['status'] = 'sent'
         except Exception as e:
             message_response['status'] = 'failed'
@@ -311,3 +343,31 @@ def notify_backup_task_lock_expired(router_backup: RouterBackup):
             message=error_message
         )
     return
+
+
+def notify_important_backup_email(router_backup: RouterBackup, reason: str = "Respaldo Inicial / Manual"):
+    """
+    Envía por correo electrónico el archivo de configuración adjunto cuando se realiza
+    un respaldo inicial o un respaldo manual instantáneo en canales Email con config_change o daily_backup_report activo.
+    """
+    router = router_backup.router
+    email_channels = MessageChannel.objects.filter(enabled=True, channel_type='email', config_change=True)
+    if not email_channels.exists():
+        return
+
+    msg_body = (
+        f"📦 Respaldo de Configuración Guardado ({reason})\n"
+        f"Equipo: {router.name} ({router.address})\n"
+        f"Fabricante / Tipo: {router.get_router_type_display()}\n"
+        f"Revisión: #{router_backup.id}\n"
+        f"Fecha: {timezone.localtime(timezone.now()).strftime('%d/%m/%Y %H:%M:%S')}\n\n"
+        f"Se adjunta a este correo el archivo de respaldo de configuración."
+    )
+    for channel in email_channels:
+        msg = Message.objects.create(
+            channel=channel,
+            router_backup=router_backup,
+            subject=f"[MEGACOM] Respaldo Adjunto: {router.name} (Rev #{router_backup.id})",
+            message=msg_body,
+        )
+        send_notification_message(msg)

@@ -6,104 +6,92 @@
             <div class="card card-primary card-outline">
 
                 <div class="card-header">
-                    <h3 class="card-title">Canales de Notificación</h3>
+                    <h3 class="card-title"><i class="fas fa-broadcast-tower text-primary mr-1"></i> Canales de Notificación</h3>
+                    <span class="text-muted small">
+                        <i class="fas fa-check-circle text-success mr-1"></i>
+                        Por Hora: solo envía correo si hubo cambios &bull; Diario / Semanal: envía el respaldo programado del día
+                    </span>
                 </div>
 
                 <div class="card-body">
                 {% include 'message_center/message_center_nav_tabs.html' %}
-                <div class="row">
+                <div class="row mt-2">
                     <div class="col-lg-12">
                         <table class="table table-hover datatables-no-export">
                             <thead>
                             <tr>
-                                <th>Nombre</th>
-                                <th>Habilitado</th>
-                                <th>Canal</th>
-                                <th style="text-decoration: underline" title="Cambio de estado a En Línea">En Línea</th>
-                                <th style="text-decoration: underline" title="Cambio de estado a Fuera de Línea">Fuera de Línea</th>
-                                <th style="text-decoration: underline" title="Falla de respaldo">Respaldo</th>
-                                <th style="text-decoration: underline" title="Alerta cuando se detecta un cambio de configuración">Cambio Config</th>
-                                <th style="text-decoration: underline" title="Reporte diario de estado de equipos">Reporte Estado</th>
-                                <th style="text-decoration: underline" title="Reporte diario de respaldos">Reporte Respaldo</th>
+                                <th>Nombre del Canal</th>
+                                <th>Estado del Canal</th>
+                                <th>Tipo / Destino</th>
+                                <th title="Envía el respaldo por correo cuando hay un cambio real (y en respaldos diarios/semanales programados)">Envío de Respaldos</th>
+                                <th title="Alerta si un respaldo falla">Alerta Falla Backup</th>
+                                <th title="Alerta cuando un equipo se cae o vuelve en línea">Alerta Caída / En Línea</th>
+                                <th title="Resumen diario de respaldos y estado de red">Reporte Diario</th>
                             </tr>
-
                             </thead>
                             <tbody>
                             {% for channel in message_channels %}
                                 <tr>
-                                    <td>
-                                        <a href="/message_center/manage_channel/?uuid={{ channel.uuid }}">
-                                        {{ channel.name }}
-                                            </a>
-                                    
+                                    <td class="font-weight-bold">
+                                        <a href="{% if channel.channel_type == 'email' %}/message_center/email_backups/{% else %}/message_center/manage_channel/?uuid={{ channel.uuid }}{% endif %}">
+                                            {{ channel.name }}
+                                        </a>
                                     </td>
                                     <td>
                                         {% if channel.enabled %}
-                                            <span style="display: none">enabled</span><i class="far fa-check-circle text-success"></i>
+                                            <span class="badge-pill-soft success">
+                                                <span class="status-dot online"></span> En Línea
+                                            </span>
                                         {% else %}
-                                            <span style="display: none">disabled</span><i class="far fa-times-circle text-danger"></i>
+                                            <span class="badge-pill-soft danger">
+                                                <span class="status-dot offline"></span> Pausado
+                                            </span>
                                         {% endif %}
                                     </td>
-                                    <td>{{ channel.get_channel_type_display }}</td>
                                     <td>
-                                        {% if channel.status_change_online %}
-                                            <span style="display: none">enabled</span><i class="far fa-check-circle text-success"></i>
-                                        {% else %}
-                                            <span style="display: none">disabled</span><i class="far fa-times-circle text-danger"></i>
-                                        {% endif %}
+                                        <span class="badge-gpon badge-gpon-info">{{ channel.get_channel_type_display }}</span>
+                                        <code class="ml-1">{{ channel.destination }}</code>
                                     </td>
-                                <td>
-                                        {% if channel.status_change_offline %}
-                                            <span style="display: none">enabled</span><i class="far fa-check-circle text-success"></i>
-                                        {% else %}
-                                            <span style="display: none">disabled</span><i class="far fa-times-circle text-danger"></i>
-                                        {% endif %}
-                                    </td>
-                                <td>
-                                        {% if channel.backup_fail %}
-                                            <span style="display: none">enabled</span><i class="far fa-check-circle text-success"></i>
-                                        {% else %}
-                                            <span style="display: none">disabled</span><i class="far fa-times-circle text-danger"></i>
-                                        {% endif %}
-                                    </td>
-                                <td>
+                                    <td>
                                         {% if channel.config_change %}
-                                            <span style="display: none">enabled</span><i class="far fa-check-circle text-success"></i>
+                                            <span class="badge-gpon badge-gpon-success"><i class="fas fa-check"></i> Activo</span>
                                         {% else %}
-                                            <span style="display: none">disabled</span><i class="far fa-times-circle text-danger"></i>
+                                            <span class="badge badge-secondary">Desactivado</span>
                                         {% endif %}
                                     </td>
-                                <td>
-                                        {% if channel.daily_status_report %}
-                                            <span style="display: none">enabled</span><i class="far fa-check-circle text-success"></i>
+                                    <td>
+                                        {% if channel.backup_fail %}
+                                            <span class="badge-gpon badge-gpon-success"><i class="fas fa-check"></i> Activo</span>
                                         {% else %}
-                                            <span style="display: none">disabled</span><i class="far fa-times-circle text-danger"></i>
+                                            <span class="badge badge-secondary">Desactivado</span>
                                         {% endif %}
                                     </td>
-                                <td>
-                                        {% if channel.daily_backup_report %}
-                                            <span style="display: none">enabled</span><i class="far fa-check-circle text-success"></i>
+                                    <td>
+                                        {% if channel.status_change_offline or channel.status_change_online %}
+                                            <span class="badge-gpon badge-gpon-success"><i class="fas fa-check"></i> Activo</span>
                                         {% else %}
-                                            <span style="display: none">disabled</span><i class="far fa-times-circle text-danger"></i>
+                                            <span class="badge badge-secondary">Opcional (Off)</span>
                                         {% endif %}
                                     </td>
-                                    
-                                
+                                    <td>
+                                        {% if channel.daily_backup_report or channel.daily_status_report %}
+                                            <span class="badge-gpon badge-gpon-success"><i class="fas fa-check"></i> Activo</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Opcional (Off)</span>
+                                        {% endif %}
+                                    </td>
                                 </tr>
-
                             {% endfor %}
-
                             </tbody>
                         </table>
-
-
                     </div>
                 </div>
-                <div class="row">
-                <div class="col-lg-12">
-                    <a href="/message_center/manage_channel/" class="btn btn-primary">Crear Canal</a>
-                    <a href="/message_center/manage_settings/" class="btn btn-primary">Ajustes de Mensajería</a>
-                </div>
+                <div class="row mt-3">
+                    <div class="col-lg-12">
+                        <a href="/message_center/email_backups/" class="btn btn-primary"><i class="fas fa-envelope"></i> Configurar Correo de Respaldos</a>
+                        <a href="/message_center/manage_channel/" class="btn btn-outline-primary ml-1"><i class="fas fa-plus"></i> Crear Canal (WhatsApp / ntfy)</a>
+                        <a href="/message_center/manage_settings/" class="btn btn-outline-secondary ml-1"><i class="fas fa-sliders-h"></i> Ajustes Avanzados</a>
+                    </div>
                 </div>
                 </div>
             </div>

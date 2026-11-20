@@ -1,4 +1,5 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+import csv
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 
@@ -68,22 +69,12 @@ def run_import_task(request):
         return JsonResponse({'status': 'error', 'error_message': error_message})
 
     if import_task.backup_profile_name:
-        backup_profile = BackupProfile.objects.filter(name=import_task.backup_profile_name).first()
-        if not backup_profile:
-            error_message = f'Backup Profile with name "{import_task.backup_profile_name}" not found.'
-            import_task.import_error = True
-            import_task.import_error_message = error_message
-            import_task.save()
-            return JsonResponse({'status': 'error', 'error_message': error_message})
+        backup_profile, _ = BackupProfile.objects.get_or_create(name=import_task.backup_profile_name)
+    else:
+        backup_profile, _ = BackupProfile.objects.get_or_create(name='default')
 
     if import_task.router_group_name:
-        router_group = RouterGroup.objects.filter(name=import_task.router_group_name).first()
-        if not router_group:
-            error_message = f'Router Group with name "{import_task.router_group_name}" not found.'
-            import_task.import_error = True
-            import_task.import_error_message = error_message
-            import_task.save()
-            return JsonResponse({'status': 'error', 'error_message': error_message})
+        router_group, _ = RouterGroup.objects.get_or_create(name=import_task.router_group_name)
 
     if not import_task.password and not ssh_key:
         error_message = 'You must provide a password or an SSH Key'
@@ -92,8 +83,10 @@ def run_import_task(request):
         import_task.save()
         return JsonResponse({'status': 'error', 'error_message': error_message})
 
+    protocol = getattr(import_task, 'connection_protocol', 'ssh') or 'ssh'
     test_authentication_success, test_authentication_message = test_authentication(
-        import_task.router_type, address, import_task.port, import_task.username, import_task.password, ssh_key
+        import_task.router_type, address, import_task.port, import_task.username, import_task.password, ssh_key,
+        connection_protocol=protocol
     )
     if not test_authentication_success:
         if test_authentication_message:
@@ -107,7 +100,8 @@ def run_import_task(request):
 
     new_router = Router.objects.create(
         name=import_task.name, username=import_task.username, password=import_task.password,
-        address=address, port=import_task.port, router_type=import_task.router_type, backup_profile=backup_profile,
+        address=address, port=import_task.port, router_type=import_task.router_type,
+        connection_protocol=protocol, backup_profile=backup_profile,
         monitoring=import_task.monitoring
     )
     router_status, router_status_created = RouterStatus.objects.get_or_create(router=new_router)
@@ -231,28 +225,27 @@ def view_import_csv_file(request):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     form_description_content = '''
-    <strong>CSV Formatting guide</strong>
-    <p>For best results, we recommend always using double quotes and coma. ex: "","",""</p>
-    <p>
-    The header line is required, and the order of the columns must match the following:<br>
-    "name","username","password","ssh_key","address","port","router_type","backup_profile","router_group","monitoring"
-    </p>
-    
-    <strong>Example</strong>
-    <pre>
-    "name","username","password","ssh_key","address","port","router_type","backup_profile","router_group","monitoring"
-    "example host A","admin","","ssh key name","192.168.2.17","22","mikrotik","default","","true"
-    "example host B","admin","mysecret","","192.168.2.18","22","mikrotik","default","group a","false"
-    </pre>
-    
-    <strong>After importing</strong>
-    <p>After importing, you will be able to review the data and create the import tasks.</p>
-    
-    <strong>Delete CSV</strong>
-    <p>If you want to delete the CSV data and all tasks, you can do so from the details page. Successfully imported routers will not be removed.</p>
+    <strong><i class="fas fa-info-circle text-primary mr-1"></i> Guía de Carga Masiva en Excel (.CSV)</strong>
+    <p class="mt-1">Puedes descargar la <b>Plantilla Excel</b>, llenarla en Microsoft Excel o LibreOffice con todos tus nodos y equipos, guardarla como <code>.csv</code> y subirla directamente aquí.</p>
+    <p class="mb-1"><b>Columnas soportadas:</b></p>
+    <ul class="pl-3 mb-2">
+        <li><code>name</code>: Nombre del equipo (ej. <code>rt crucero</code>)</li>
+        <li><code>username</code> / <code>password</code>: Credenciales de acceso</li>
+        <li><code>address</code> / <code>port</code>: IP y puerto (<code>22</code> SSH o <code>23</code> Telnet)</li>
+        <li><code>router_type</code>: <code>mikrotik</code>, <code>cisco-ios</code>, <code>huawei</code>, <code>zte</code>, <code>ubiquiti-airos</code>, <code>openwrt</code></li>
+        <li><code>connection_protocol</code>: <code>ssh</code> o <code>telnet</code></li>
+        <li><code>router_group</code>: Nombre del Nodo (si el Nodo no existe, <b>el sistema lo crea automáticamente</b>)</li>
+        <li><code>backup_profile</code>: Perfil de respaldo (ej. <code>default</code>)</li>
+        <li><code>monitoring</code>: <code>true</code> o <code>false</code></li>
+    </ul>
+    <strong>Ejemplo de filas:</strong>
+    <pre>"name","username","password","address","port","router_type","connection_protocol","backup_profile","router_group","monitoring"
+"rt crucero","admin","clave123","192.168.130.5","22","mikrotik","ssh","default","crucero","true"
+"sw crucero","admin","clave123","172.20.250.91","22","cisco-ios","ssh","default","crucero","true"
+"fw crucero","admin","clave123","172.20.250.115","23","huawei","telnet","default","crucero","true"</pre>
     '''
 
-    form = CsvDataForm(request.POST or None)
+    form = CsvDataForm(request.POST or None, request.FILES or None)
     if form.is_valid():
         csv_data_instance = form.save(commit=False)
         csv_data_instance.import_data = form.cleaned_data['import_data']
@@ -272,6 +265,7 @@ def view_import_csv_file(request):
                     'address': task.get('address'),
                     'port': task.get('port', 22),
                     'router_type': task.get('router_type'),
+                    'connection_protocol': task.get('connection_protocol', 'ssh'),
                     'backup_profile_name': task.get('backup_profile'),
                     'router_group_name': task.get('router_group'),
                     'monitoring': True if str(task.get('monitoring', 'true')).lower() == 'true' else False,
@@ -295,3 +289,49 @@ def view_import_csv_file(request):
 
     return render(request, 'generic_form.html', context=data)
 
+
+
+@login_required()
+def view_download_csv_template(request):
+    """Descarga una plantilla CSV lista para abrir en Excel con ejemplos multi-marca."""
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    response['Content-Disposition'] = 'attachment; filename="plantilla_equipos_megacom.csv"'
+    writer = csv.writer(response, quoting=csv.QUOTE_ALL)
+    writer.writerow([
+        'name', 'username', 'password', 'address', 'port',
+        'router_type', 'connection_protocol', 'backup_profile', 'router_group', 'monitoring'
+    ])
+    writer.writerow(['rt ejemplo mikrotik', 'admin', 'SuClaveAqui', '192.168.1.1', '22', 'mikrotik', 'ssh', 'default', 'Nodo Central', 'true'])
+    writer.writerow(['sw ejemplo cisco', 'admin', 'SuClaveAqui', '192.168.1.2', '22', 'cisco-ios', 'ssh', 'default', 'Nodo Central', 'true'])
+    writer.writerow(['fw ejemplo huawei', 'admin', 'SuClaveAqui', '192.168.1.3', '23', 'huawei', 'telnet', 'default', 'Nodo Central', 'true'])
+    writer.writerow(['olt ejemplo zte', 'admin', 'SuClaveAqui', '192.168.1.4', '23', 'zte', 'telnet', 'default', 'Nodo Sur', 'true'])
+    return response
+
+
+@login_required()
+def view_export_routers_csv(request):
+    """Exporta todos los equipos actuales en formato CSV compatible con Excel y con la herramienta de importación."""
+    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=30).exists():
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
+    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    response['Content-Disposition'] = 'attachment; filename="inventario_equipos_megacom.csv"'
+    writer = csv.writer(response, quoting=csv.QUOTE_ALL)
+    writer.writerow([
+        'name', 'username', 'password', 'address', 'port',
+        'router_type', 'connection_protocol', 'backup_profile', 'router_group', 'monitoring'
+    ])
+    for r in Router.objects.all().prefetch_related('routergroup_set', 'backup_profile').order_by('name'):
+        grp = r.routergroup_set.first()
+        writer.writerow([
+            r.name,
+            r.username or '',
+            r.decrypted_password or '',
+            r.address,
+            str(r.port),
+            r.router_type,
+            getattr(r, 'connection_protocol', 'ssh') or 'ssh',
+            r.backup_profile.name if r.backup_profile else 'default',
+            grp.name if grp else '',
+            'true' if r.monitoring else 'false',
+        ])
+    return response

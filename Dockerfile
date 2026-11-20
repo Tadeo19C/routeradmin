@@ -16,8 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app/
 
-RUN chmod +x /app/init.sh
-RUN chmod +x /app/entrypoint.sh
+RUN dos2unix /app/init.sh /app/entrypoint.sh && chmod +x /app/init.sh /app/entrypoint.sh
 ARG SERVER_ADDRESS
 ARG DEBUG_MODE
 ENTRYPOINT ["/app/entrypoint.sh"]

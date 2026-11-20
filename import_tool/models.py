@@ -31,6 +31,7 @@ class ImportTask(models.Model):
     backup_profile = models.ForeignKey(BackupProfile, on_delete=models.SET_NULL, blank=True, null=True)
     backup_profile_name = models.CharField(max_length=100, blank=True, null=True)
     router_type = models.CharField(max_length=100, choices=SUPPORTED_ROUTER_TYPES)
+    connection_protocol = models.CharField(max_length=10, default='ssh')
     monitoring = models.BooleanField(default=True)
 
     import_success = models.BooleanField(default=False)
