@@ -59,6 +59,7 @@ export FERNET_KEY="$(cat /app_secrets/fernet_key)"
 cat > $PRODUCTION_SETTINGS_FILE <<EOL
 DEBUG = $DEBUG_VALUE
 ALLOWED_HOSTS = ['*']
+USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECRET_KEY = '$(cat /app_secrets/secret_key)'
 FERNET_KEY = '$(cat /app_secrets/fernet_key)'

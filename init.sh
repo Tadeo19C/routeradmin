@@ -31,7 +31,7 @@ python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 
 exec gunicorn routerfleet.wsgi:application \
-  --bind 0.0.0.0:8001 \
+  --bind 0.0.0.0:8000 \
   --worker-class sync \
   --workers 4 \
   --timeout 300 \
