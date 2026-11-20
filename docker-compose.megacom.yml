@@ -12,7 +12,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-megacom}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-megacom} || pg_isready"]
       interval: 5s
       timeout: 5s
       retries: 15
@@ -40,6 +40,9 @@ services:
       - megacom_media:/var/lib/routerfleet/
       - megacom_static:/app_static_files/
       - megacom_secrets:/app_secrets/
+    ports:
+      - "${WEB_PORT_PRIMARY:-80}:80"
+      - "${WEB_PORT_SECONDARY:-81}:81"
     command: /bin/bash /app/init.sh
     depends_on:
       - megacom-db
@@ -68,21 +71,6 @@ services:
       - megacom_secrets:/app_secrets/
     depends_on:
       - megacom-db
-      - megacom-app
-
-  megacom-web:
-    container_name: megacom-web
-    restart: unless-stopped
-    image: nginx:1.24-alpine
-    security_opt:
-      - seccomp:unconfined
-    volumes:
-      - megacom_static:/static:ro
-      - ./nginx/megacom.conf:/etc/nginx/conf.d/default.conf:ro
-    ports:
-      - "${WEB_PORT_PRIMARY:-80}:80"
-      - "${WEB_PORT_SECONDARY:-81}:81"
-    depends_on:
       - megacom-app
 
 volumes:

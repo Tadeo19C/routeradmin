@@ -35,12 +35,15 @@ if [ ! -f .env ]; then
     cp .env.example .env
 fi
 
-# Funcion para comprobar si un puerto esta ocupado por otro proceso que no sea megacom-web
+# Detener contenedor viejo megacom-web si existia para liberar sus puertos
+$DOCKER_CMD rm -f megacom-web &> /dev/null || true
+
+# Funcion para comprobar si un puerto esta ocupado por otro servicio ajeno a megacom
 is_port_busy() {
     local port=$1
     if command -v ss &> /dev/null; then
         if ss -tulpn 2>/dev/null | grep -E -q ":${port}[[:space:]]"; then
-            if ! $DOCKER_CMD ps --format '{{.Names}}' 2>/dev/null | grep -q '^megacom-web$'; then
+            if ! $DOCKER_CMD ps --format '{{.Names}}' 2>/dev/null | grep -E -q '^(megacom-app|megacom-web)$'; then
                 return 0
             fi
         fi
@@ -49,7 +52,7 @@ is_port_busy() {
 }
 
 if is_port_busy 80; then
-    echo "[!] Aviso: El puerto 80 ya está ocupado por otro servicio en este servidor."
+    echo "[!] Aviso: El puerto 80 ya está ocupado por otro servicio (ej. Cacti/Apache) en este servidor."
     export WEB_PORT_PRIMARY=8080
 else
     export WEB_PORT_PRIMARY=80

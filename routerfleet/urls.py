@@ -105,3 +105,11 @@ urlpatterns = [
     path('cron/perform_command_tasks/', view_cron_perform_command_tasks, name='cron_perform_command_tasks'),
     path('dashboard/logs/', view_activity_logs, name='activity_logs'),
 ]
+
+from django.urls import re_path
+from django.views.static import serve as static_serve
+from django.conf import settings as django_settings
+
+urlpatterns += [
+    re_path(r'^static/(?P<path>.*)$', static_serve, {'document_root': django_settings.BASE_DIR / 'static_files'}),
+]

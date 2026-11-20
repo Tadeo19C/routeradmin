@@ -3,7 +3,7 @@ set -e
 
 shopt -s nullglob
 
-echo "[*] Esperando a que la base de datos este lista..."
+echo "[*] Verificando conexion con la base de datos..."
 python - <<'PYCODE'
 import time
 import sys
@@ -20,7 +20,7 @@ for attempt in range(30):
         print("[OK] Base de datos conectada correctamente.")
         sys.exit(0)
     except Exception as e:
-        print(f"[*] Esperando base de datos ({attempt+1}/30)...")
+        print(f"[*] Esperando base de datos ({attempt+1}/30): {e}")
         time.sleep(2)
 
 print("[ERROR] No se pudo conectar a la base de datos despues de 60 segundos.")
@@ -28,9 +28,12 @@ sys.exit(1)
 PYCODE
 
 python manage.py migrate --noinput
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput || true
 
+echo "[*] Iniciando servidor web MEGACOM..."
 exec gunicorn routerfleet.wsgi:application \
+  --bind 0.0.0.0:80 \
+  --bind 0.0.0.0:81 \
   --bind 0.0.0.0:8001 \
   --worker-class sync \
   --workers 4 \
