@@ -4,6 +4,8 @@ import uuid
 
 class WebadminSettings(models.Model):
     name = models.CharField(default='webadmin_settings', max_length=20, unique=True)
+    custom_logo = models.FileField(upload_to='branding/', blank=True, null=True, verbose_name="Logo Personalizado")
+    app_title = models.CharField(max_length=64, default='BACKUP WEB', verbose_name="Título del Sistema")
     update_available = models.BooleanField(default=False)
     current_version = models.PositiveIntegerField(default=0)
     latest_version = models.PositiveIntegerField(default=0)
@@ -18,3 +20,12 @@ class WebadminSettings(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def logo_url(self):
+        if self.custom_logo:
+            try:
+                return self.custom_logo.url
+            except Exception:
+                return None
+        return None

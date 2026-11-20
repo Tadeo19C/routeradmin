@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% if page_title %}{{ page_title }} | {% endif %}BACKUP WEB</title>
+    <title>{% if page_title %}{{ page_title }} | {% endif %}{{ custom_app_title|default:'BACKUP WEB' }}</title>
 
     <!-- Preconnect to Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -84,10 +84,16 @@
             <div class="container-fluid">
                 <!-- Brand -->
                 <a href="/" class="brand-wrapper">
-                    <div class="brand-icon-box">
-                        <i class="fas fa-network-wired"></i>
-                    </div>
-                    <span class="brand-text">BACKUP WEB</span>
+                    {% if custom_logo_url %}
+                        <div class="brand-logo-container d-flex align-items-center mr-2">
+                            <img src="{{ custom_logo_url }}" alt="{{ custom_app_title|default:'BACKUP WEB' }}" style="max-height: 28px; max-width: 130px; object-fit: contain;">
+                        </div>
+                    {% else %}
+                        <div class="brand-icon-box">
+                            <i class="fas fa-network-wired"></i>
+                        </div>
+                    {% endif %}
+                    <span class="brand-text">{{ custom_app_title|default:'BACKUP WEB' }}</span>
                 </a>
 
                 <!-- Mobile Toggle -->
@@ -142,6 +148,11 @@
                                     <div class="font-weight-bold">{{ user.username }}</div>
                                     <small class="text-muted">{{ user.email|default:"admin@backupweb.local" }}</small>
                                 </div>
+                                {% if user.is_staff or user.is_superuser %}
+                                <a class="dropdown-item" href="/system/branding/">
+                                    <i class="fas fa-paint-brush text-primary"></i> Personalizar Logo
+                                </a>
+                                {% endif %}
                                 <a class="dropdown-item" href="/dashboard/logs/">
                                     <i class="fas fa-history text-muted"></i> Historial de Cambios
                                 </a>

@@ -4,12 +4,17 @@
 
 <div class="register-box">
     <div class="register-logo">
-      <a href="/"><b>BACKUP WEB</b></a>
+      <a href="/" style="display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;">
+        {% if custom_logo_url %}
+          <img src="{{ custom_logo_url }}" alt="{{ custom_app_title|default:'BACKUP WEB' }}" style="max-height: 52px; max-width: 220px; object-fit: contain; margin-bottom: 2px;">
+        {% endif %}
+        <span><b>{{ custom_app_title|default:'BACKUP WEB' }}</b></span>
+      </a>
     </div>
   
     <div class="card">
       <div class="card-body register-card-body">
-        <p class="login-box-msg font-weight-bold text-muted mb-4">Iniciar Sesión en BACKUP WEB</p>
+        <p class="login-box-msg font-weight-bold text-muted mb-4">Iniciar Sesión en {{ custom_app_title|default:'BACKUP WEB' }}</p>
         <form action="/accounts/login/" method="post">
             {% csrf_token %}
             <div class="input-group mb-3">

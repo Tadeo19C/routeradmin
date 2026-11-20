@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3" style="max-width: 960px;">
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h4 class="font-weight-bold mb-1" style="color: var(--foreground); font-size: 1.25rem;">
+                <i class="fas fa-paint-brush text-primary mr-2"></i>Personalización & Logo
+            </h4>
+            <p class="text-muted small mb-0">Personaliza la identidad visual, el logo corporativo y el título de tu plataforma BACKUP WEB.</p>
+        </div>
+        <a href="/" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left mr-1"></i> Volver al Inicio
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="mb-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm py-2 px-3" role="alert" style="font-size: 0.88rem;">
+            <i class="fas fa-info-circle mr-1"></i> {{ message }}
+            <button type="button" class="close py-2" data-dismiss="alert" aria-label="Cerrar">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Main Form Column -->
+        <div class="col-lg-7 mb-4">
+            <div class="card shadow-sm border-0" style="background: var(--card); border-radius: 12px; border: 1px solid var(--border) !important;">
+                <div class="card-header bg-transparent py-3" style="border-bottom: 1px solid var(--border);">
+                    <h5 class="card-title mb-0 font-weight-bold" style="font-size: 0.95rem; color: var(--foreground);">
+                        <i class="fas fa-sliders-h text-primary mr-2"></i>Ajustes de Marca
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data" id="brandingForm">
+                        {% csrf_token %}
+
+                        <!-- App Title Input -->
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold small text-muted text-uppercase mb-1" style="letter-spacing: 0.05em;">
+                                Nombre de la Plataforma
+                            </label>
+                            {{ form.app_title }}
+                            <small class="form-text text-muted">
+                                Nombre visible en la barra superior, pestaña del navegador y pantalla de inicio de sesión.
+                            </small>
+                            {% if form.app_title.errors %}
+                            <div class="text-danger small mt-1">{{ form.app_title.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Logo File Upload -->
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold small text-muted text-uppercase mb-1" style="letter-spacing: 0.05em;">
+                                Subir Nuevo Logo
+                            </label>
+                            <div class="custom-file mb-2">
+                                {{ form.custom_logo }}
+                                <label class="custom-file-label text-truncate" for="customLogoInput" id="customLogoLabel">
+                                    {% if settings_obj.custom_logo %}
+                                        Cambiar logo actual...
+                                    {% else %}
+                                        Seleccionar imagen (PNG, SVG, JPG, WebP)...
+                                    {% endif %}
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle text-primary mr-1"></i> Formatos recomendados: <strong>PNG transparente</strong> o <strong>SVG</strong>. Tamaño máximo: 5 MB.
+                            </small>
+                            {% if form.custom_logo.errors %}
+                            <div class="text-danger small mt-1">{{ form.custom_logo.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex align-items-center justify-content-between pt-3 mt-3" style="border-top: 1px solid var(--border);">
+                            <button type="submit" name="action" value="save" class="btn btn-primary px-4 font-weight-bold shadow-sm" style="font-size: 0.88rem;">
+                                <i class="fas fa-save mr-1"></i> Guardar Cambios
+                            </button>
+
+                            {% if settings_obj.custom_logo or settings_obj.app_title != 'BACKUP WEB' %}
+                            <button type="submit" name="action" value="restore_default" class="btn btn-outline-danger btn-sm" onclick="return confirm('¿Seguro que deseas restablecer el logo y nombre original de BACKUP WEB?');">
+                                <i class="fas fa-undo mr-1"></i> Restaurar Predeterminado
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview & Status Column -->
+        <div class="col-lg-5 mb-4">
+            <!-- Live Preview Card -->
+            <div class="card shadow-sm border-0 mb-3" style="background: var(--card); border-radius: 12px; border: 1px solid var(--border) !important;">
+                <div class="card-header bg-transparent py-3" style="border-bottom: 1px solid var(--border);">
+                    <h5 class="card-title mb-0 font-weight-bold" style="font-size: 0.95rem; color: var(--foreground);">
+                        <i class="fas fa-eye text-info mr-2"></i>Vista Previa en Vivo
+                    </h5>
+                </div>
+                <div class="card-body p-3">
+                    <!-- Topbar Preview Mockup -->
+                    <div class="mb-3">
+                        <span class="small font-weight-bold text-muted text-uppercase d-block mb-2" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                            En Barra Superior (Topbar):
+                        </span>
+                        <div class="p-3 rounded d-flex align-items-center justify-content-between" style="background: var(--header-bg, #ffffff); border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                            <div class="d-flex align-items-center" id="previewTopbarBrand">
+                                {% if settings_obj.custom_logo %}
+                                    <div class="brand-logo-container mr-2 d-flex align-items-center" id="topbarLogoBox">
+                                        <img src="{{ settings_obj.custom_logo.url }}" id="topbarPreviewImg" alt="Logo" style="max-height: 28px; max-width: 120px; object-fit: contain;">
+                                    </div>
+                                    <div class="brand-icon-box d-none" id="topbarDefaultIconBox">
+                                        <i class="fas fa-network-wired"></i>
+                                    </div>
+                                {% else %}
+                                    <div class="brand-logo-container mr-2 d-none align-items-center" id="topbarLogoBox">
+                                        <img src="" id="topbarPreviewImg" alt="Logo" style="max-height: 28px; max-width: 120px; object-fit: contain;">
+                                    </div>
+                                    <div class="brand-icon-box" id="topbarDefaultIconBox">
+                                        <i class="fas fa-network-wired"></i>
+                                    </div>
+                                {% endif %}
+                                <span class="brand-text font-weight-bold ml-2" id="topbarPreviewText" style="font-size: 0.95rem; color: var(--foreground);">
+                                    {{ settings_obj.app_title|default:'BACKUP WEB' }}
+                                </span>
+                            </div>
+                            <span class="badge badge-light border text-muted" style="font-size: 0.7rem;">Demo</span>
+                        </div>
+                    </div>
+
+                    <!-- Login Screen Preview Mockup -->
+                    <div>
+                        <span class="small font-weight-bold text-muted text-uppercase d-block mb-2" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                            En Pantalla de Acceso (Login):
+                        </span>
+                        <div class="p-4 rounded text-center" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid rgba(255,255,255,0.1);">
+                            <div id="loginPreviewContainer" class="d-flex flex-column align-items-center justify-content-center">
+                                {% if settings_obj.custom_logo %}
+                                    <img src="{{ settings_obj.custom_logo.url }}" id="loginPreviewImg" alt="Logo Login" style="max-height: 48px; max-width: 180px; object-fit: contain; margin-bottom: 8px;">
+                                {% else %}
+                                    <img src="" id="loginPreviewImg" alt="Logo Login" class="d-none" style="max-height: 48px; max-width: 180px; object-fit: contain; margin-bottom: 8px;">
+                                    <i class="fas fa-server text-primary mb-2" id="loginDefaultIcon" style="font-size: 2rem;"></i>
+                                {% endif %}
+                                <div class="text-white font-weight-bold" id="loginPreviewText" style="font-size: 1.15rem; letter-spacing: -0.3px;">
+                                    {{ settings_obj.app_title|default:'BACKUP WEB' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations Card -->
+            <div class="card shadow-sm border-0" style="background: rgba(37, 99, 235, 0.04); border-radius: 12px; border: 1px dashed rgba(37, 99, 235, 0.25) !important;">
+                <div class="card-body p-3">
+                    <h6 class="font-weight-bold text-primary mb-2" style="font-size: 0.85rem;">
+                        <i class="fas fa-lightbulb mr-1"></i> Consejos de Diseño
+                    </h6>
+                    <ul class="text-muted small pl-3 mb-0" style="font-size: 0.8rem; line-height: 1.5;">
+                        <li class="mb-1">Utiliza imágenes con <strong>fondo transparente</strong> (.png o .svg) para que se adapten automáticamente al modo claro y oscuro.</li>
+                        <li class="mb-1">Proporción recomendada: horizontal (rectangular 3:1 o 4:1) o isotipo cuadrado.</li>
+                        <li>El cambio se refleja al instante en todos los navegadores y usuarios conectados.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputLogo = document.getElementById('customLogoInput');
+    const labelLogo = document.getElementById('customLogoLabel');
+    const inputTitle = document.getElementById('id_app_title');
+    
+    const topbarPreviewImg = document.getElementById('topbarPreviewImg');
+    const topbarLogoBox = document.getElementById('topbarLogoBox');
+    const topbarDefaultIconBox = document.getElementById('topbarDefaultIconBox');
+    const topbarPreviewText = document.getElementById('topbarPreviewText');
+    
+    const loginPreviewImg = document.getElementById('loginPreviewImg');
+    const loginDefaultIcon = document.getElementById('loginDefaultIcon');
+    const loginPreviewText = document.getElementById('loginPreviewText');
+
+    // Title live preview
+    if (inputTitle) {
+        inputTitle.addEventListener('input', function() {
+            const val = this.value.trim() || 'BACKUP WEB';
+            if (topbarPreviewText) topbarPreviewText.textContent = val;
+            if (loginPreviewText) loginPreviewText.textContent = val;
+        });
+    }
+
+    // Logo live preview
+    if (inputLogo) {
+        inputLogo.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (labelLogo) labelLogo.textContent = file.name;
+                const objectUrl = URL.createObjectURL(file);
+
+                // Update Topbar Preview
+                if (topbarPreviewImg) {
+                    topbarPreviewImg.src = objectUrl;
+                    topbarLogoBox.classList.remove('d-none');
+                    topbarLogoBox.classList.add('d-flex');
+                    if (topbarDefaultIconBox) topbarDefaultIconBox.classList.add('d-none');
+                }
+
+                // Update Login Preview
+                if (loginPreviewImg) {
+                    loginPreviewImg.src = objectUrl;
+                    loginPreviewImg.classList.remove('d-none');
+                    if (loginDefaultIcon) loginDefaultIcon.classList.add('d-none');
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

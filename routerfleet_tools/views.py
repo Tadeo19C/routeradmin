@@ -1,9 +1,51 @@
-from django.shortcuts import render, Http404
+from django.shortcuts import render, redirect, Http404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from .models import WebadminSettings
+from .forms import SystemBrandingForm
 from django.http import JsonResponse
 from django.conf import settings
 from django.utils import timezone
 import requests
+
+
+@login_required
+def view_system_branding(request):
+    if not (request.user.is_superuser or request.user.is_staff):
+        return render(request, 'access_denied.html', status=403)
+
+    settings_obj, _ = WebadminSettings.objects.get_or_create(name='webadmin_settings')
+
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        
+        # Action: Restore default branding
+        if action == 'restore_default' or request.POST.get('remove_logo') == '1':
+            if settings_obj.custom_logo:
+                settings_obj.custom_logo.delete(save=False)
+                settings_obj.custom_logo = None
+            settings_obj.app_title = 'BACKUP WEB'
+            settings_obj.save()
+            messages.success(request, "Se ha restaurado el logo y la identidad predeterminada de BACKUP WEB.")
+            return redirect('system_branding')
+
+        form = SystemBrandingForm(request.POST, request.FILES, instance=settings_obj)
+        if form.is_valid():
+            branding = form.save(commit=False)
+            if not branding.app_title or not branding.app_title.strip():
+                branding.app_title = 'BACKUP WEB'
+            branding.save()
+            messages.success(request, "Identidad y logo del sistema actualizados exitosamente.")
+            return redirect('system_branding')
+    else:
+        form = SystemBrandingForm(instance=settings_obj)
+
+    context = {
+        'form': form,
+        'settings_obj': settings_obj,
+        'page_title': 'Personalización de Logo & Marca',
+    }
+    return render(request, 'routerfleet_tools/system_branding.html', context)
 
 
 def view_cron_check_updates(request):

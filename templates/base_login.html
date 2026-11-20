@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BACKUP WEB | Acceso</title>
+  <title>{{ custom_app_title|default:'BACKUP WEB' }} | Acceso</title>
 
   <!-- Google Font: Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -57,6 +57,11 @@
         color: #0f172a !important;
         padding: 0 !important;
     }
+        {% if custom_logo_url %}
+    .register-logo a::before, .login-logo a::before {
+        display: none !important;
+    }
+    {% endif %}
     .register-logo, .login-logo {
         margin-bottom: 1.5rem;
         text-align: center;

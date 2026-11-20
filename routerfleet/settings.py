@@ -80,6 +80,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'routerfleet_tools.context_processors.branding_context',
             ],
         },
     },
@@ -144,6 +145,7 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = '/var/lib/routerfleet/'
 ROUTERFLEET_VERSION = 7514
 

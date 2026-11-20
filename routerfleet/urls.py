@@ -24,7 +24,7 @@ from router_manager.views import view_create_instant_backup_multiple_routers, vi
     view_router_group_list, view_manage_router_group, view_router_details, \
     view_create_instant_backup_task, view_router_availability, view_cron_update_router_information, \
     view_manage_router_groups_multiple, view_ajax_quick_create_group, view_ajax_test_connection, view_ajax_router_telemetry
-from routerfleet_tools.views import view_cron_check_updates
+from routerfleet_tools.views import view_cron_check_updates, view_system_branding
 from user_manager.views import view_manage_user, view_user_list
 
 urlpatterns = [
@@ -104,6 +104,7 @@ urlpatterns = [
     path('cron/create_command_jobs/', view_cron_create_command_jobs, name='cron_create_command_jobs'),
     path('cron/perform_command_tasks/', view_cron_perform_command_tasks, name='cron_perform_command_tasks'),
     path('dashboard/logs/', view_activity_logs, name='activity_logs'),
+    path('system/branding/', view_system_branding, name='system_branding'),
 ]
 
 from django.urls import re_path
@@ -112,4 +113,5 @@ from django.conf import settings as django_settings
 
 urlpatterns += [
     re_path(r'^static/(?P<path>.*)$', static_serve, {'document_root': django_settings.BASE_DIR / 'static_files'}),
+    re_path(r'^media/(?P<path>.*)$', static_serve, {'document_root': django_settings.MEDIA_ROOT}),
 ]
