@@ -3,6 +3,8 @@ services:
     container_name: megacom-db
     restart: unless-stopped
     image: postgres:16
+    security_opt:
+      - seccomp:unconfined
     volumes:
       - megacom_postgres_data:/var/lib/postgresql/data
     environment:
@@ -19,6 +21,8 @@ services:
     container_name: megacom-app
     restart: unless-stopped
     build: .
+    security_opt:
+      - seccomp:unconfined
     environment:
       - SERVER_ADDRESS=${SERVER_ADDRESS:-0.0.0.0}
       - DEBUG_MODE=False
@@ -38,13 +42,14 @@ services:
       - megacom_secrets:/app_secrets/
     command: /bin/bash /app/init.sh
     depends_on:
-      megacom-db:
-        condition: service_healthy
+      - megacom-db
 
   megacom-scheduler:
     container_name: megacom-scheduler
     restart: unless-stopped
     build: .
+    security_opt:
+      - seccomp:unconfined
     command: python manage.py run_scheduler --interval 45
     environment:
       - SERVER_ADDRESS=${SERVER_ADDRESS:-0.0.0.0}
@@ -62,15 +67,15 @@ services:
       - megacom_media:/var/lib/routerfleet/
       - megacom_secrets:/app_secrets/
     depends_on:
-      megacom-db:
-        condition: service_healthy
-      megacom-app:
-        condition: service_started
+      - megacom-db
+      - megacom-app
 
   megacom-web:
     container_name: megacom-web
     restart: unless-stopped
-    image: nginx:alpine
+    image: nginx:1.24-alpine
+    security_opt:
+      - seccomp:unconfined
     volumes:
       - megacom_static:/static:ro
     ports:

@@ -18,6 +18,18 @@ if ! docker info &> /dev/null; then
     DOCKER_CMD="sudo docker"
 fi
 
+if $DOCKER_CMD compose version &> /dev/null; then
+    COMPOSE_CMD="$DOCKER_CMD compose"
+elif command -v docker-compose &> /dev/null; then
+    if ! docker info &> /dev/null; then
+        COMPOSE_CMD="sudo docker-compose"
+    else
+        COMPOSE_CMD="docker-compose"
+    fi
+else
+    COMPOSE_CMD="$DOCKER_CMD compose"
+fi
+
 if [ ! -f .env ]; then
     echo "[*] Creando archivo .env inicial..."
     cp .env.example .env
@@ -52,7 +64,7 @@ fi
 
 echo "[*] Habilitando puertos ${WEB_PORT_PRIMARY} y ${WEB_PORT_SECONDARY}..."
 echo "[*] Construyendo y levantando contenedores de MEGACOM..."
-$DOCKER_CMD compose -f docker-compose.megacom.yml up -d --build --remove-orphans
+$COMPOSE_CMD -f docker-compose.megacom.yml up -d --build --remove-orphans
 
 SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
 if [ -z "$SERVER_IP" ]; then
