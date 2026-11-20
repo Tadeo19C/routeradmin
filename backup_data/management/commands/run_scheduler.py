@@ -5,7 +5,7 @@ from backup_data.scheduler import run_scheduler_loop
 
 
 class Command(BaseCommand):
-    help = 'Inicia el planificador en segundo plano de MEGACOM (monitoreo activo, respaldos programados y notificaciones).'
+    help = 'Inicia el planificador en segundo plano de BACKUP WEB (monitoreo activo, respaldos programados y notificaciones).'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -26,5 +26,5 @@ class Command(BaseCommand):
                 break
             except Exception:
                 time.sleep(2)
-        self.stdout.write(self.style.SUCCESS(f'[SCHEDULER] Iniciando planificador MEGACOM cada {interval}s...'))
+        self.stdout.write(self.style.SUCCESS(f'[SCHEDULER] Iniciando planificador BACKUP WEB cada {interval}s...'))
         run_scheduler_loop(interval_seconds=interval)

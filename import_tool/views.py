@@ -295,7 +295,7 @@ def view_import_csv_file(request):
 def view_download_csv_template(request):
     """Descarga una plantilla CSV lista para abrir en Excel con ejemplos multi-marca."""
     response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
-    response['Content-Disposition'] = 'attachment; filename="plantilla_equipos_megacom.csv"'
+    response['Content-Disposition'] = 'attachment; filename="plantilla_equipos_backupweb.csv"'
     writer = csv.writer(response, quoting=csv.QUOTE_ALL)
     writer.writerow([
         'name', 'username', 'password', 'address', 'port',
@@ -314,7 +314,7 @@ def view_export_routers_csv(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=30).exists():
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
-    response['Content-Disposition'] = 'attachment; filename="inventario_equipos_megacom.csv"'
+    response['Content-Disposition'] = 'attachment; filename="inventario_equipos_backupweb.csv"'
     writer = csv.writer(response, quoting=csv.QUOTE_ALL)
     writer.writerow([
         'name', 'username', 'password', 'address', 'port',

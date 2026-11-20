@@ -1,6 +1,6 @@
-# Guía de Pruebas de MEGACOM
+# Guía de Pruebas de BACKUP WEB
 
-Esta guía detalla cómo verificar que la instalación de **MEGACOM** ha sido exitosa y que todas las funciones principales están operativas.
+Esta guía detalla cómo verificar que la instalación de **BACKUP WEB** ha sido exitosa y que todas las funciones principales están operativas.
 
 ## 1. Verificación de Infraestructura (Servidor)
 

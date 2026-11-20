@@ -1,6 +1,6 @@
 @echo off
 echo ===================================================
-echo   MEGACOM ROUTERFLEET - Instalador Docker Plug ^& Play
+echo   BACKUP WEB - Instalador Docker Plug ^& Play
 echo ===================================================
 echo.
 
@@ -18,7 +18,7 @@ if not exist .env (
     copy .env.example .env >nul
 )
 
-echo [*] Construyendo y levantando los contenedores de MEGACOM (Puertos 80 y 81)...
+echo [*] Construyendo y levantando los contenedores de BACKUP WEB (Puertos 80 y 81)...
 docker compose -f docker-compose.megacom.yml up -d --build --remove-orphans
 
 if %ERRORLEVEL% equ 0 (

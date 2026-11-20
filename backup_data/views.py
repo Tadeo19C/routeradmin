@@ -1,5 +1,5 @@
 """
-Controlador HTTP de Vistas para backup_data en MEGACOM.
+Controlador HTTP de Vistas para backup_data en BACKUP WEB.
 Delega toda la lógica de negocio a backup_data.services, manteniendo
 los endpoints HTTP compatibles con cron/Docker.
 """

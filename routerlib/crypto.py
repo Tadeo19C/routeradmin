@@ -1,5 +1,5 @@
 """
-Módulo de Cifrado Seguro de Credenciales en Reposo para MEGACOM.
+Módulo de Cifrado Seguro de Credenciales en Reposo para BACKUP WEB.
 Utiliza cifrado simétrico robusto Fernet (AES-128 en modo CBC con HMAC-SHA256).
 """
 import base64

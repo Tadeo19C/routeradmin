@@ -1,10 +1,10 @@
-# MEGACOM
+# BACKUP WEB
 
-Bienvenido a **MEGACOM** - la evolución en la gestión y respaldo centralizado de routers. Este proyecto está diseñado para revolucionar la forma en que manejamos las configuraciones de equipos de red, enfocándose en la simplicidad, seguridad y regionalización para Centroamérica.
+Bienvenido a **BACKUP WEB** - la evolución en la gestión y respaldo centralizado de routers. Este proyecto está diseñado para revolucionar la forma en que manejamos las configuraciones de equipos de red, enfocándose en la simplicidad, seguridad y regionalización para Centroamérica.
 
 ## Introducción
 
-**MEGACOM** ha sido desarrollado con el objetivo de facilitar la administración de flotas de dispositivos, con un enfoque inicial en equipos MikroTik. Este proyecto representa un sistema robusto que no solo simplifica, sino que también protege las tareas de gestión de red a través de diversos dispositivos.
+**BACKUP WEB** ha sido desarrollado con el objetivo de facilitar la administración de flotas de dispositivos, con un enfoque inicial en equipos MikroTik. Este proyecto representa un sistema robusto que no solo simplifica, sino que también protege las tareas de gestión de red a través de diversos dispositivos.
 
 ## Características Principales
 
@@ -19,7 +19,7 @@ Bienvenido a **MEGACOM** - la evolución en la gestión y respaldo centralizado 
 
 ## Instrucciones de Despliegue
 
-Sigue estos pasos para desplegar **MEGACOM** en tu servidor:
+Sigue estos pasos para desplegar **BACKUP WEB** en tu servidor:
 
 ### Paso 1: Preparar el Entorno
 Crea un directorio para el proyecto y entra en él.

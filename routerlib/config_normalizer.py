@@ -1,5 +1,5 @@
 """
-Módulo de Normalización Inteligente de Configuraciones de Red para MEGACOM.
+Módulo de Normalización Inteligente de Configuraciones de Red para BACKUP WEB.
 Elimina comentarios volátiles, marcas de tiempo de exportación y diferencias de formato
 para evitar falsos positivos de 'Configuración Modificada' (Config Drift).
 """

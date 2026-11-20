@@ -123,7 +123,7 @@ def view_manage_command(request):
     <p>Enable or disable the command. Disabled commands cannot be executed.</p>
     
     <strong>Capture Output</strong>
-    <p>If unchecked, RouterFleet executes the command and immediately closes the connection. If checked, RouterFleet will wait for the command to finish to capture its output. Wait times can be long and may delay the execution queue if you have many commands pending. <strong>Only check this if you really need the output.</strong></p>
+    <p>If unchecked, BACKUP WEB executes the command and immediately closes the connection. If checked, BACKUP WEB will wait for the command to finish to capture its output. Wait times can be long and may delay the execution queue if you have many commands pending. <strong>Only check this if you really need the output.</strong></p>
     
     <strong>Max Retry and Retry Interval</strong>
     <p>Maximum number of retries if the command fails, and the interval (in seconds) between each attempt.</p>

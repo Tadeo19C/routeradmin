@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% if page_title %}{{ page_title }} | {% endif %}MEGACOM</title>
+    <title>{% if page_title %}{{ page_title }} | {% endif %}BACKUP WEB</title>
 
     <!-- Preconnect to Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,7 +38,7 @@
     <link rel="stylesheet" href="/static/modern_ui.css?v=2.1">
     <script>
         (function() {
-            var savedTheme = localStorage.getItem('megacom_theme');
+            var savedTheme = localStorage.getItem('backupweb_theme');
             if (savedTheme === 'dark' || (!savedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.setAttribute('data-theme', 'dark');
             }
@@ -87,7 +87,7 @@
                     <div class="brand-icon-box">
                         <i class="fas fa-network-wired"></i>
                     </div>
-                    <span class="brand-text">MEGACOM</span>
+                    <span class="brand-text">BACKUP WEB</span>
                 </a>
 
                 <!-- Mobile Toggle -->
@@ -140,7 +140,7 @@
                             <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userMenuDropdown">
                                 <div class="dropdown-item-text pb-2 mb-1 border-bottom">
                                     <div class="font-weight-bold">{{ user.username }}</div>
-                                    <small class="text-muted">{{ user.email|default:"admin@megacom.local" }}</small>
+                                    <small class="text-muted">{{ user.email|default:"admin@backupweb.local" }}</small>
                                 </div>
                                 <a class="dropdown-item" href="/dashboard/logs/">
                                     <i class="fas fa-history text-muted"></i> Historial de Cambios
@@ -318,49 +318,7 @@
         $('.datatables-with-export').show();
         $('.datatables-no-export').show();
     </script>
-    <script>
-        $(document).ready(function () {
-            const webadminVersion = '{{ webadmin_version.current_version }}';
-            $('#btn_update_changelog').on('click', function () {
-                $.ajax({
-                    url: `https://updates.eth0.com.br/api/application_changelog/?app=routerfleet&version=${webadminVersion}`,
-                    type: 'GET',
-                    success: function (response) {
-                        const updates = response.updates.sort((a, b) => new Date(b.release_date) - new Date(a.release_date));
-                        let updatesHtml = '';
-                        updates.forEach(update => {
-                            updatesHtml += `<div class="update">
-                                        <h5>Version ${update.version}</h5>
-                                        <p>${update.release_notes.replace(/\r\n/g, "<br>")}</p>
-                                    </div>`;
-                        });
 
-                        // Update modal content
-                        $('#genericModalLabel').text('Actualizaciones de MEGACOM');
-                        $('#genericModalBody').html(updatesHtml);
-                        $('#genericModalCloseButton').text('Cerrar');
-                        $('#genericModalActionButton').text('Instrucciones de Actualización').attr('href', 'https://github.com/eduardogsilva/routerfleet').attr('target', '_blank');
-
-                        // Show modal
-                        $('#genericModal').modal('show');
-                    },
-                    error: function (xhr, status, error) {
-                        // Update modal for error display
-                        $('#genericModalLabel').text('Error');
-                        $('#genericModalBody').html('<p>Ocurrió un error al obtener la información de actualización. Por favor, inténtelo de nuevo más tarde.</p>');
-                        $('#genericModalCloseButton').text('Cerrar');
-                        $('#genericModalActionButton').hide(); // Hide the action button in case of error
-
-                        // Show modal
-                        $('#genericModal').modal('show');
-                        console.error("An error occurred while fetching updates: ", error);
-                    }
-                });
-            });
-        });
-
-
-    </script>
 
     <script>
         function setCookie(name, value, days) {
@@ -445,7 +403,7 @@
                     document.documentElement.removeAttribute('data-theme');
                     document.body.classList.remove('dark-mode');
                 }
-                localStorage.setItem('megacom_theme', nextTheme);
+                localStorage.setItem('backupweb_theme', nextTheme);
                 updateThemeIcon(nextTheme === 'dark');
             });
         });

@@ -441,7 +441,7 @@ def view_send_backup_email_now(request):
     sent_to = []
     for ch in email_channels:
         msg_body = (
-            f"📦 Respaldo enviado desde MEGACOM\n"
+            f"📦 Respaldo enviado desde BACKUP WEB\n"
             f"Equipo: {backup.router.name} ({backup.router.address})\n"
             f"Fabricante / Tipo: {backup.router.get_router_type_display()}\n"
             f"Revisión: #{backup.id} ({backup.created.strftime('%d/%m/%Y %H:%M:%S')})\n\n"
@@ -450,7 +450,7 @@ def view_send_backup_email_now(request):
         msg = Message.objects.create(
             channel=ch,
             router_backup=backup,
-            subject=f"[MEGACOM] Respaldo #{backup.id} - {backup.router.name}",
+            subject=f"[BACKUP WEB] Respaldo #{backup.id} - {backup.router.name}",
             message=msg_body,
         )
         send_notification_message(msg)

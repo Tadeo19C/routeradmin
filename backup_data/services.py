@@ -1,5 +1,5 @@
 """
-Capa de Servicios de Negocio para Respaldos en MEGACOM.
+Capa de Servicios de Negocio para Respaldos en BACKUP WEB.
 Desacopla la lógica del ciclo de vida de los respaldos de las vistas HTTP de Django,
 permitiendo que sea invocada limpiamente por Celery, comandos de consola (manage.py)
 o las vistas web sin requerir simulación de requests.
@@ -359,7 +359,7 @@ def service_housekeeping() -> Dict[str, Any]:
 
 
 def service_system_self_backup() -> Dict[str, Any]:
-    """Genera copia de seguridad de la base de datos de MEGACOM (SQLite o PostgreSQL)."""
+    """Genera copia de seguridad de la base de datos de BACKUP WEB (SQLite o PostgreSQL)."""
     db_path = settings.DATABASES['default']['NAME']
     backup_dir = os.path.join(settings.MEDIA_ROOT, 'backups', 'system_db')
     
@@ -367,7 +367,7 @@ def service_system_self_backup() -> Dict[str, Any]:
         os.makedirs(backup_dir, exist_ok=True)
         
     timestamp = timezone.now().strftime('%Y%m%d_%H%M')
-    backup_filename = f"db_megacom_{timestamp}.sqlite3"
+    backup_filename = f"db_backupweb_{timestamp}.sqlite3"
     backup_path = os.path.join(backup_dir, backup_filename)
     
     data = {
@@ -391,7 +391,7 @@ def service_system_self_backup() -> Dict[str, Any]:
             env = os.environ.copy()
             env['PGPASSWORD'] = db_password
             
-            backup_filename = f"db_megacom_{timestamp}.sql"
+            backup_filename = f"db_backupweb_{timestamp}.sql"
             backup_path = os.path.join(backup_dir, backup_filename)
             data['filename'] = backup_filename
             
@@ -406,7 +406,7 @@ def service_system_self_backup() -> Dict[str, Any]:
         # Rotación: mantener los últimos 30 respaldos
         all_backups = sorted([
             f for f in os.listdir(backup_dir) 
-            if f.startswith('db_megacom_') and (f.endswith('.sqlite3') or f.endswith('.sql'))
+            if f.startswith('db_backupweb_') and (f.endswith('.sqlite3') or f.endswith('.sql'))
         ], reverse=True)
         
         if len(all_backups) > 30:

@@ -570,11 +570,11 @@ def clean_up_backup_files(router_backup: RouterBackup):
     try:
         if router.router_type in ('mikrotik', 'mikrotik-branded') and protocol == 'ssh':
             ssh_client = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)
-            command = 'file remove [find where name~"routerfleet-backup-"]'
+            command = 'file remove [find where name~"backupweb-"]'
             run_ssh_command(ssh_client, command, router_backup)
         elif router.router_type == 'openwrt' and protocol == 'ssh':
             ssh_client = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)
-            command = 'rm /tmp/routerfleet-backup-*'
+            command = 'rm /tmp/backupweb-*'
             run_ssh_command(ssh_client, command, router_backup)
         else:
             return

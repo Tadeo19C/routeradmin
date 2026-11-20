@@ -121,7 +121,7 @@ def view_cron_send_messages(request):
     webadmin_settings, _ = WebadminSettings.objects.get_or_create(name='webadmin_settings')
     update_notification = ''
     if webadmin_settings.update_available:
-        update_notification = '\n\nA new version of RouterFleet is available. Please update your installation to get the latest security and feature updates.'
+        update_notification = '\n\nUna nueva versión de BACKUP WEB está disponible. Please update your installation to get the latest security and feature updates.'
     message_list = Message.objects.filter(status='pending', next_retry__isnull=True)
 
     if not message_list:
@@ -273,7 +273,7 @@ def view_manage_message_channel(request):
     <p>Dirección de destino para el canal de mensajes. 
     <ul>
     <li>Para CallMeBot, este es el número de teléfono.</li>
-    <li>Para ntfy.sh, este es el nombre del tema. Considere usar algo <strong>muy</strong> único, como: routerfleet-{uuid.uuid4()}</li>
+    <li>Para ntfy.sh, este es el nombre del tema. Considere usar algo <strong>muy</strong> único, como: backupweb-{uuid.uuid4()}</li>
     </ul>
     </p>
     <strong>Token</strong>
@@ -352,7 +352,7 @@ def view_email_backups_config(request):
             else:
                 latest_b = RouterBackup.objects.filter(success=True, backup_text__isnull=False).exclude(backup_text='').order_by('-created').first()
                 test_body = (
-                    "✅ Prueba exitosa de Correo de Respaldos Relevantes (MEGACOM)\n\n"
+                    "✅ Prueba exitosa de Correo de Respaldos Relevantes (BACKUP WEB)\n\n"
                     "Su configuración SMTP funciona correctamente.\n"
                     "El sistema NO enviará correos repetitivos cuando la configuración sea idéntica: "
                     "solo recibirá correos cuando se detecte un cambio real en algún equipo, en el primer respaldo base o ante una falla."
@@ -362,7 +362,7 @@ def view_email_backups_config(request):
                 test_msg = Message.objects.create(
                     channel=email_channel,
                     router_backup=latest_b,
-                    subject='[MEGACOM] Prueba de Envío de Respaldo Relevante por Correo',
+                    subject='[BACKUP WEB] Prueba de Envío de Respaldo Relevante por Correo',
                     message=test_body,
                 )
                 send_notification_message(test_msg)

@@ -4,7 +4,7 @@ set -e
 cd "$(dirname "$0")"
 
 echo "==================================================="
-echo "  MEGACOM ROUTERFLEET - Instalador Docker Plug & Play"
+echo "  BACKUP WEB - Instalador Docker Plug & Play"
 echo "==================================================="
 
 if ! command -v docker &> /dev/null; then
@@ -66,7 +66,7 @@ else
 fi
 
 echo "[*] Habilitando puertos ${WEB_PORT_PRIMARY} y ${WEB_PORT_SECONDARY}..."
-echo "[*] Construyendo y levantando contenedores de MEGACOM..."
+echo "[*] Construyendo y levantando contenedores de BACKUP WEB..."
 $COMPOSE_CMD -f docker-compose.megacom.yml up -d --build --remove-orphans
 
 SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}')

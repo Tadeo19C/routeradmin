@@ -190,7 +190,7 @@ class MessageChannelForm(forms.ModelForm):
             if token:
                  self.cleaned_data['token'] = ''
 
-        test_message = 'Mensaje de prueba de MEGACOM'
+        test_message = 'Mensaje de prueba de BACKUP WEB'
         remote_error = 'No se recibió mensaje de error'
 
         if channel_type == 'callmebot' and enabled:

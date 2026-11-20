@@ -90,16 +90,16 @@ def get_system_db_backup_stats(media_root):
     
     backups = sorted([
         f for f in os.listdir(backup_dir) 
-        if f.startswith('db_megacom_') and f.endswith('.sqlite3')
+        if f.startswith('db_backupweb_') and f.endswith('.sqlite3')
     ], reverse=True)
     
     if not backups:
         return {'last_backup': 'Nunca', 'count': 0}
     
     last_backup_file = backups[0]
-    # Extract timestamp from db_megacom_YYYYMMDD_HHMM.sqlite3
+    # Extract timestamp from db_backupweb_YYYYMMDD_HHMM.sqlite3
     try:
-        ts_part = last_backup_file.replace('db_megacom_', '').replace('.sqlite3', '')
+        ts_part = last_backup_file.replace('db_backupweb_', '').replace('.sqlite3', '')
         dt = datetime.strptime(ts_part, '%Y%m%d_%H%M')
         last_backup_str = dt.strftime('%d/%m/%Y %H:%M')
     except:

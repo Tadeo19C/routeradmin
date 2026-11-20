@@ -1,5 +1,5 @@
 """
-Tareas asíncronas de Celery para el motor de respaldos de MEGACOM.
+Tareas asíncronas de Celery para el motor de respaldos de BACKUP WEB.
 Ejecuta los servicios de negocio de forma nativa a través de Celery Beat + Redis
 sin requerir la simulación de peticiones HTTP.
 """
@@ -43,7 +43,7 @@ def task_housekeeping():
 
 @shared_task(name='megacom.system_self_backup', ignore_result=True)
 def task_system_self_backup():
-    """Creates a daily backup of the MEGACOM database itself."""
+    """Creates a daily backup of the BACKUP WEB database itself."""
     from backup_data.services import service_system_self_backup
     result = service_system_self_backup()
     logger.info(f'system_self_backup: {result}')

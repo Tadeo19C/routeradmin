@@ -33,18 +33,18 @@
                         <p>This steps should be reproduced on the host machine for wireguard_webadmin.</p>
                         <ul>
                             <li><strong>Outside the Container:</strong>
-                                <pre><code>cat /proc/sys/kernel/random/uuid &gt; /var/lib/docker/volumes/wireguard_webadmin_wireguard/_data/routerfleet_key</code></pre>
+                                <pre><code>cat /proc/sys/kernel/random/uuid &gt; /var/lib/docker/volumes/wireguard_webadmin_wireguard/_data/backupweb_key</code></pre>
                             </li>
                             <li><strong>Inside the Container:</strong>
-                                <pre><code>cat /proc/sys/kernel/random/uuid &gt; /etc/wireguard/routerfleet_key</code></pre>
+                                <pre><code>cat /proc/sys/kernel/random/uuid &gt; /etc/wireguard/backupweb_key</code></pre>
                             </li>
                         </ul>
-                        <p>Remember, your <code>routerfleet_key</code> should be a valid UUID.</p>
+                        <p>Remember, your <code>backupweb_key</code> should be a valid UUID.</p>
                         <strong>Warning:</strong>
                         <p>Keep this KEY protected. Currently, It's used to authenticate users without password, including your own admin account.</p>
 
                         <strong>Disabling the API Key:</strong>
-                        <p>If you ever need to disable your API key, you can generate a new one or simply delete the <code>routerfleet_key</code> file.</p>
+                        <p>If you ever need to disable your API key, you can generate a new one or simply delete the <code>backupweb_key</code> file.</p>
 
                     </div>
                 </div>

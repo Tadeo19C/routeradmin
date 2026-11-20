@@ -92,7 +92,7 @@ def notify_config_change(router_backup: RouterBackup, previous_backup: RouterBac
         Message.objects.create(
             channel=channel,
             router_backup=router_backup,
-            subject=f"[MEGACOM] Respaldo Importante / Cambio en {router.name} (Rev #{router_backup.id})",
+            subject=f"[BACKUP WEB] Respaldo Importante / Cambio en {router.name} (Rev #{router_backup.id})",
             message=msg_body,
         )
 
@@ -107,7 +107,7 @@ def generate_backup_report(data):
         message_text = 'Advertencia: Error al calcular la hora del reporte, por favor verifique la configuración de zona horaria.\n\n'
     else:
         message_text = ''
-    message_text += 'Reporte diario de respaldos de MEGACOM:\n'
+    message_text += 'Reporte diario de respaldos de BACKUP WEB:\n'
     message_text += f'Nuevas versiones respaldadas: {success_backup_list.count()}\n'
     message_text += f'Respaldos fallidos: {failed_backup_list.count()}\n'
     message_text += f'Respaldos pendientes: {pending_backup_list.count()}\n'
@@ -142,7 +142,7 @@ def generate_status_report(data):
         message_text = 'Advertencia: Error al calcular la hora del reporte, por favor verifique la configuración de zona horaria.\n\n'
     else:
         message_text = ''
-    message_text += 'Reporte diario de estado de MEGACOM:\n'
+    message_text += 'Reporte diario de estado de BACKUP WEB:\n'
     message_text += f'Equipos monitoreados: {router_list.count()}\n'
     message_text += f'En línea: {router_list.filter(routerstatus__status_online=True).count()}\n'
     message_text += f'Fuera de línea: {offline_count}\n'
@@ -217,10 +217,10 @@ def send_notification_message(message: Message):
                 use_tls=smtp_tls,
                 fail_silently=False,
             )
-            from_addr = f"MEGACOM Respaldos <{smtp_user}>" if smtp_user else getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@megacom.local')
+            from_addr = f"BACKUP WEB <{smtp_user}>" if smtp_user else getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@backupweb.local')
             dest_list = [d.strip() for d in (message.channel.destination or '').split(',') if d.strip()]
             email_msg = EmailMessage(
-                subject=message.subject or 'Notificación MEGACOM',
+                subject=message.subject or 'Notificación BACKUP WEB',
                 body=message.message,
                 from_email=from_addr,
                 to=dest_list,
@@ -367,7 +367,7 @@ def notify_important_backup_email(router_backup: RouterBackup, reason: str = "Re
         msg = Message.objects.create(
             channel=channel,
             router_backup=router_backup,
-            subject=f"[MEGACOM] Respaldo Adjunto: {router.name} (Rev #{router_backup.id})",
+            subject=f"[BACKUP WEB] Respaldo Adjunto: {router.name} (Rev #{router_backup.id})",
             message=msg_body,
         )
         send_notification_message(msg)

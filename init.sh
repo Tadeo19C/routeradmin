@@ -30,7 +30,7 @@ PYCODE
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput || true
 
-echo "[*] Iniciando servidor web MEGACOM..."
+echo "[*] Iniciando servidor BACKUP WEB..."
 exec gunicorn routerfleet.wsgi:application \
   --bind 0.0.0.0:80 \
   --bind 0.0.0.0:81 \

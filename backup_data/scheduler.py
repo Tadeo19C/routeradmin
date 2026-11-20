@@ -12,7 +12,7 @@ _stop_event = threading.Event()
 
 
 def run_scheduler_loop(interval_seconds=45):
-    logger.info("RouterFleet Background Scheduler started (interval: %ds).", interval_seconds)
+    logger.info("BACKUP WEB Background Scheduler started (interval: %ds).", interval_seconds)
     last_housekeeping = timezone.now() - timedelta(minutes=15)
 
     # Small initial wait to allow Django and DB initialization to complete cleanly
@@ -108,7 +108,7 @@ def start_scheduler(interval_seconds=45):
         target=run_scheduler_loop,
         args=(interval_seconds,),
         daemon=True,
-        name="RouterFleetScheduler"
+        name="BackupWebScheduler"
     )
     _scheduler_thread.start()
     print("[SCHEDULER] Motor de monitoreo activo, respaldos y comandos iniciado correctamente.")

@@ -1,6 +1,6 @@
-# Guía de Despliegue de MEGACOM
+# Guía de Despliegue de BACKUP WEB
 
-Esta guía describe cómo desplegar **MEGACOM** para tus clientes usando Docker. Esto asegura un entorno consistente y una instalación sencilla.
+Esta guía describe cómo desplegar **BACKUP WEB** para tus clientes usando Docker. Esto asegura un entorno consistente y una instalación sencilla.
 
 ## Requisitos Previos
 - Docker y Docker Compose instalados en la máquina host.
@@ -11,14 +11,14 @@ Esta guía describe cómo desplegar **MEGACOM** para tus clientes usando Docker.
 Hemos proporcionado un script automatizado para manejar la instalación en contenedores:
 
 1.  **Preparar el host**: Asegúrate de que Docker y Docker Compose estén instalados.
-2.  **Descargar el paquete**: Extrae los archivos de MEGACOM en una carpeta.
+2.  **Descargar el paquete**: Extrae los archivos de BACKUP WEB en una carpeta.
 3.  **Ejecutar la configuración**:
     ```bash
     chmod +x setup.sh
     ./setup.sh
     ```
 4.  **Configuración Inicial**:
-    - El script construirá las imágenes personalizadas de MEGACOM e iniciará los servicios.
+    - El script construirá las imágenes personalizadas de BACKUP WEB e iniciará los servicios.
     - Abre tu navegador en `http://tu-ip-servidor`.
 
 ## Instalación Manual (Docker)
@@ -32,7 +32,7 @@ docker-compose -f docker-compose.megacom.yml up -d --build
     - Accede a la aplicación en `http://tu-ip-servidor:8000`.
     - Crea el primer usuario administrador cuando se te solicite.
 
-## Actualización de MEGACOM
+## Actualización de BACKUP WEB
 
 Para actualizar a la versión más reciente:
 ```bash

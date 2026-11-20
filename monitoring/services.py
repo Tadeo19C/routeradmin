@@ -1,5 +1,5 @@
 """
-Motor de Monitoreo Activo Integrado para MEGACOM.
+Motor de Monitoreo Activo Integrado para BACKUP WEB.
 Realiza sondeos concurrentes (TCP Socket al puerto de gestión + Fallback ICMP Ping)
 para actualizar en tiempo real el estado Online/Offline, registrar tiempos de caída
 reales (RouterDownTime) y disparar alertas de cambio de estado.
