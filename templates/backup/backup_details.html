@@ -18,6 +18,9 @@
             </div>
         </div>
         <div class="mt-2 mt-md-0 d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-info mr-2" data-toggle="modal" data-target="#backupDetailsModal" title="Ver ficha técnica y propiedades del respaldo">
+                <i class="fas fa-info-circle mr-1"></i> Detalles
+            </button>
             {% if backup_list %}
                 <a href="/backup/compare/?uuid={{ backup.uuid }}&compare_uuid={{ backup_list.0.uuid }}" 
                    class="btn btn-sm btn-primary mr-2" 
@@ -36,136 +39,9 @@
         </div>
     </div>
 
+    <!-- Contenido Principal: Visor de Configuración a Ancho Completo (100% de pantalla) -->
     <div class='row'>
-        <!-- Panel Izquierdo: Ficha Técnica -->
-        <div class='col-xl-4 col-lg-5'>
-            <div class="unimus-meta-card">
-                <div class="unimus-card-header">
-                    <span class="unimus-card-title">
-                        <i class="fas fa-sliders-h text-primary"></i> Datos del Respaldo
-                    </span>
-                    {% if backup.success %}
-                        <span class="badge-gpon badge-gpon-success">
-                            <i class="fas fa-check-circle"></i> Exitoso
-                        </span>
-                    {% elif backup.error %}
-                        <span class="badge-gpon badge-gpon-error" title="{{ backup.error_message }}">
-                            <i class="fas fa-times-circle"></i> Con Error
-                        </span>
-                    {% elif backup.backup_pending_retrieval %}
-                        <span class="badge-gpon badge-gpon-info">
-                            <i class="fas fa-cloud-download-alt"></i> Descargando
-                        </span>
-                    {% else %}
-                        <span class="badge-gpon badge-gpon-warning">
-                            <i class="far fa-clock"></i> En Cola
-                        </span>
-                    {% endif %}
-                </div>
-
-                <ul class="unimus-property-list">
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label">Folio</span>
-                        <span class="unimus-property-val font-weight-bold">#{{ backup.id }}</span>
-                    </li>
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label">Equipo</span>
-                        <span class="unimus-property-val">
-                            <a href="/router/details/?uuid={{ backup.router.uuid }}" class="font-weight-bold">
-                                {{ backup.router.name }}
-                            </a>
-                        </span>
-                    </li>
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label">Dirección IP</span>
-                        <span class="unimus-property-val">
-                            <code>{{ backup.router.address }}</code>
-                        </span>
-                    </li>
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label">Fabricante</span>
-                        <span class="unimus-property-val">
-                            <span class="badge badge-secondary text-uppercase">{{ backup.router.router_type }}</span>
-                        </span>
-                    </li>
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label">Nodo / Zona</span>
-                        <span class="unimus-property-val">
-                            {{ backup.router.router_node.name|default:"General" }}
-                        </span>
-                    </li>
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label">Tipo Programación</span>
-                        <span class="unimus-property-val">
-                            {{ backup.get_schedule_type_display }}
-                        </span>
-                    </li>
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label">Tarea Creada</span>
-                        <span class="unimus-property-val">{{ backup.created|date:"d/m/Y H:i:s" }}</span>
-                    </li>
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label">Hora Finalizado</span>
-                        <span class="unimus-property-val">{{ backup.finish_time|date:"d/m/Y H:i:s"|default_if_none:"-" }}</span>
-                    </li>
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label">Tiempo de Ejecución</span>
-                        <span class="unimus-property-val">{{ backup.queue_length }}s</span>
-                    </li>
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label">Hash SHA256</span>
-                        <span class="unimus-property-val d-flex align-items-center justify-content-end">
-                            <code class="small" title="{{ backup.backup_text_hash }}">{{ backup.backup_text_hash|slice:":12" }}...</code>
-                            <button type="button" class="btn btn-xs btn-outline-secondary ml-1" 
-                                    title="Copiar Hash completo"
-                                    onclick="navigator.clipboard.writeText('{{ backup.backup_text_hash }}'); this.innerHTML='<i class=\'fas fa-check\'></i>'; setTimeout(()=>this.innerHTML='<i class=\'far fa-copy\'></i>', 1500);">
-                                <i class="far fa-copy"></i>
-                            </button>
-                        </span>
-                    </li>
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label">Descargar Archivos</span>
-                        <span class="unimus-property-val">
-                            {% if backup.success or backup.backup_text %}
-                                <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" 
-                                   class="btn btn-xs btn-outline-primary mr-1" 
-                                   download 
-                                   title="Descargar configuración en texto">
-                                    <i class="fas fa-file-code mr-1"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
-                                </a>
-                                <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" 
-                                   class="btn btn-xs btn-outline-info" 
-                                   download 
-                                   title="Descargar respaldo binario (.backup)">
-                                    <i class="fas fa-file-archive mr-1"></i> Binario (.backup)
-                                </a>
-                            {% else %}
-                                <span class="text-muted small">No disponible</span>
-                            {% endif %}
-                        </span>
-                    </li>
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label">Consola de Ejecución</span>
-                        <span class="unimus-property-val">
-                            <a href='/backup/backup_details/?uuid={{ backup.uuid }}&show_console={% if show_console %}false{% else %}true{% endif %}' class="small">
-                                {% if show_console %}<i class="fas fa-eye-slash mr-1"></i> Ocultar consola{% else %}<i class="fas fa-terminal mr-1"></i> Ver registro consola{% endif %}
-                            </a>
-                        </span>
-                    </li>
-                    <li class="unimus-property-item">
-                        <span class="unimus-property-label text-danger">Zona de Peligro</span>
-                        <span class="unimus-property-val">
-                            <a href='javascript:void(0)' class='text-danger small font-weight-bold' data-command='delete' onclick='openCommandDialog(this)'>
-                                <i class="far fa-trash-alt mr-1"></i> Eliminar respaldo
-                            </a>
-                        </span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Panel Derecho: Visor de Configuración Unimus -->
-        <div class='col-xl-8 col-lg-7'>
+        <div class='col-12'>
             {% if show_console %}
                 <div class="unimus-code-card mb-3">
                     <div class="unimus-card-header">
@@ -176,7 +52,7 @@
                             <i class="fas fa-times"></i> Ocultar
                         </a>
                     </div>
-                    <pre class="unimus-code-pre" style="max-height: 280px;">{{ backup.task_console_output|default_if_none:"Sin salida de consola registrada." }}</pre>
+                    <pre class="unimus-code-pre" style="max-height: 250px;">{{ backup.task_console_output|default_if_none:"Sin salida de consola registrada." }}</pre>
                 </div>
             {% endif %}
 
@@ -190,14 +66,29 @@
 
             <div class="unimus-code-card">
                 <div class="unimus-card-header">
-                    <span class="unimus-card-title">
-                        <i class="fas fa-code text-primary"></i> Configuración de Respaldo
-                        <span class="badge badge-secondary ml-1" style="font-size: 11px;">
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <span class="unimus-card-title mr-2">
+                            <i class="fas fa-code text-primary"></i> Configuración de Respaldo
+                        </span>
+                        <span class="badge badge-secondary" style="font-size: 11px;">
                             {% if backup.router.router_type == 'mikrotik' %}RouterOS Script (.rsc){% else %}Texto (.cfg){% endif %}
                         </span>
-                    </span>
+                        {% if backup.success %}
+                            <span class="badge-gpon badge-gpon-success ml-2">
+                                <i class="fas fa-check-circle"></i> Exitoso
+                            </span>
+                        {% elif backup.error %}
+                            <span class="badge-gpon badge-gpon-error ml-2" title="{{ backup.error_message }}">
+                                <i class="fas fa-times-circle"></i> Con Error
+                            </span>
+                        {% endif %}
+                    </div>
 
-                    <div class="unimus-btn-group d-flex align-items-center">
+                    <!-- Barra de herramientas del visor -->
+                    <div class="unimus-btn-group d-flex align-items-center flex-wrap gap-1">
+                        <button type="button" class="btn btn-outline-info mr-1" data-toggle="modal" data-target="#backupDetailsModal" title="Ver ficha técnica y propiedades">
+                            <i class="fas fa-info-circle mr-1"></i> Detalles
+                        </button>
                         <button type="button" class="btn btn-outline-secondary mr-1" id="wrap-btn" onclick="toggleWrap()" title="Ajustar líneas largas">
                             <i class="fas fa-align-left mr-1"></i> <span id="wrap-text">Ajustar líneas</span>
                         </button>
@@ -205,15 +96,139 @@
                             <i class="far fa-copy mr-1"></i> <span id="copy-text">Copiar</span>
                         </button>
                         {% if backup.success or backup.backup_text %}
-                            <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" class="btn btn-outline-primary" download title="Descargar archivo">
-                                <i class="fas fa-download mr-1"></i> Descargar
+                            <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" class="btn btn-outline-primary mr-1" download title="Descargar archivo de texto">
+                                <i class="fas fa-file-code mr-1"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
+                            </a>
+                            <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" class="btn btn-outline-secondary" download title="Descargar respaldo binario (.backup)">
+                                <i class="fas fa-file-archive mr-1"></i> Binario
                             </a>
                         {% endif %}
                     </div>
                 </div>
 
                 <div class="p-0 position-relative">
-                    <pre id="backup-text-pre" class="unimus-code-pre" style="max-height: 720px;">{{ display_text|default_if_none:"(Sin contenido de configuración registrado)" }}</pre>
+                    <pre id="backup-text-pre" class="unimus-code-pre" style="max-height: 760px;">{{ display_text|default_if_none:"(Sin contenido de configuración registrado)" }}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Datos del Respaldo (Ahorro de pantalla para máxima visibilidad del código) -->
+    <div class="modal fade" id="backupDetailsModal" tabindex="-1" role="dialog" aria-labelledby="backupDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header unimus-card-header">
+                    <span class="unimus-card-title" id="backupDetailsModalLabel">
+                        <i class="fas fa-sliders-h text-primary"></i> Datos del Respaldo #{{ backup.id }}
+                    </span>
+                    <button type="button" class="close text-muted" data-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 20px; line-height: 1;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body p-0">
+                    <ul class="unimus-property-list">
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label">Folio</span>
+                            <span class="unimus-property-val font-weight-bold">#{{ backup.id }}</span>
+                        </li>
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label">Equipo</span>
+                            <span class="unimus-property-val">
+                                <a href="/router/details/?uuid={{ backup.router.uuid }}" class="font-weight-bold">
+                                    {{ backup.router.name }}
+                                </a>
+                            </span>
+                        </li>
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label">Dirección IP</span>
+                            <span class="unimus-property-val">
+                                <code>{{ backup.router.address }}</code>
+                            </span>
+                        </li>
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label">Fabricante</span>
+                            <span class="unimus-property-val">
+                                <span class="badge badge-secondary text-uppercase">{{ backup.router.router_type }}</span>
+                            </span>
+                        </li>
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label">Nodo / Zona</span>
+                            <span class="unimus-property-val">
+                                {{ backup.router.router_node.name|default:"General" }}
+                            </span>
+                        </li>
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label">Tipo Programación</span>
+                            <span class="unimus-property-val">
+                                {{ backup.get_schedule_type_display }}
+                            </span>
+                        </li>
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label">Tarea Creada</span>
+                            <span class="unimus-property-val">{{ backup.created|date:"d/m/Y H:i:s" }}</span>
+                        </li>
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label">Hora Finalizado</span>
+                            <span class="unimus-property-val">{{ backup.finish_time|date:"d/m/Y H:i:s"|default_if_none:"-" }}</span>
+                        </li>
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label">Tiempo de Ejecución</span>
+                            <span class="unimus-property-val">{{ backup.queue_length }}s</span>
+                        </li>
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label">Hash SHA256</span>
+                            <span class="unimus-property-val d-flex align-items-center justify-content-end">
+                                <code class="small" title="{{ backup.backup_text_hash }}">{{ backup.backup_text_hash|slice:":16" }}...</code>
+                                <button type="button" class="btn btn-xs btn-outline-secondary ml-1" 
+                                        title="Copiar Hash completo"
+                                        onclick="navigator.clipboard.writeText('{{ backup.backup_text_hash }}'); this.innerHTML='<i class=\'fas fa-check\'></i>'; setTimeout(()=>this.innerHTML='<i class=\'far fa-copy\'></i>', 1500);">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                            </span>
+                        </li>
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label">Descargar Archivos</span>
+                            <span class="unimus-property-val">
+                                {% if backup.success or backup.backup_text %}
+                                    <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" 
+                                       class="btn btn-xs btn-outline-primary mr-1" 
+                                       download 
+                                       title="Descargar configuración en texto">
+                                        <i class="fas fa-file-code mr-1"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
+                                    </a>
+                                    <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" 
+                                       class="btn btn-xs btn-outline-info" 
+                                       download 
+                                       title="Descargar respaldo binario (.backup)">
+                                        <i class="fas fa-file-archive mr-1"></i> Binario (.backup)
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted small">No disponible</span>
+                                {% endif %}
+                            </span>
+                        </li>
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label">Consola de Ejecución</span>
+                            <span class="unimus-property-val">
+                                <a href='/backup/backup_details/?uuid={{ backup.uuid }}&show_console={% if show_console %}false{% else %}true{% endif %}' class="small">
+                                    {% if show_console %}<i class="fas fa-eye-slash mr-1"></i> Ocultar consola{% else %}<i class="fas fa-terminal mr-1"></i> Ver registro consola{% endif %}
+                                </a>
+                            </span>
+                        </li>
+                        <li class="unimus-property-item">
+                            <span class="unimus-property-label text-danger">Zona de Peligro</span>
+                            <span class="unimus-property-val">
+                                <a href='javascript:void(0)' class='text-danger small font-weight-bold' data-command='delete' onclick='openCommandDialog(this)'>
+                                    <i class="far fa-trash-alt mr-1"></i> Eliminar respaldo
+                                </a>
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="modal-footer" style="padding: 8px 14px; border-top: 1px solid var(--border);">
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
