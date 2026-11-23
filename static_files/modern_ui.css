@@ -1366,3 +1366,109 @@ body:not(.dark-mode) .badge-pill-soft.danger {
     color: #cf222e;
     border-color: #ffcecb;
 }
+
+/* ========================================================
+   Unimus-Style Technical Config Viewer & Property Grid
+   ======================================================== */
+.unimus-meta-card, .unimus-code-card {
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 3px !important;
+    box-shadow: none !important;
+    margin-bottom: 20px;
+}
+
+.unimus-card-header {
+    background-color: rgba(0, 0, 0, 0.12) !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 10px 14px !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+[data-theme="light"] .unimus-card-header,
+body:not(.dark-mode) .unimus-card-header {
+    background-color: #f6f8fa !important;
+    border-bottom: 1px solid #d0d7de !important;
+}
+
+.unimus-card-title {
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    color: var(--foreground) !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.unimus-property-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.unimus-property-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+    gap: 12px;
+}
+
+.unimus-property-item:last-child {
+    border-bottom: none;
+}
+
+.unimus-property-label {
+    color: var(--muted);
+    font-weight: 500;
+    min-width: 140px;
+}
+
+.unimus-property-val {
+    color: var(--foreground);
+    text-align: right;
+    word-break: break-all;
+}
+
+/* Unimus Code Viewer */
+.unimus-code-pre {
+    background-color: #121518 !important;
+    color: #e6edf3 !important;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
+    font-size: 12.5px !important;
+    line-height: 1.6 !important;
+    padding: 16px !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 0 3px 3px !important;
+    overflow-x: auto !important;
+    white-space: pre !important;
+    tab-size: 4 !important;
+}
+
+[data-theme="light"] .unimus-code-pre,
+body:not(.dark-mode) .unimus-code-pre {
+    background-color: #f6f8fa !important;
+    color: #1f2328 !important;
+    border-top: 1px solid #d0d7de !important;
+}
+
+.unimus-code-pre.wrap-lines {
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+}
+
+/* Toolbar Buttons */
+.unimus-btn-group .btn {
+    font-size: 11.5px !important;
+    padding: 3px 10px !important;
+    border-radius: 3px !important;
+}
+

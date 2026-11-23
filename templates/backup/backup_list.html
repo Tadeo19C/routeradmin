@@ -15,13 +15,24 @@
                 {% endif %}
                 <div class="card-body">
                     {% include 'backup/backup_nav_tabs.html' %}
-                    <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div>
-                            <button id="compare-backups-btn" class="btn btn-primary btn-sm" disabled title="Selecciona exactamente 2 respaldos para comparar">
-                                <i class="fas fa-columns mr-1"></i> Comparar Seleccionados
+
+                    <!-- Barra de Acciones Estilo Unimus -->
+                    <div class="mb-3 p-2 border rounded d-flex justify-content-between align-items-center flex-wrap gap-2" style="background-color: rgba(0, 0, 0, 0.05);">
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <a href="/router/list/" class="btn btn-primary btn-sm mr-2" title="Ejecutar respaldo inmediato en equipos">
+                                <i class="fas fa-play mr-1"></i> Respaldar ahora
+                            </a>
+                            <button id="compare-backups-btn" class="btn btn-outline-secondary btn-sm mr-2" disabled title="Selecciona 2 casillas para comparar">
+                                <i class="fas fa-columns mr-1"></i> Comparar seleccionados (Diff)
                             </button>
                         </div>
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <a href="/backup/search/" class="btn btn-outline-secondary btn-sm mr-2" title="Buscar texto dentro de todas las configuraciones">
+                                <i class="fas fa-search mr-1"></i> Buscar en configuraciones
+                            </a>
+                        </div>
                     </div>
+
                     <div class="table-responsive">
                         <table class="table table-hover datatables-no-export" id="backup-list-table">
                             <thead>
@@ -34,7 +45,7 @@
                                 <th>Fecha de Respaldo</th>
                                 <th>Última Verificación</th>
                                 <th class="min-width text-center">Estado</th>
-                                <th class="min-width text-center">Descargar Archivos</th>
+                                <th class="min-width text-center">Acciones</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -88,22 +99,27 @@
                                     </td>
                                     <td class="min-width text-nowrap text-center">
                                         {% if backup.success %}
+                                            <a href="/backup/backup_details/?uuid={{ backup.uuid }}"
+                                               class="btn btn-xs btn-outline-secondary mr-1"
+                                               title="Ver contenido del respaldo">
+                                                <i class="fas fa-eye"></i> Ver
+                                            </a>
                                             {% if backup.prev_backup_uuid %}
                                             <a href="/backup/compare/?uuid={{ backup.uuid }}&compare_uuid={{ backup.prev_backup_uuid }}"
                                                class="btn btn-xs btn-primary mr-1"
-                                               title="Ver cambios (Diff) respecto a la versión anterior de este equipo">
-                                                <i class="fas fa-columns"></i> Ver Cambios
+                                               title="Ver cambios (Diff) respecto a la versión anterior">
+                                                <i class="fas fa-columns"></i> Diff
                                             </a>
                                             {% endif %}
                                             <a href="/backup/download/?uuid={{ backup.uuid }}&type=text"
                                                class="btn btn-xs btn-outline-primary mr-1"
-                                               title="Descargar configuración en texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})">
-                                                <i class="fas fa-file-code"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
+                                               title="Descargar archivo de texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})">
+                                                <i class="fas fa-file-code"></i> {% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %}
                                             </a>
                                             <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary"
                                                class="btn btn-xs btn-outline-info mr-1"
                                                title="Descargar archivo binario (.backup)">
-                                                <i class="fas fa-file-archive"></i> Binario (.backup)
+                                                <i class="fas fa-file-archive"></i> .backup
                                             </a>
                                             <a href="/backup/send_email/?uuid={{ backup.uuid }}"
                                                class="btn btn-xs btn-outline-secondary"
@@ -111,7 +127,11 @@
                                                 <i class="fas fa-envelope"></i>
                                             </a>
                                         {% else %}
-                                            <span class="text-muted">---</span>
+                                            <a href="/backup/backup_details/?uuid={{ backup.uuid }}"
+                                               class="btn btn-xs btn-outline-secondary"
+                                               title="Ver detalle del error">
+                                                <i class="fas fa-info-circle"></i> Detalle
+                                            </a>
                                         {% endif %}
                                     </td>
                                 </tr>

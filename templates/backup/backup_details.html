@@ -2,260 +2,264 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
+    <!-- Barra superior de navegación / Breadcrumb estilo Unimus -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3 pb-2 border-bottom">
+        <div class="d-flex align-items-center">
+            <a href="/backup/backup_list/" class="btn btn-sm btn-outline-secondary mr-3" title="Volver al listado">
+                <i class="fas fa-arrow-left"></i> Respaldos
+            </a>
+            <div>
+                <h4 class="m-0 font-weight-bold d-inline-block align-middle" style="font-size: 1.15rem;">
+                    {{ backup.router.name }}
+                </h4>
+                <span class="text-muted ml-2 small">
+                    <code>{{ backup.router.address }}</code> &bull; Folio #{{ backup.id }}
+                </span>
+            </div>
+        </div>
+        <div class="mt-2 mt-md-0 d-flex gap-2">
+            {% if backup_list %}
+                <a href="/backup/compare/?uuid={{ backup.uuid }}&compare_uuid={{ backup_list.0.uuid }}" 
+                   class="btn btn-sm btn-primary mr-2" 
+                   title="Comparar cambios respecto a la versión anterior">
+                    <i class="fas fa-columns mr-1"></i> Comparar Cambios (Diff)
+                </a>
+            {% endif %}
+            {% if backup.success or backup.backup_text %}
+                <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" 
+                   class="btn btn-sm btn-outline-secondary" 
+                   download 
+                   title="Descargar archivo de texto">
+                    <i class="fas fa-download mr-1"></i> Descargar
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
     <div class='row'>
-        <div class='col-xl-4'>
-            <div class="card card-primary card-outline">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <a href="/router/details/?uuid={{ backup.router.uuid }}" >
-                            {{ backup.router.name }}
-                        </a>
-
-                    </h3>
-                    {% comment %}
-                    <span class="float-right">
-                        <a href="/router/manage/?uuid={{ backup.router.uuid }}" >
-                            <i class="fas fa-edit"></i>
-                        </a>
+        <!-- Panel Izquierdo: Ficha Técnica -->
+        <div class='col-xl-4 col-lg-5'>
+            <div class="unimus-meta-card">
+                <div class="unimus-card-header">
+                    <span class="unimus-card-title">
+                        <i class="fas fa-sliders-h text-primary"></i> Datos del Respaldo
                     </span>
-                    {% endcomment %}
+                    {% if backup.success %}
+                        <span class="badge-gpon badge-gpon-success">
+                            <i class="fas fa-check-circle"></i> Exitoso
+                        </span>
+                    {% elif backup.error %}
+                        <span class="badge-gpon badge-gpon-error" title="{{ backup.error_message }}">
+                            <i class="fas fa-times-circle"></i> Con Error
+                        </span>
+                    {% elif backup.backup_pending_retrieval %}
+                        <span class="badge-gpon badge-gpon-info">
+                            <i class="fas fa-cloud-download-alt"></i> Descargando
+                        </span>
+                    {% else %}
+                        <span class="badge-gpon badge-gpon-warning">
+                            <i class="far fa-clock"></i> En Cola
+                        </span>
+                    {% endif %}
                 </div>
 
-                <div class="card-body row">
-                    <div class="col-lg-12">
-
-                        <ul class="list-group list-group-unbordered mb-3">
-                            {% comment %}
-                            <li class="list-group-item">
-                                <b></b>
-                                <span class="float-right">{{ backup }}</span>
-                            </li>
-                            {% endcomment %}
-                             <li class="list-group-item">
-                                 <b>Folio de Respaldo</b>
-                                 <span class="float-right">
-                                     {{ backup.id }}
-                                 </span>
-                             </li>
-
-
-                            {% if not backup.success and not backup.error %}
-                                <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Estado del Respaldo</b>
-                                    <span class="float-right">
-                                    {% if backup.success %}
-                                        <i class="far fa-check-circle text-success"></i>
-                                    {% elif backup.error %}
-                                        <i class="far fa-times-circle text-danger"
-                                           title="{{ backup.error_message }}"></i>
-                                    {% elif backup.backup_pending_retrieval %}
-                                        <i class="fas fa-cloud-download-alt text-info"
-                                           title="Respaldo pendiente de recuperación"></i>
-                                    {% else %}
-                                        <i class="far fa-clock text-warning"></i>
-                                    {% endif %}
-                                </span>
-                                </li>
-
-                                <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Monitoreo de Host</b>
-                                    <span class="float-right">
-                                    {% if backup.router.monitoring %}
-                                        {% if backup.router.routerstatus.status_online %}
-                                            <i class="far fa-check-circle text-success"></i>
-                                        {% else %}
-                                            <i class="far fa-times-circle text-danger"></i> Equipo fuera de línea. Esperando conexión...
-                                        {% endif %}
-                                    {% else %}
-                                        No habilitado
-                                    {% endif %}
-                                </span>
-                                </li>
-                                <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Intentos</b>
-                                    <span class="float-right">
-                                        <span {% if backup.retry_count > 0 %}class="text-danger"{% endif %}>
-                                            {{ backup.retry_count }}
-                                        </span>
-                                </span>
-                                </li>
-
-                                <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Próximo Intento</b>
-                                    <span class="float-right">
-                                    {% if backup.next_retry %}
-                                        {% if backup.next_retry > now %}
-                                            <a href="/backup/backup_details/?uuid={{ backup.uuid }}&action=anticipate&show_console={{ show_console|yesno:"true,false" }}">
-                                            (anticipar)
-                                            </a>
-                                            <span class="text-success" style="text-decoration: underline" title="Este respaldo está programado para ejecutarse después de {{ backup.next_retry }}">
-                                                 {{ backup.next_retry }} <i class="far fa-clock"></i>
-                                            </span>
-                                        {% else %}
-                                            <span class="text-info" style="text-decoration: underline" title="Este respaldo está en cola para ejecutarse lo antes posible.">
-                                                {{ backup.next_retry }} <i class="far fa-clock"></i>
-                                            </span>
-                                        {% endif %}
-                                    {% else %}
-                                        <span class="text-info" style="text-decoration: underline" title="Este respaldo está en cola para ejecutarse lo antes posible.">
-                                                en cola <i class="far fa-clock"></i>
-                                        </span>
-                                    {% endif %}
-                                    
-                                    
-                                </span>
-                                </li>
-
-                                <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Última ejecución Cron</b>
-                                    <span class="float-right">
-                                    {% if webadmin_settings.cron_last_run %}
-                                        {% if webadmin_settings.cron_last_run < 5_minutes_ago %}
-                                            <span class="text-danger" style="text-decoration: underline" title="Tus tareas cron no se están ejecutando correctamente.">
-                                            {{ webadmin_settings.cron_last_run }}
-                                            </span>
-                                        {% else %}
-
-                                            {{ webadmin_settings.cron_last_run }}
-                                        {% endif %}
-                                    {% endif %}
-                                </span>
-                                </li>
-
-                                <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Bloqueo de Tarea</b>
-                                    <span class="float-right">{{ backup.task_lock|default_if_none:"" }}</span>
-                                </li>
-
-                                <li class="list-group-item">
-                                    <b><i class="far fa-question-circle" title="Esta información de depuración solo se muestra mientras el respaldo no ha terminado."></i> Mensaje de error</b>
-                                    <span class="float-right">
-                                    {{ backup.error_message|default_if_none:"" }}
-                                </span>
-                                </li>
-
-
-                            {% endif %}
-
-                            <li class="list-group-item">
-                                 <b>Tipo de Programación</b>
-                                <span class="float-right">
-                                    {{ backup.get_schedule_type_display }}
-                                </span>
-                            </li>
-                            <li class="list-group-item">
-                                 <b>Tarea Creada</b>
-                                <span class="float-right">{{ backup.created }}</span>
-                            </li>
-                            <li class="list-group-item">
-                                 <b>Hora Programada</b>
-                                <span class="float-right">{{ backup.schedule_time|default_if_none:"" }}</span>
-                            </li>
-
-                            <li class="list-group-item">
-                                 <b>Finalizado</b>
-                                <span class="float-right">{{ backup.finish_time|default_if_none:"" }}</span>
-                            </li>
-
-                            <li class="list-group-item">
-                                 <b>Longitud de Cola</b>
-                                <span class="float-right">{{ backup.queue_length }}s</span>
-                            </li>
-
-                            <li class="list-group-item">
-                                 <b>Hash del respaldo</b>
-                                <span class="float-right" title="{{ backup.backup_text_hash }}">{{ backup.backup_text_hash|slice:":16" }}...</span>
-                            </li>
-
-                            <li class="list-group-item">
-                                 <b>Descargar Archivos</b>
-                                 <span class="float-right">
-                                 {% if backup.success or backup.backup_text %}
-                                     <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" class="btn btn-xs btn-outline-primary mr-1" download title="Descargar configuración en texto">
-                                         <i class="fas fa-file-code"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
-                                     </a>
-                                     <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" class="btn btn-xs btn-outline-info" download title="Descargar respaldo binario (.backup)">
-                                         <i class="fas fa-file-archive"></i> Binario (.backup)
-                                     </a>
-                                 {% endif %}
-                                 </span>
-                             </li>
-
-                            <li class="list-group-item">
-                                 <b>Mostrar Consola</b>
-                                <span class="float-right">
-                                    <a href='/backup/backup_details/?uuid={{ backup.uuid }}&show_console={% if show_console %}false{% else %}true{% endif %}'>
-                                         {% if show_console %}ocultar{% else %}mostrar{% endif %}
-                                    </a>
-                                </span>
-                            </li>
-
-                            <li class="list-group-item">
-                                 <b>Eliminar respaldo</b>
-                                <span class="float-right">
-
-                                <a href='javascript:void(0)' class='text-danger' data-command='delete' onclick='openCommandDialog(this)'>
-                                    <i class="far fa-trash-alt"></i>
+                <ul class="unimus-property-list">
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label">Folio</span>
+                        <span class="unimus-property-val font-weight-bold">#{{ backup.id }}</span>
+                    </li>
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label">Equipo</span>
+                        <span class="unimus-property-val">
+                            <a href="/router/details/?uuid={{ backup.router.uuid }}" class="font-weight-bold">
+                                {{ backup.router.name }}
+                            </a>
+                        </span>
+                    </li>
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label">Dirección IP</span>
+                        <span class="unimus-property-val">
+                            <code>{{ backup.router.address }}</code>
+                        </span>
+                    </li>
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label">Fabricante</span>
+                        <span class="unimus-property-val">
+                            <span class="badge badge-secondary text-uppercase">{{ backup.router.router_type }}</span>
+                        </span>
+                    </li>
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label">Nodo / Zona</span>
+                        <span class="unimus-property-val">
+                            {{ backup.router.router_node.name|default:"General" }}
+                        </span>
+                    </li>
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label">Tipo Programación</span>
+                        <span class="unimus-property-val">
+                            {{ backup.get_schedule_type_display }}
+                        </span>
+                    </li>
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label">Tarea Creada</span>
+                        <span class="unimus-property-val">{{ backup.created|date:"d/m/Y H:i:s" }}</span>
+                    </li>
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label">Hora Finalizado</span>
+                        <span class="unimus-property-val">{{ backup.finish_time|date:"d/m/Y H:i:s"|default_if_none:"-" }}</span>
+                    </li>
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label">Tiempo de Ejecución</span>
+                        <span class="unimus-property-val">{{ backup.queue_length }}s</span>
+                    </li>
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label">Hash SHA256</span>
+                        <span class="unimus-property-val d-flex align-items-center justify-content-end">
+                            <code class="small" title="{{ backup.backup_text_hash }}">{{ backup.backup_text_hash|slice:":12" }}...</code>
+                            <button type="button" class="btn btn-xs btn-outline-secondary ml-1" 
+                                    title="Copiar Hash completo"
+                                    onclick="navigator.clipboard.writeText('{{ backup.backup_text_hash }}'); this.innerHTML='<i class=\'fas fa-check\'></i>'; setTimeout(()=>this.innerHTML='<i class=\'far fa-copy\'></i>', 1500);">
+                                <i class="far fa-copy"></i>
+                            </button>
+                        </span>
+                    </li>
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label">Descargar Archivos</span>
+                        <span class="unimus-property-val">
+                            {% if backup.success or backup.backup_text %}
+                                <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" 
+                                   class="btn btn-xs btn-outline-primary mr-1" 
+                                   download 
+                                   title="Descargar configuración en texto">
+                                    <i class="fas fa-file-code mr-1"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
                                 </a>
-
-                                </span>
-                            </li>
-
-                        </ul>
-                    </div>
-                </div>
+                                <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" 
+                                   class="btn btn-xs btn-outline-info" 
+                                   download 
+                                   title="Descargar respaldo binario (.backup)">
+                                    <i class="fas fa-file-archive mr-1"></i> Binario (.backup)
+                                </a>
+                            {% else %}
+                                <span class="text-muted small">No disponible</span>
+                            {% endif %}
+                        </span>
+                    </li>
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label">Consola de Ejecución</span>
+                        <span class="unimus-property-val">
+                            <a href='/backup/backup_details/?uuid={{ backup.uuid }}&show_console={% if show_console %}false{% else %}true{% endif %}' class="small">
+                                {% if show_console %}<i class="fas fa-eye-slash mr-1"></i> Ocultar consola{% else %}<i class="fas fa-terminal mr-1"></i> Ver registro consola{% endif %}
+                            </a>
+                        </span>
+                    </li>
+                    <li class="unimus-property-item">
+                        <span class="unimus-property-label text-danger">Zona de Peligro</span>
+                        <span class="unimus-property-val">
+                            <a href='javascript:void(0)' class='text-danger small font-weight-bold' data-command='delete' onclick='openCommandDialog(this)'>
+                                <i class="far fa-trash-alt mr-1"></i> Eliminar respaldo
+                            </a>
+                        </span>
+                    </li>
+                </ul>
             </div>
-
         </div>
-        <div class='col-xl-8'>
+
+        <!-- Panel Derecho: Visor de Configuración Unimus -->
+        <div class='col-xl-8 col-lg-7'>
             {% if show_console %}
-                <div class="card card-primary card-outline">
-                    <div class="card-header">
-                        <h3 class="card-title">Consola de Tarea</h3>
+                <div class="unimus-code-card mb-3">
+                    <div class="unimus-card-header">
+                        <span class="unimus-card-title">
+                            <i class="fas fa-terminal text-info"></i> Consola de Tarea
+                        </span>
+                        <a href="/backup/backup_details/?uuid={{ backup.uuid }}&show_console=false" class="btn btn-xs btn-outline-secondary">
+                            <i class="fas fa-times"></i> Ocultar
+                        </a>
                     </div>
-
-                    <div class="card-body p-0">
-                        <pre class="m-0 border-0" style="border-radius: 0 0 12px 12px; max-height: 400px;">{{ backup.task_console_output|default_if_none:"" }}</pre>
-                    </div>
+                    <pre class="unimus-code-pre" style="max-height: 280px;">{{ backup.task_console_output|default_if_none:"Sin salida de consola registrada." }}</pre>
                 </div>
             {% endif %}
+
             {% if backup_truncated %}
-                <div class="alert alert-warning alert-dismissible">
+                <div class="alert alert-warning alert-dismissible mb-3">
                     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                    <h5><i class="icon fas fa-exclamation-triangle"></i> Capa de Seguridad Activa</h5>
-                    El archivo de respaldo es muy grande (más de 500KB). Se muestra solo el inicio para proteger la memoria del navegador. 
-                    Por favor, <strong>descargue el archivo completo</strong> si necesita revisarlo íntegramente.
+                    <h5><i class="icon fas fa-exclamation-triangle"></i> Archivo Extenso</h5>
+                    El archivo de respaldo supera los 500KB. Se muestra una vista preliminar; si deseas analizarlo por completo, utiliza el botón <strong>Descargar</strong>.
                 </div>
             {% endif %}
-            <div class="card card-primary card-outline">
 
-                <div class="card-header">
-                    <h3 class="card-title">Respaldo de Texto</h3>
-                    <button type="button" class="btn btn-xs btn-outline-secondary" onclick="const t=document.getElementById('backup-text-pre').innerText; navigator.clipboard.writeText(t); this.innerHTML='<i class=\'fas fa-check\'></i> Copiado'; setTimeout(()=>this.innerHTML='<i class=\'far fa-copy\'></i> Copiar', 1800);"><i class="far fa-copy"></i> Copiar</button>
+            <div class="unimus-code-card">
+                <div class="unimus-card-header">
+                    <span class="unimus-card-title">
+                        <i class="fas fa-code text-primary"></i> Configuración de Respaldo
+                        <span class="badge badge-secondary ml-1" style="font-size: 11px;">
+                            {% if backup.router.router_type == 'mikrotik' %}RouterOS Script (.rsc){% else %}Texto (.cfg){% endif %}
+                        </span>
+                    </span>
+
+                    <div class="unimus-btn-group d-flex align-items-center">
+                        <button type="button" class="btn btn-outline-secondary mr-1" id="wrap-btn" onclick="toggleWrap()" title="Ajustar líneas largas">
+                            <i class="fas fa-align-left mr-1"></i> <span id="wrap-text">Ajustar líneas</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary mr-1" id="copy-btn" onclick="copyConfig()" title="Copiar toda la configuración">
+                            <i class="far fa-copy mr-1"></i> <span id="copy-text">Copiar</span>
+                        </button>
+                        {% if backup.success or backup.backup_text %}
+                            <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" class="btn btn-outline-primary" download title="Descargar archivo">
+                                <i class="fas fa-download mr-1"></i> Descargar
+                            </a>
+                        {% endif %}
+                    </div>
                 </div>
 
-                <div class="card-body p-0">
-                    <pre id="backup-text-pre" class="m-0" style="max-height: 720px;">{{ display_text|default_if_none:"" }}</pre>
+                <div class="p-0 position-relative">
+                    <pre id="backup-text-pre" class="unimus-code-pre" style="max-height: 720px;">{{ display_text|default_if_none:"(Sin contenido de configuración registrado)" }}</pre>
                 </div>
             </div>
         </div>
-
-
     </div>
 {% endblock %}
 
 {% block custom_page_scripts %}
-
     <script>
+        function copyConfig() {
+            const pre = document.getElementById('backup-text-pre');
+            const btn = document.getElementById('copy-btn');
+            const text = document.getElementById('copy-text');
+            navigator.clipboard.writeText(pre.innerText).then(function() {
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-success');
+                text.textContent = '¡Copiado!';
+                setTimeout(function() {
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-secondary');
+                    text.textContent = 'Copiar';
+                }, 2000);
+            });
+        }
+
+        function toggleWrap() {
+            const pre = document.getElementById('backup-text-pre');
+            const btn = document.getElementById('wrap-btn');
+            const text = document.getElementById('wrap-text');
+            pre.classList.toggle('wrap-lines');
+            if (pre.classList.contains('wrap-lines')) {
+                btn.classList.add('btn-primary');
+                btn.classList.remove('btn-outline-secondary');
+                text.textContent = 'Líneas fijas';
+            } else {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-secondary');
+                text.textContent = 'Ajustar líneas';
+            }
+        }
+
         function openCommandDialog(element) {
-            var command = element.getAttribute('data-command');
-            var confirmation = prompt("Por favor escribe 'borrar{{ backup.id }}' para proceder.");
+            var confirmation = prompt("Por favor escribe 'borrar{{ backup.id }}' para proceder con la eliminación.");
             if (confirmation) {
                 var url = "/backup/delete/?uuid={{ backup.uuid }}&action=delete&confirmation=" + encodeURIComponent(confirmation);
                 window.location.href = url;
             }
         }
     </script>
-
-
 {% endblock %}
