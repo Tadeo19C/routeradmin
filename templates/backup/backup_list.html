@@ -16,21 +16,10 @@
                 <div class="card-body">
                     {% include 'backup/backup_nav_tabs.html' %}
 
-                    <!-- Barra de Acciones Estilo Unimus -->
-                    <div class="mb-3 p-2 border rounded d-flex justify-content-between align-items-center flex-wrap gap-2" style="background-color: rgba(0, 0, 0, 0.05);">
-                        <div class="d-flex align-items-center flex-wrap gap-2">
-                            <a href="/router/list/" class="btn btn-primary btn-sm mr-2" title="Ejecutar respaldo inmediato en equipos">
-                                <i class="fas fa-play mr-1"></i> Respaldar ahora
-                            </a>
-                            <button id="compare-backups-btn" class="btn btn-outline-secondary btn-sm mr-2" disabled title="Selecciona 2 casillas para comparar">
-                                <i class="fas fa-columns mr-1"></i> Comparar seleccionados (Diff)
-                            </button>
-                        </div>
-                        <div class="d-flex align-items-center flex-wrap gap-2">
-                            <a href="/backup/search/" class="btn btn-outline-secondary btn-sm mr-2" title="Buscar texto dentro de todas las configuraciones">
-                                <i class="fas fa-search mr-1"></i> Buscar en configuraciones
-                            </a>
-                        </div>
+                    <div class="mb-3 d-flex align-items-center">
+                        <button id="compare-backups-btn" class="btn btn-outline-secondary btn-sm" disabled title="Selecciona 2 casillas para comparar">
+                            <i class="fas fa-columns mr-1"></i> Comparar seleccionados (Diff)
+                        </button>
                     </div>
 
                     <div class="table-responsive">

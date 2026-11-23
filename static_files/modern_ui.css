@@ -1426,13 +1426,26 @@ body:not(.dark-mode) .unimus-card-header {
 }
 
 .unimus-property-label {
-    color: var(--muted);
+    color: #94a3b8 !important;
     font-weight: 500;
     min-width: 140px;
 }
 
+[data-theme="light"] .unimus-property-label,
+body:not(.dark-mode) .unimus-property-label {
+    color: #475569 !important;
+}
+
 .unimus-property-val {
-    color: var(--foreground);
+    color: #f1f5f9 !important;
+    text-align: right;
+    word-break: break-all;
+}
+
+[data-theme="light"] .unimus-property-val,
+body:not(.dark-mode) .unimus-property-val {
+    color: #0f172a !important;
+}
     text-align: right;
     word-break: break-all;
 }
