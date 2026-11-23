@@ -1,123 +1,128 @@
-/* BACKUP WEB Unified Design System */
-/* Shadcn Nova Base + Mist/Neutral Surface + Blue Primary (#3B82F6) + Brand Navy (#264092) */
+/* BACKUP WEB - Unimus-Inspired Clean Technical UI */
+/* Classic Enterprise Sans (Segoe UI / Roboto) + Unimus Charcoal Slate Palette */
 
 :root {
-    --background: #f8fafc;
-    --foreground: #0f172a;
+    --background: #f6f8fa;
+    --foreground: #24292f;
 
     --card: #ffffff;
-    --card-foreground: #0f172a;
+    --card-foreground: #24292f;
 
-    --primary: #3b82f6;
-    --primary-hover: #2563eb;
+    --primary: #3162b2;
+    --primary-hover: #264e91;
     --primary-foreground: #ffffff;
-    --primary-subtle: rgba(59, 130, 246, 0.10);
+    --primary-subtle: rgba(49, 98, 178, 0.10);
 
-    --brand-navy: #264092;
+    --brand-navy: #1f3a68;
+    --header-bg: #ffffff;
 
-    --secondary: #f1f5f9;
-    --secondary-foreground: #1e293b;
+    --secondary: #eaeef2;
+    --secondary-foreground: #24292f;
 
-    --muted: #f1f5f9;
-    --muted-foreground: #64748b;
+    --muted: #f3f5f8;
+    --muted-foreground: #656d76;
 
-    --border: #e2e8f0;
-    --input: #e2e8f0;
-    --ring: #3b82f6;
+    --border: #d0d7de;
+    --input: #d0d7de;
+    --ring: #3162b2;
 
-    --radius: 0.375rem;    /* 6px (rounded-md in ControladorGPON) */
-    --radius-lg: 0.625rem; /* 10px (compact rounded-xl in ControladorGPON) */
+    --radius: 3px;
+    --radius-lg: 4px;
 
-    /* Semantic Status (ControladorGPON exact colors) */
-    --success: #10b981;
+    /* Semantic Status */
+    --success: #2da44e;
     --success-foreground: #ffffff;
-    --success-subtle: rgba(16, 185, 129, 0.10);
+    --success-subtle: rgba(45, 164, 78, 0.12);
 
-    --warning: #f59e0b;
+    --warning: #bf8700;
     --warning-foreground: #ffffff;
-    --warning-subtle: rgba(245, 158, 11, 0.10);
+    --warning-subtle: rgba(191, 135, 0, 0.12);
 
-    --error: #ef4444;
+    --error: #cf222e;
     --error-foreground: #ffffff;
-    --error-subtle: rgba(239, 68, 68, 0.10);
+    --error-subtle: rgba(207, 34, 46, 0.12);
 
-    --info: #3b82f6;
+    --info: #0969da;
     --info-foreground: #ffffff;
-    --info-subtle: rgba(59, 130, 246, 0.10);
+    --info-subtle: rgba(9, 105, 218, 0.12);
 
-    --shadow-2xs: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    --shadow-2xs: none;
+    --shadow-xs: none;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
 
-    --transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition: background-color 0.1s ease, border-color 0.1s ease, color 0.1s ease;
 }
 
-/* Dark Mode (ControladorGPON Shadcn Nova Dark + Slate/Navy Undertone) */
+/* Dark Mode - Unimus Charcoal / Slate Theme */
 [data-theme="dark"], body.dark-mode {
-    --background: #0b1120;
-    --foreground: #f8fafc;
+    --background: #16181d;
+    --foreground: #dce1e8;
 
-    --card: #141e33;
-    --card-foreground: #f8fafc;
+    --card: #1c2025;
+    --card-foreground: #dce1e8;
 
-    --primary: #3b82f6;
-    --primary-hover: #60a5fa;
+    --primary: #4a78c4;
+    --primary-hover: #3b67ad;
     --primary-foreground: #ffffff;
-    --primary-subtle: rgba(59, 130, 246, 0.15);
+    --primary-subtle: rgba(74, 120, 196, 0.14);
 
-    --brand-navy: #3b82f6;
+    --brand-navy: #5c8ee6;
+    --header-bg: #14171a;
 
-    --secondary: #1e293b;
-    --secondary-foreground: #f8fafc;
+    --secondary: #22262d;
+    --secondary-foreground: #dce1e8;
 
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
+    --muted: #1c2025;
+    --muted-foreground: #7e8794;
 
-    --border: #24324f;
-    --input: #24324f;
-    --ring: #3b82f6;
+    --border: #2c3239;
+    --input: #23272e;
+    --ring: #4a78c4;
 
-    --success: #10b981;
-    --success-subtle: rgba(16, 185, 129, 0.15);
+    --success: #3fb950;
+    --success-subtle: rgba(63, 185, 80, 0.15);
 
-    --warning: #f59e0b;
-    --warning-subtle: rgba(245, 158, 11, 0.15);
+    --warning: #d29922;
+    --warning-subtle: rgba(210, 153, 34, 0.15);
 
-    --error: #ef4444;
-    --error-subtle: rgba(239, 68, 68, 0.15);
+    --error: #f85149;
+    --error-subtle: rgba(248, 81, 73, 0.15);
 
-    --info: #38bdf8;
-    --info-subtle: rgba(56, 189, 248, 0.15);
+    --info: #58a6ff;
+    --info-subtle: rgba(88, 166, 255, 0.15);
 
-    --shadow-2xs: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --shadow-2xs: none;
+    --shadow-xs: none;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
-/* Base Styles (ControladorGPON Compact Nova 12px Scale) */
+/* ========================================================
+   Base Styles - Clean, Classic Sans-Serif (No modern quirky fonts)
+   ======================================================== */
 body {
     background-color: var(--background) !important;
-    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
     color: var(--foreground) !important;
-    font-size: 12px !important;
+    font-size: 12.5px !important;
     line-height: 1.45 !important;
-    letter-spacing: -0.011em !important;
+    letter-spacing: 0 !important;
     margin: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Thin Scrollbars (ControladorGPON 5px scrollbar) */
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -134,27 +139,25 @@ body {
     min-height: 100vh;
 }
 
-/* Topbar Header (Matches ControladorGPON Compact AppTopbar) */
+/* ========================================================
+   Topbar Header (Compact Unimus-style horizontal bar)
+   ======================================================== */
 .main-header {
-    background: rgba(255, 255, 255, 0.85) !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
+    background: var(--header-bg) !important;
     border-bottom: 1px solid var(--border) !important;
     padding: 0 1rem !important;
-    height: 48px !important;
-    min-height: 48px !important;
-    max-height: 48px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
     display: flex;
     align-items: center;
     margin-left: 0 !important;
-    box-shadow: var(--shadow-2xs);
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     position: sticky;
     top: 0;
     z-index: 1030;
-}
-
-[data-theme="dark"] .main-header, body.dark-mode .main-header {
-    background: rgba(20, 30, 51, 0.85) !important;
 }
 
 /* Brand */
@@ -167,44 +170,45 @@ body {
 }
 
 .brand-icon-box {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    background: linear-gradient(135deg, var(--brand-navy) 0%, var(--primary) 100%);
-    color: white;
+    width: 26px;
+    height: 26px;
+    border-radius: 3px;
+    background: #1f242c;
+    border: 1px solid #363c47;
+    color: #5c8ee6;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12.5px;
-    box-shadow: 0 2px 5px rgba(59, 130, 246, 0.25);
+    font-size: 12px;
 }
 
 .brand-text {
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    color: var(--brand-navy);
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--foreground);
 }
 
 [data-theme="dark"] .brand-text, body.dark-mode .brand-text {
-    color: #ffffff;
+    color: #e6edf3;
 }
 
-/* Navigation Links (Matches ControladorGPON Pill navigation) */
+/* Navigation Links (Unimus Tab-style Navigation) */
 .nav-links {
     display: flex;
-    gap: 3px;
+    gap: 4px;
     align-items: center;
 }
 
 .nav-link-item {
     color: var(--muted-foreground) !important;
     text-decoration: none !important;
-    font-weight: 600;
-    padding: 4px 10px !important;
+    font-weight: 500;
+    padding: 4px 11px !important;
     font-size: 12px !important;
-    height: 30px;
-    border-radius: var(--radius);
+    height: 28px;
+    border-radius: var(--radius) !important;
+    border: 1px solid transparent;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -212,21 +216,29 @@ body {
 }
 
 .nav-link-item i {
-    font-size: 12px;
+    font-size: 11.5px;
 }
 
 .nav-link-item:hover {
-    background: var(--secondary);
+    background: var(--secondary) !important;
     color: var(--foreground) !important;
+    border-color: var(--border) !important;
 }
 
 .nav-link-item.active {
-    background: var(--primary-subtle) !important;
-    color: var(--primary) !important;
-    font-weight: 700;
+    background: #252b34 !important;
+    color: #79a6f2 !important;
+    border: 1px solid #363e4b !important;
+    font-weight: 600;
 }
 
-/* User Avatar Dropdown (Matches ControladorGPON AppTopbar) */
+[data-theme="light"] .nav-link-item.active, body:not(.dark-mode) .nav-link-item.active {
+    background: #eaeef2 !important;
+    color: #24292f !important;
+    border-color: #d0d7de !important;
+}
+
+/* User Avatar Dropdown */
 .user-avatar-btn {
     display: inline-flex;
     align-items: center;
@@ -246,34 +258,38 @@ body {
 }
 
 .user-avatar-circle {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: var(--primary-subtle);
-    color: var(--primary);
-    font-size: 11px;
-    font-weight: 700;
+    width: 24px;
+    height: 24px;
+    border-radius: 3px;
+    background: var(--secondary);
+    border: 1px solid var(--border);
+    color: var(--foreground);
+    font-size: 10.5px;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .user-name-text {
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
     color: var(--foreground);
-    line-height: 1.15;
+    line-height: 1.1;
 }
 
 .user-role-badge {
-    font-size: 10px;
+    font-size: 9.5px;
     color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
 }
 
 /* Theme Toggle Button */
 .theme-toggle-btn {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     border-radius: var(--radius);
     background: transparent;
     border: 1px solid var(--border);
@@ -283,35 +299,34 @@ body {
     justify-content: center;
     cursor: pointer;
     transition: var(--transition);
-    font-size: 12px;
+    font-size: 11.5px;
 }
 
 .theme-toggle-btn:hover {
     background: var(--secondary);
     color: var(--foreground);
-    border-color: var(--border);
 }
 
-/* Main Content Area (ControladorGPON Compact Workspace Padding) */
+/* Main Content Area */
 .content-wrapper {
-    margin-left: 0 !important;
     background-color: var(--background) !important;
-    padding: 12px 16px !important;
+    padding: 10px 0 !important;
 }
 
 .container-fluid {
-    max-width: 1400px !important;
+    max-width: 1440px !important;
     margin: 0 auto;
 }
 
-/* Card Component (Matches ControladorGPON Compact DataCard / Shadcn Card sm) */
+/* ========================================================
+   Card Component - Solid Flat Unimus Style
+   ======================================================== */
 .card {
     background: var(--card) !important;
     border: 1px solid var(--border) !important;
     border-radius: var(--radius-lg) !important;
-    box-shadow: var(--shadow-2xs) !important;
+    box-shadow: none !important;
     margin-bottom: 12px;
-    transition: var(--transition);
     overflow: hidden;
 }
 
@@ -320,60 +335,78 @@ body {
 }
 
 .card-header {
-    background: transparent !important;
+    background: #181c21 !important;
     border-bottom: 1px solid var(--border) !important;
-    padding: 8px 14px !important;
-    min-height: 38px;
+    padding: 6px 12px !important;
+    min-height: 34px;
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
+[data-theme="light"] .card-header, body:not(.dark-mode) .card-header {
+    background: #f6f8fa !important;
+}
+
 .card-title {
-    color: var(--foreground) !important;
+    color: #5c8ee6 !important;
     font-weight: 600 !important;
-    font-size: 13px !important;
+    font-size: 13.5px !important;
     margin-bottom: 0;
-    letter-spacing: -0.011em;
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
+[data-theme="light"] .card-title, body:not(.dark-mode) .card-title {
+    color: #24292f !important;
+}
+
 .card-body {
-    padding: 12px 14px !important;
+    padding: 12px !important;
     color: var(--foreground) !important;
 }
 
+/* Section titles */
+.section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    color: #5c8ee6 !important;
+    margin-bottom: 10px;
+}
+
+[data-theme="light"] .section-title, body:not(.dark-mode) .section-title {
+    color: #656d76 !important;
+}
+
 /* ========================================================
-   ControladorGPON Exact Compact KPICard Replication
+   KPI Card Component - Flat Sober Technical Metrics
    ======================================================== */
 .kpi-card {
     background: var(--card) !important;
     border: 1px solid var(--border) !important;
     border-radius: var(--radius-lg) !important;
-    padding: 12px 14px !important;
-    box-shadow: var(--shadow-2xs) !important;
+    padding: 10px 12px !important;
+    box-shadow: none !important;
     position: relative;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 86px;
-    transition: var(--transition);
+    min-height: 78px;
     text-decoration: none !important;
     color: var(--foreground) !important;
+    transition: var(--transition);
 }
 
 .kpi-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm) !important;
     border-color: var(--primary) !important;
+    background: var(--secondary) !important;
 }
 
 .kpi-card-header {
-    position: relative;
-    z-index: 2;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -381,9 +414,9 @@ body {
 
 .kpi-card-title {
     font-size: 10.5px !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.06em !important;
+    letter-spacing: 0.04em !important;
     color: var(--muted-foreground) !important;
     margin-bottom: 4px;
     display: flex;
@@ -392,149 +425,130 @@ body {
 }
 
 .kpi-card-value-row {
-    position: relative;
-    z-index: 2;
     display: flex;
     align-items: baseline;
     gap: 6px;
 }
 
 .kpi-card-value {
-    font-size: 21px !important;
-    font-weight: 800 !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
     color: var(--foreground) !important;
     line-height: 1;
-    letter-spacing: -0.02em;
-    font-feature-settings: "tnum";
     font-variant-numeric: tabular-nums;
 }
 
 .kpi-card-subtitle {
-    position: relative;
-    z-index: 2;
     font-size: 11px;
     color: var(--muted-foreground);
     margin-top: 4px;
     line-height: 1.25;
 }
 
-/* Watermark Icon in background (ControladorGPON globals.css exact transform) */
 .kpi-card-watermark {
-    position: absolute;
-    bottom: -6px;
-    right: -4px;
-    z-index: 1;
-    pointer-events: none;
-    font-size: 52px;
-    opacity: 0.14;
-    transform: translate3d(0, 0, 0) rotate(-8deg);
-    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+    display: none !important;
 }
-
-.kpi-card:hover .kpi-card-watermark {
-    opacity: 0.26;
-    transform: translate3d(-5px, -6px, 0) rotate(0deg) scale(1.1);
-}
-
-.kpi-card.color-blue .kpi-card-watermark { color: var(--primary); }
-.kpi-card.color-green .kpi-card-watermark { color: var(--success); }
-.kpi-card.color-red .kpi-card-watermark { color: var(--error); }
-.kpi-card.color-amber .kpi-card-watermark { color: var(--warning); }
 
 /* ========================================================
-   ActionBadge & Semantic Statuses (ControladorGPON h-5 rounded-md)
+   ActionBadge & Status Pills (Compact 3px Rectangular)
    ======================================================== */
 .badge-gpon {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    height: 20px;
     padding: 2px 7px;
-    border-radius: var(--radius);
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: -0.01em;
-    border: none !important;
+    line-height: 1.2;
+    border-radius: var(--radius);
     white-space: nowrap;
-}
-
-.badge-gpon-success {
-    background-color: var(--success-subtle) !important;
-    color: var(--success) !important;
-}
-
-.badge-gpon-error, .badge-gpon-destructive {
-    background-color: var(--error-subtle) !important;
-    color: var(--error) !important;
-}
-
-.badge-gpon-warning {
-    background-color: var(--warning-subtle) !important;
-    color: var(--warning) !important;
+    border: 1px solid transparent;
 }
 
 .badge-gpon-info {
-    background-color: var(--info-subtle) !important;
-    color: var(--info) !important;
+    background-color: var(--primary-subtle);
+    color: var(--primary);
+    border-color: rgba(74, 120, 196, 0.25);
 }
 
-/* LED Pulse */
+.badge-gpon-success {
+    background-color: var(--success-subtle);
+    color: var(--success);
+    border-color: rgba(63, 185, 80, 0.25);
+}
+
+.badge-gpon-warning {
+    background-color: var(--warning-subtle);
+    color: var(--warning);
+    border-color: rgba(210, 153, 34, 0.25);
+}
+
+.badge-gpon-error {
+    background-color: var(--error-subtle);
+    color: var(--error);
+    border-color: rgba(248, 81, 73, 0.25);
+}
+
 .status-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
     display: inline-block;
+    flex-shrink: 0;
 }
 
-.status-dot.online {
-    background-color: var(--success);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-    animation: gpon-pulse-green 2s infinite;
-}
-
-.status-dot.offline {
-    background-color: var(--error);
-}
-
-@keyframes gpon-pulse-green {
-    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-    70% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
+.status-dot.online { background-color: var(--success); }
+.status-dot.offline { background-color: var(--error); }
+.status-dot.warning { background-color: var(--warning); }
+.status-dot.muted { background-color: var(--muted-foreground); }
 
 /* ========================================================
-   Tables (ControladorGPON table.tsx exact compact sizing)
+   Tables (High Density Unimus Look)
    ======================================================== */
+.table-responsive {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card);
+}
+
 .table {
-    width: 100% !important;
     margin-bottom: 0 !important;
-    color: var(--foreground) !important;
-    border-collapse: separate !important;
-    border-spacing: 0 !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
 }
 
 .table thead th {
-    background-color: var(--secondary) !important;
-    color: var(--muted-foreground) !important;
-    font-weight: 700 !important;
-    font-size: 10.5px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em;
+    background-color: #181c21 !important;
+    color: #8b949e !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
     border-top: none !important;
     border-bottom: 1px solid var(--border) !important;
     border-left: none !important;
     border-right: none !important;
-    padding: 7px 10px !important;
-    height: 34px;
+    padding: 6px 10px !important;
+    height: 32px;
     white-space: nowrap;
 }
 
+[data-theme="light"] .table thead th, body:not(.dark-mode) .table thead th {
+    background-color: #f1f3f5 !important;
+    color: #57606a !important;
+}
+
 .table tbody tr {
-    transition: background-color 0.12s ease;
+    transition: background-color 0.1s ease;
+    border-bottom: 1px solid var(--border);
 }
 
 .table tbody tr:hover {
-    background-color: var(--muted) !important;
+    background-color: rgba(255, 255, 255, 0.035) !important;
+}
+
+[data-theme="light"] .table tbody tr:hover, body:not(.dark-mode) .table tbody tr:hover {
+    background-color: #f6f8fa !important;
 }
 
 .table td {
@@ -543,595 +557,292 @@ body {
     border-bottom: 1px solid var(--border) !important;
     border-left: none !important;
     border-right: none !important;
-    padding: 6px 10px !important;
+    padding: 5px 10px !important;
     font-size: 12px !important;
     line-height: 1.35 !important;
     color: var(--foreground) !important;
 }
 
-/* DataTables Controls */
-.dataTables_wrapper .dataTables_filter input {
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius) !important;
-    padding: 4px 10px !important;
-    height: 30px !important;
-    font-size: 12px !important;
-    background: var(--card) !important;
-    color: var(--foreground) !important;
-    outline: none !important;
-    transition: var(--transition);
+/* Monospace for IPs, ports, commands */
+.table td code, .table td .font-mono, td a[href*="router_details"] {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
+    font-size: 11.5px !important;
 }
 
-.dataTables_wrapper .dataTables_filter input:focus {
-    border-color: var(--primary) !important;
-    box-shadow: 0 0 0 2px var(--primary-subtle) !important;
-}
-
-/* Forms & Inputs (ControladorGPON input.tsx h-8 = 32px, text-xs = 12px) */
+/* ========================================================
+   Forms, Inputs & Search Bar (Unimus Style)
+   ======================================================== */
 .form-group {
     margin-bottom: 10px !important;
 }
 
 .form-group label {
-    margin-bottom: 4px;
+    margin-bottom: 3px;
     font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    font-weight: 600;
+    text-transform: none;
     color: var(--muted-foreground);
 }
 
-.form-control, .custom-select {
-    padding: 4px 10px !important;
-    height: 32px !important;
+.form-control, .custom-select, .dataTables_wrapper .dataTables_filter input {
+    padding: 3px 8px !important;
+    height: 28px !important;
     font-size: 12px !important;
     border-radius: var(--radius) !important;
     border: 1px solid var(--border) !important;
-    background-color: var(--card) !important;
+    background-color: #1a1e23 !important;
     color: var(--foreground) !important;
+    box-shadow: none !important;
     transition: var(--transition);
 }
 
-.input-group-sm > .form-control,
-.input-group-sm > .input-group-prepend > .input-group-text,
-.input-group-sm > .input-group-append > .input-group-text {
-    height: 30px !important;
-    padding: 3px 9px !important;
-    font-size: 12px !important;
+[data-theme="light"] .form-control, 
+[data-theme="light"] .custom-select, 
+[data-theme="light"] .dataTables_wrapper .dataTables_filter input,
+body:not(.dark-mode) .form-control {
+    background-color: #ffffff !important;
+    border-color: #d0d7de !important;
 }
 
-.form-control:focus, .custom-select:focus {
+.form-control:focus, .custom-select:focus, .dataTables_wrapper .dataTables_filter input:focus {
     border-color: var(--primary) !important;
-    box-shadow: 0 0 0 2px var(--primary-subtle) !important;
-    background-color: var(--card) !important;
-    color: var(--foreground) !important;
+    background-color: #1f242a !important;
+    outline: none !important;
+    box-shadow: none !important;
 }
 
-/* Buttons (ControladorGPON button.tsx h-8 / h-7 / h-6, text-xs = 12px) */
+/* ========================================================
+   Buttons - Clean, Flat, Utilitarian (No 3D effects)
+   ======================================================== */
 .btn {
-    font-weight: 600 !important;
-    padding: 5px 11px !important;
-    height: 32px;
-    font-size: 12px !important;
+    font-family: inherit !important;
+    font-weight: 500 !important;
+    padding: 3px 10px !important;
+    height: 28px !important;
+    font-size: 11.5px !important;
     border-radius: var(--radius) !important;
-    transition: var(--transition);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 5px;
-    box-shadow: var(--shadow-2xs);
+    box-shadow: none !important;
+    transform: none !important;
+    transition: var(--transition);
     line-height: 1.2 !important;
 }
 
-.btn-sm, .btn-group-sm > .btn {
-    padding: 3px 9px !important;
-    height: 28px !important;
-    font-size: 11.5px !important;
-    gap: 4px;
-}
-
-.btn-xs {
-    padding: 2px 7px !important;
-    height: 24px !important;
-    font-size: 11px !important;
-    gap: 3px;
-}
-
 .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-xs);
+    transform: none !important;
+    box-shadow: none !important;
 }
 
 .btn-primary {
-    background: var(--primary) !important;
-    border: none !important;
+    background: #3665af !important;
+    border: 1px solid #4a78c4 !important;
     color: #ffffff !important;
 }
 
 .btn-primary:hover {
-    background: var(--primary-hover) !important;
+    background: #2e5797 !important;
+    border-color: #3b68af !important;
+}
+
+.btn-secondary, .btn-default, .btn-outline-secondary {
+    background: #22262c !important;
+    border: 1px solid #363c46 !important;
+    color: #b8c0cc !important;
+}
+
+.btn-secondary:hover, .btn-default:hover, .btn-outline-secondary:hover {
+    background: #2a3038 !important;
+    border-color: #49515e !important;
+    color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-secondary,
+[data-theme="light"] .btn-default,
+[data-theme="light"] .btn-outline-secondary,
+body:not(.dark-mode) .btn-secondary {
+    background: #f6f8fa !important;
+    border-color: #d0d7de !important;
+    color: #24292f !important;
+}
+
+.btn-success {
+    background: #238636 !important;
+    border: 1px solid #2ea043 !important;
+    color: #ffffff !important;
+}
+
+.btn-danger {
+    background: #da3633 !important;
+    border: 1px solid #f85149 !important;
+    color: #ffffff !important;
+}
+
+.btn-sm, .btn-group-sm > .btn {
+    padding: 2px 8px !important;
+    height: 26px !important;
+    font-size: 11px !important;
+}
+
+.btn-xs {
+    padding: 1px 6px !important;
+    height: 22px !important;
+    font-size: 10.5px !important;
+}
+
+/* ========================================================
+   Dropdown Menus & Modals
+   ======================================================== */
+.dropdown-menu {
+    background: #1c2025 !important;
+    border: 1px solid #2c3239 !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    padding: 4px !important;
+}
+
+[data-theme="light"] .dropdown-menu, body:not(.dark-mode) .dropdown-menu {
+    background: #ffffff !important;
+    border-color: #d0d7de !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dropdown-item {
+    font-size: 12px !important;
+    padding: 5px 10px !important;
+    color: var(--foreground) !important;
+    border-radius: var(--radius);
+}
+
+.dropdown-item:hover {
+    background: var(--secondary) !important;
+    color: #ffffff !important;
+}
+
+.modal-content {
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+.modal-header {
+    background: #181c21 !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 8px 14px !important;
+}
+
+[data-theme="light"] .modal-header, body:not(.dark-mode) .modal-header {
+    background: #f6f8fa !important;
+}
+
+.modal-title {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--foreground) !important;
+}
+
+.modal-body {
+    padding: 14px !important;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border) !important;
+    padding: 8px 14px !important;
+}
+
+/* ========================================================
+   Nav Tabs - Classic Unimus Top Navigation Style
+   ======================================================== */
+.nav-tabs {
+    border-bottom: 1px solid var(--border) !important;
+    margin-bottom: 12px;
+}
+
+.nav-tabs .nav-link {
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: var(--muted-foreground) !important;
+    border: 1px solid transparent !important;
+    border-radius: 3px 3px 0 0 !important;
+    padding: 6px 14px !important;
+    background: transparent;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--foreground) !important;
+    border-color: var(--border) var(--border) transparent !important;
+}
+
+.nav-tabs .nav-link.active {
+    color: #79a6f2 !important;
+    background: #1c2025 !important;
+    border-color: var(--border) var(--border) #1c2025 !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="light"] .nav-tabs .nav-link.active, body:not(.dark-mode) .nav-tabs .nav-link.active {
+    background: #ffffff !important;
+    border-color: #d0d7de #d0d7de #ffffff !important;
+    color: #24292f !important;
+}
+
+/* ========================================================
+   Soft Pill Badges (router_list.html)
+   ======================================================== */
+.badge-pill-soft {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: var(--radius);
+    line-height: 1.2;
+}
+
+.badge-pill-soft.success {
+    background: var(--success-subtle);
+    color: var(--success);
+    border: 1px solid rgba(63, 185, 80, 0.25);
+}
+
+.badge-pill-soft.danger {
+    background: var(--error-subtle);
+    color: var(--error);
+    border: 1px solid rgba(248, 81, 73, 0.25);
+}
+
+.badge-pill-soft.warning {
+    background: var(--warning-subtle);
+    color: var(--warning);
+    border: 1px solid rgba(210, 153, 34, 0.25);
 }
 
 /* Progress bar */
 .progress {
     height: 6px !important;
     background-color: var(--secondary) !important;
-    border-radius: 9999px !important;
-    overflow: hidden;
+    border-radius: 2px !important;
 }
 
 .progress-bar {
-    background: var(--primary) !important;
-    border-radius: 9999px !important;
-}
-
-/* Dropdown Menu */
-.dropdown-menu {
-    background-color: var(--card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius-lg) !important;
-    box-shadow: var(--shadow-lg) !important;
-    padding: 6px !important;
-    min-width: 200px;
-}
-
-.dropdown-item {
-    color: var(--foreground) !important;
-    font-size: 13px !important;
-    font-weight: 500;
-    padding: 7px 12px !important;
-    border-radius: var(--radius);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: var(--transition);
-}
-
-.dropdown-item:hover {
-    background-color: var(--secondary) !important;
-    color: var(--primary) !important;
-}
-
-/* ========================================================
-   List Group (Cards de detalles en Modo Claro y Oscuro)
-   ======================================================== */
-.list-group {
-    background-color: transparent !important;
-}
-
-.list-group-item {
-    background-color: var(--card) !important;
-    color: var(--foreground) !important;
-    border-color: var(--border) !important;
-}
-
-.list-group-unbordered > .list-group-item {
-    border-left: 0 !important;
-    border-right: 0 !important;
-    border-radius: 0 !important;
-    padding: 10px 0 !important;
-    border-top: 1px solid var(--border) !important;
-    border-bottom: 1px solid var(--border) !important;
-    background-color: transparent !important;
-    color: var(--foreground) !important;
-}
-
-.list-group-item b {
-    color: var(--muted-foreground) !important;
-    font-weight: 600;
-}
-
-.list-group-item .float-right {
-    color: var(--foreground);
-    font-weight: 500;
-}
-
-/* ========================================================
-   Visor de Código / Terminal (pre & code) en Dark Mode
-   ======================================================== */
-pre, code {
-    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, Consolas, monospace !important;
-    font-size: 12.5px !important;
-    line-height: 1.6 !important;
-}
-
-pre {
-    background-color: #0b1324 !important;
-    color: #38bdf8 !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius-lg) !important;
-    padding: 16px 20px !important;
-    overflow-x: auto;
-    max-height: 650px;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-
-[data-theme="dark"] pre, body.dark-mode pre {
-    background-color: #070c18 !important;
-    color: #7dd3fc !important;
-    border-color: #1e293b !important;
-}
-
-/* ========================================================
-   Ajustes Generales Dark Mode (Enlaces, Tablas, Textos)
-   ======================================================== */
-[data-theme="dark"] .bg-white,
-body.dark-mode .bg-white {
-    background-color: var(--card) !important;
-    color: var(--foreground) !important;
-}
-
-[data-theme="dark"] .text-dark,
-body.dark-mode .text-dark {
-    color: var(--foreground) !important;
-}
-
-[data-theme="dark"] .border,
-body.dark-mode .border {
-    border-color: var(--border) !important;
-}
-
-[data-theme="dark"] a:not(.btn):not(.nav-link-item):not(.dropdown-item),
-body.dark-mode a:not(.btn):not(.nav-link-item):not(.dropdown-item) {
-    color: #60a5fa !important;
-}
-
-[data-theme="dark"] a:not(.btn):not(.nav-link-item):not(.dropdown-item):hover,
-body.dark-mode a:not(.btn):not(.nav-link-item):not(.dropdown-item):hover {
-    color: #93c5fd !important;
-}
-
-[data-theme="dark"] .alert-warning,
-body.dark-mode .alert-warning {
-    background-color: rgba(245, 158, 11, 0.15) !important;
-    border-color: rgba(245, 158, 11, 0.3) !important;
-    color: #fbbf24 !important;
-}
-
-
-/* ========================================================
-   Comprehensive Dark Mode & Component Coverage
-   (Modals, Tabs, DataTables, Pagination, Chosen, Badges)
-   ======================================================== */
-
-textarea.form-control {
-    height: auto !important;
-    min-height: 90px;
-}
-
-/* Soft Pill Badges (used in router_list.html - ControladorGPON h-5 rounded-md) */
-.badge-pill-soft {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    height: 20px;
-    padding: 2px 7px;
-    border-radius: var(--radius);
-    font-size: 11px;
-    font-weight: 600;
-    white-space: nowrap;
-}
-.badge-pill-soft.success {
-    background-color: var(--success-subtle);
-    color: var(--success);
-}
-.badge-pill-soft.danger {
-    background-color: var(--error-subtle);
-    color: var(--error);
-}
-.badge-pill-soft.warning {
-    background-color: var(--warning-subtle);
-    color: var(--warning);
-}
-.badge-pill-soft.info {
-    background-color: var(--info-subtle);
-    color: var(--info);
-}
-
-/* Nav Tabs (Light & Dark - Compact) */
-.nav-tabs {
-    border-bottom: 1px solid var(--border) !important;
-    gap: 3px;
-}
-.nav-tabs .nav-link {
-    color: var(--muted-foreground) !important;
-    background-color: transparent !important;
-    border: 1px solid transparent !important;
-    border-bottom: 2px solid transparent !important;
-    border-radius: var(--radius) var(--radius) 0 0 !important;
-    font-weight: 600 !important;
-    font-size: 12px !important;
-    padding: 5px 11px !important;
-    transition: var(--transition);
-}
-.nav-tabs .nav-link:hover {
-    color: var(--foreground) !important;
-    background-color: var(--secondary) !important;
-}
-.nav-tabs .nav-link.active,
-.card-primary.card-outline-tabs > .card-header a.active {
-    color: var(--primary) !important;
-    background-color: var(--primary-subtle) !important;
-    border-bottom: 2px solid var(--primary) !important;
-    font-weight: 700 !important;
-}
-
-/* Modals (Light & Dark - Compact) */
-.modal-content {
-    background-color: var(--card) !important;
-    color: var(--foreground) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius-lg) !important;
-    box-shadow: var(--shadow-lg) !important;
-}
-.modal-header {
-    background-color: transparent !important;
-    border-bottom: 1px solid var(--border) !important;
-    color: var(--foreground) !important;
-    padding: 10px 14px !important;
-}
-.modal-title {
-    color: var(--foreground) !important;
-    font-weight: 700 !important;
-    font-size: 13.5px !important;
-}
-.modal-body {
-    background-color: var(--card) !important;
-    color: var(--foreground) !important;
-    padding: 14px !important;
-}
-.modal-footer {
-    background-color: transparent !important;
-    border-top: 1px solid var(--border) !important;
-    padding: 8px 14px !important;
-}
-.modal-header .close {
-    color: var(--muted-foreground) !important;
-    text-shadow: none !important;
-    opacity: 0.8;
-}
-.modal-header .close:hover {
-    color: var(--foreground) !important;
-    opacity: 1;
-}
-
-/* Pagination & DataTables Controls */
-.page-item .page-link {
-    background-color: var(--card) !important;
-    border-color: var(--border) !important;
-    color: var(--foreground) !important;
-    font-size: 11.5px !important;
-    padding: 4px 9px !important;
-}
-.page-item .page-link:hover {
-    background-color: var(--secondary) !important;
-    color: var(--primary) !important;
-}
-.page-item.active .page-link {
     background-color: var(--primary) !important;
-    border-color: var(--primary) !important;
-    color: #ffffff !important;
 }
-.page-item.disabled .page-link {
-    background-color: var(--secondary) !important;
+
+/* DataTables pagination */
+.page-item .page-link {
+    background: var(--card) !important;
     border-color: var(--border) !important;
-    color: var(--muted-foreground) !important;
-    opacity: 0.55;
-}
-.dataTables_info,
-.dataTables_length label,
-.dataTables_filter label {
     color: var(--muted-foreground) !important;
     font-size: 11.5px !important;
-}
-.dt-buttons .btn {
-    background-color: var(--secondary) !important;
-    border: 1px solid var(--border) !important;
-    color: var(--foreground) !important;
-    font-size: 11.5px !important;
-    padding: 3px 9px !important;
-    height: 28px !important;
-}
-.dt-buttons .btn:hover {
-    background-color: var(--primary-subtle) !important;
-    color: var(--primary) !important;
-    border-color: var(--primary) !important;
+    padding: 3px 8px !important;
 }
 
-/* Input Groups & Addons */
-.input-group-text {
-    background-color: var(--secondary) !important;
-    border: 1px solid var(--border) !important;
-    color: var(--muted-foreground) !important;
-}
-
-/* Chosen Select Plugin Dark Mode */
-[data-theme="dark"] .chosen-container-single .chosen-single,
-body.dark-mode .chosen-container-single .chosen-single,
-[data-theme="dark"] .chosen-container-multi .chosen-choices,
-body.dark-mode .chosen-container-multi .chosen-choices {
-    background: var(--card) !important;
-    border: 1px solid var(--border) !important;
-    color: var(--foreground) !important;
-    box-shadow: none !important;
-    border-radius: var(--radius) !important;
-}
-[data-theme="dark"] .chosen-container .chosen-drop,
-body.dark-mode .chosen-container .chosen-drop {
-    background: var(--card) !important;
-    border: 1px solid var(--border) !important;
-    color: var(--foreground) !important;
-}
-[data-theme="dark"] .chosen-container .chosen-results li,
-body.dark-mode .chosen-container .chosen-results li {
-    color: var(--foreground) !important;
-}
-[data-theme="dark"] .chosen-container .chosen-results li.highlighted,
-body.dark-mode .chosen-container .chosen-results li.highlighted {
-    background: var(--primary) !important;
+.page-item.active .page-link {
+    background: #3665af !important;
+    border-color: #4a78c4 !important;
     color: #ffffff !important;
-}
-[data-theme="dark"] .chosen-container-multi .chosen-choices li.search-choice,
-body.dark-mode .chosen-container-multi .chosen-choices li.search-choice {
-    background: var(--secondary) !important;
-    border: 1px solid var(--border) !important;
-    color: var(--foreground) !important;
-    box-shadow: none !important;
-}
-[data-theme="dark"] .chosen-container-multi .chosen-choices li.search-field input[type="text"],
-body.dark-mode .chosen-container-multi .chosen-choices li.search-field input[type="text"] {
-    color: var(--foreground) !important;
-}
-
-/* Dark Mode Specific Overrides for Badges, Buttons, Alerts & Surfaces */
-[data-theme="dark"] .bg-light,
-body.dark-mode .bg-light {
-    background-color: var(--secondary) !important;
-    color: var(--foreground) !important;
-}
-[data-theme="dark"] .badge-light,
-body.dark-mode .badge-light {
-    background-color: var(--secondary) !important;
-    color: var(--foreground) !important;
-    border-color: var(--border) !important;
-}
-[data-theme="dark"] .btn-outline-secondary,
-body.dark-mode .btn-outline-secondary {
-    color: #cbd5e1 !important;
-    border-color: #334155 !important;
-}
-[data-theme="dark"] .btn-outline-secondary:hover,
-body.dark-mode .btn-outline-secondary:hover {
-    background-color: #1e293b !important;
-    color: #ffffff !important;
-}
-[data-theme="dark"] .btn-outline-dark,
-body.dark-mode .btn-outline-dark {
-    color: #cbd5e1 !important;
-    border-color: #475569 !important;
-}
-[data-theme="dark"] .btn-outline-dark:hover,
-body.dark-mode .btn-outline-dark:hover {
-    background-color: #334155 !important;
-    color: #ffffff !important;
-}
-[data-theme="dark"] .dropdown-divider,
-body.dark-mode .dropdown-divider,
-[data-theme="dark"] hr,
-body.dark-mode hr {
-    border-color: var(--border) !important;
-}
-[data-theme="dark"] code,
-body.dark-mode code {
-    color: #38bdf8 !important;
-    background-color: rgba(56, 189, 248, 0.12) !important;
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-[data-theme="dark"] .alert-info,
-body.dark-mode .alert-info {
-    background-color: rgba(56, 189, 248, 0.12) !important;
-    border-color: rgba(56, 189, 248, 0.3) !important;
-    color: #7dd3fc !important;
-}
-[data-theme="dark"] .alert-success,
-body.dark-mode .alert-success {
-    background-color: rgba(16, 185, 129, 0.12) !important;
-    border-color: rgba(16, 185, 129, 0.3) !important;
-    color: #6ee7b7 !important;
-}
-[data-theme="dark"] .alert-danger,
-body.dark-mode .alert-danger {
-    background-color: rgba(239, 68, 68, 0.12) !important;
-    border-color: rgba(239, 68, 68, 0.3) !important;
-    color: #fca5a5 !important;
-}
-
-
-/* ========================================================
-   Antigravity Design Expert Enhancements
-   (Weightlessness, Spatial Depth, Glassmorphism & Staggered Motion)
-   ======================================================== */
-
-.content-wrapper {
-    background-image:
-        radial-gradient(at 15% 10%, rgba(59, 130, 246, 0.05) 0px, transparent 45%),
-        radial-gradient(at 85% 5%, rgba(38, 64, 146, 0.04) 0px, transparent 45%) !important;
-}
-
-[data-theme="dark"] .content-wrapper,
-body.dark-mode .content-wrapper {
-    background-image:
-        radial-gradient(at 15% 10%, rgba(59, 130, 246, 0.09) 0px, transparent 50%),
-        radial-gradient(at 85% 15%, rgba(16, 185, 129, 0.05) 0px, transparent 45%) !important;
-}
-
-/* Weightless Floating Cards & Glassmorphic Rim */
-.card {
-    box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.05), 0 4px 10px -2px rgba(15, 23, 42, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 0.7) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
-
-[data-theme="dark"] .card,
-body.dark-mode .card {
-    background: rgba(20, 30, 51, 0.88) !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-    box-shadow: 0 18px 36px -8px rgba(0, 0, 0, 0.45), 0 4px 12px -2px rgba(0, 0, 0, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.06) !important;
-}
-
-.kpi-card {
-    box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.05), 0 4px 10px -2px rgba(15, 23, 42, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 0.7) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease, box-shadow 0.22s ease !important;
-}
-
-[data-theme="dark"] .kpi-card,
-body.dark-mode .kpi-card {
-    background: rgba(20, 30, 51, 0.88) !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.06) !important;
-}
-
-.kpi-card:hover {
-    transform: translateY(-4px) !important;
-    box-shadow: 0 20px 38px -10px rgba(59, 130, 246, 0.16), 0 8px 16px -4px rgba(15, 23, 42, 0.06) !important;
-}
-
-/* Glassmorphic Modals & Dropdowns */
-[data-theme="dark"] .modal-content,
-body.dark-mode .modal-content,
-[data-theme="dark"] .dropdown-menu,
-body.dark-mode .dropdown-menu {
-    background: rgba(20, 30, 51, 0.94) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
-}
-
-/* Staggered Entrance Animations (Disabled on reduced-motion) */
-@keyframes agyFloatIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-    .content-wrapper .card,
-    .content-wrapper .kpi-card {
-        animation: agyFloatIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-    .row > [class*="col-"]:nth-child(1) .kpi-card { animation-delay: 0.02s; }
-    .row > [class*="col-"]:nth-child(2) .kpi-card { animation-delay: 0.07s; }
-    .row > [class*="col-"]:nth-child(3) .kpi-card { animation-delay: 0.12s; }
-    .row > [class*="col-"]:nth-child(4) .kpi-card { animation-delay: 0.17s; }
 }
