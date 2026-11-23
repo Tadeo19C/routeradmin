@@ -33,11 +33,11 @@
     <!-- Chosen -->
     <link rel="stylesheet" href="/static/plugins/chosen/bootstrap-chosen.css">
     <!-- System & Enterprise Sans Font / Unimus Clean Theme -->
-    <link rel="stylesheet" href="/static/modern_ui.css?v=3.2">
+    <link rel="stylesheet" href="/static/modern_ui.css?v=3.3">
     <script>
         (function() {
             var savedTheme = localStorage.getItem('backupweb_theme');
-            if (savedTheme === 'dark' || !savedTheme || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            if (savedTheme === 'light') { document.documentElement.setAttribute('data-theme', 'light'); } else {
                 document.documentElement.setAttribute('data-theme', 'dark');
             }
         })();
@@ -409,7 +409,7 @@
                     document.documentElement.setAttribute('data-theme', 'dark');
                     document.body.classList.add('dark-mode');
                 } else {
-                    document.documentElement.removeAttribute('data-theme');
+                    document.documentElement.setAttribute('data-theme', 'light');
                     document.body.classList.remove('dark-mode');
                 }
                 localStorage.setItem('backupweb_theme', nextTheme);
