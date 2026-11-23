@@ -231,10 +231,11 @@
 
                 <div class="card-header">
                     <h3 class="card-title">Respaldo de Texto</h3>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" onclick="const t=document.getElementById('backup-text-pre').innerText; navigator.clipboard.writeText(t); this.innerHTML='<i class=\'fas fa-check\'></i> Copiado'; setTimeout(()=>this.innerHTML='<i class=\'far fa-copy\'></i> Copiar', 1800);"><i class="far fa-copy"></i> Copiar</button>
                 </div>
 
                 <div class="card-body p-0">
-                    <pre class="m-0 border-0" style="border-radius: 0 0 12px 12px; max-height: 700px;">{{ display_text|default_if_none:"" }}</pre>
+                    <pre id="backup-text-pre" class="m-0" style="max-height: 720px;">{{ display_text|default_if_none:"" }}</pre>
                 </div>
             </div>
         </div>

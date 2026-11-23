@@ -950,3 +950,229 @@ body:not(.dark-mode) .form-control {
     border-color: #456aa8 !important;
     color: #ffffff !important;
 }
+
+
+/* ========================================================
+   Global Dark-Mode & Layout Fixes Across ALL Sections
+   (pre, list-group, card-body.row, input-group, alerts, bg-light/white, diff)
+   ======================================================== */
+
+/* Fix negative row margins clipping content inside card-body */
+.card-body.row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.card-body.row > [class*="col-"] {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Preformatted Text / Config Viewers / Console Output */
+pre {
+    background-color: #14171a !important;
+    color: #d8dee9 !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 2px !important;
+    padding: 12px 14px !important;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+    overflow: auto;
+    white-space: pre;
+    tab-size: 4;
+}
+
+[data-theme="light"] pre, body:not(.dark-mode) pre {
+    background-color: #f6f8fa !important;
+    color: #24292f !important;
+    border: 1px solid #d0d7de !important;
+}
+
+/* List Groups (Backup Details, Router Details, Fleet Commander) */
+.list-group {
+    border: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+    background: var(--card) !important;
+}
+
+.list-group-item {
+    background-color: var(--card) !important;
+    color: var(--foreground) !important;
+    border-color: var(--border) !important;
+    border-left: none !important;
+    border-right: none !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.list-group-item:first-child {
+    border-top: none !important;
+}
+
+.list-group-item:last-child {
+    border-bottom: none !important;
+}
+
+.list-group-item b, .list-group-item strong {
+    color: var(--muted-foreground) !important;
+    font-weight: 500 !important;
+    white-space: nowrap;
+}
+
+.list-group-item .float-right {
+    float: none !important;
+    margin-left: auto;
+    text-align: right;
+    color: var(--foreground) !important;
+    word-break: break-word;
+}
+
+/* Input Groups & File Inputs in Dark Mode */
+[data-theme="dark"] .input-group-text,
+body.dark-mode .input-group-text {
+    background-color: #20242a !important;
+    border-color: #353a44 !important;
+    color: #8b919a !important;
+    height: 27px;
+    padding: 3px 9px !important;
+    font-size: 11.5px !important;
+    border-radius: 2px !important;
+}
+
+[data-theme="dark"] .custom-file-label,
+body.dark-mode .custom-file-label {
+    background-color: #16181c !important;
+    border-color: #353a44 !important;
+    color: var(--foreground) !important;
+    height: 29px !important;
+    padding-top: 4px !important;
+    font-size: 12px !important;
+}
+
+[data-theme="dark"] .custom-file-label::after,
+body.dark-mode .custom-file-label::after {
+    background-color: #23262c !important;
+    color: #c9cdd4 !important;
+    border-left: 1px solid #353a44 !important;
+    height: 27px !important;
+    padding-top: 4px !important;
+}
+
+/* Dark Mode Overrides for Bootstrap Utility Classes (bg-light, bg-white, text-dark, etc.) */
+[data-theme="dark"] .bg-light,
+[data-theme="dark"] .bg-white,
+body.dark-mode .bg-light,
+body.dark-mode .bg-white {
+    background-color: #1c2026 !important;
+    color: var(--foreground) !important;
+}
+
+[data-theme="dark"] .text-dark,
+body.dark-mode .text-dark {
+    color: var(--foreground) !important;
+}
+
+[data-theme="dark"] .border,
+[data-theme="dark"] .border-top,
+[data-theme="dark"] .border-bottom,
+body.dark-mode .border,
+body.dark-mode .border-top,
+body.dark-mode .border-bottom {
+    border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .card-footer,
+body.dark-mode .card-footer {
+    background-color: #181b20 !important;
+    border-top: 1px solid var(--border) !important;
+    color: var(--foreground) !important;
+}
+
+/* Striped Tables in Dark Mode (user_manager/list.html, etc.) */
+[data-theme="dark"] .table-striped tbody tr:nth-of-type(odd),
+body.dark-mode .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Alerts & Callouts in Dark Mode */
+[data-theme="dark"] .alert-light,
+body.dark-mode .alert-light {
+    background-color: #1e2228 !important;
+    border-color: var(--border) !important;
+    color: var(--muted-foreground) !important;
+}
+
+[data-theme="dark"] .alert-info,
+body.dark-mode .alert-info {
+    background-color: rgba(82, 130, 214, 0.14) !important;
+    border-color: rgba(82, 130, 214, 0.35) !important;
+    color: #c8dcff !important;
+}
+
+[data-theme="dark"] .alert-warning,
+body.dark-mode .alert-warning {
+    background-color: rgba(210, 153, 34, 0.14) !important;
+    border-color: rgba(210, 153, 34, 0.35) !important;
+    color: #f0d388 !important;
+}
+
+[data-theme="dark"] .alert-danger,
+body.dark-mode .alert-danger {
+    background-color: rgba(248, 81, 73, 0.14) !important;
+    border-color: rgba(248, 81, 73, 0.35) !important;
+    color: #ffb3ae !important;
+}
+
+[data-theme="dark"] .alert-success,
+body.dark-mode .alert-success {
+    background-color: rgba(63, 185, 80, 0.14) !important;
+    border-color: rgba(63, 185, 80, 0.35) !important;
+    color: #a6f0b2 !important;
+}
+
+/* Breadcrumbs & Badges */
+[data-theme="dark"] .breadcrumb,
+body.dark-mode .breadcrumb {
+    background-color: #181b20 !important;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+}
+
+[data-theme="dark"] .badge-secondary,
+[data-theme="dark"] .badge-light,
+body.dark-mode .badge-secondary,
+body.dark-mode .badge-light {
+    background-color: #252a32 !important;
+    color: #c9cdd4 !important;
+    border: 1px solid #383e48 !important;
+}
+
+/* Chosen Select Plugin Dark Mode */
+[data-theme="dark"] .chosen-container-single .chosen-single,
+[data-theme="dark"] .chosen-container-multi .chosen-choices,
+body.dark-mode .chosen-container-single .chosen-single,
+body.dark-mode .chosen-container-multi .chosen-choices {
+    background: #16181c !important;
+    border: 1px solid #353a44 !important;
+    color: var(--foreground) !important;
+    box-shadow: none !important;
+}
+
+[data-theme="dark"] .chosen-container .chosen-drop,
+body.dark-mode .chosen-container .chosen-drop {
+    background: #1c2025 !important;
+    border-color: var(--border) !important;
+    color: var(--foreground) !important;
+}
+
+/* Close button visibility in dark mode */
+[data-theme="dark"] .close,
+body.dark-mode .close {
+    color: #d0d4dc !important;
+    text-shadow: none !important;
+}
