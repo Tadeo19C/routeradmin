@@ -88,6 +88,13 @@
                                     </td>
                                     <td class="min-width text-nowrap text-center">
                                         {% if backup.success %}
+                                            {% if backup.prev_backup_uuid %}
+                                            <a href="/backup/compare/?uuid={{ backup.uuid }}&compare_uuid={{ backup.prev_backup_uuid }}"
+                                               class="btn btn-xs btn-primary mr-1"
+                                               title="Ver cambios (Diff) respecto a la versión anterior de este equipo">
+                                                <i class="fas fa-columns"></i> Ver Cambios
+                                            </a>
+                                            {% endif %}
                                             <a href="/backup/download/?uuid={{ backup.uuid }}&type=text"
                                                class="btn btn-xs btn-outline-primary mr-1"
                                                title="Descargar configuración en texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})">

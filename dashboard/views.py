@@ -120,7 +120,29 @@ def view_dashboard(request):
 @login_required
 def view_status(request):
     settings.MEDIA_ROOT
+    last_24h = timezone.now() - timedelta(days=1)
+    offline_routers = list(
+        Router.objects.filter(enabled=True, monitoring=True, routerstatus__status_online=False)
+        .select_related('routerstatus')
+        .order_by('name')[:10]
+    )
+    failed_qs = (
+        RouterBackup.objects.filter(error=True, created__gte=last_24h)
+        .select_related('router')
+        .order_by('-created')
+    )
+    recent_failed_backups = []
+    seen_router_ids = set()
+    for fb in failed_qs:
+        if fb.router_id not in seen_router_ids:
+            seen_router_ids.add(fb.router_id)
+            recent_failed_backups.append(fb)
+            if len(recent_failed_backups) >= 10:
+                break
+
     context = {
+        'offline_routers': offline_routers,
+        'recent_failed_backups': recent_failed_backups,
         'page_title': 'Bienvenido',
         'media_root_stats': get_directory_statistics(settings.MEDIA_ROOT),
         'queue': RouterBackup.objects.filter(success=False, error=False).count(),

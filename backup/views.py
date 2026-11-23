@@ -89,6 +89,13 @@ def view_backup_list(request):
         backup_list = backup_list.filter(success=True, identical_to_previous=False).order_by('-created')
         view_type = 'success'
 
+    backup_list = list(backup_list)
+    if view_type == 'success':
+        last_seen_by_router = {}
+        for b in reversed(backup_list):
+            b.prev_backup_uuid = last_seen_by_router.get(b.router_id)
+            last_seen_by_router[b.router_id] = str(b.uuid)
+
     context = {
         'backup_list': backup_list,
         'page_title': 'Lista de Respaldos',

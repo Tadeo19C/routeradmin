@@ -224,11 +224,16 @@
                                                                 </td>
                                                                 <td class="min-width">
                                                                     <div class="btn-group">
-                                                                        <a href="/router/details/?uuid={{ router.uuid }}" class="btn btn-xs btn-outline-info" title="Información">
-                                                                            <i class="fas fa-info-circle"></i> Detalles
+                                                                        <a href="/router/create_instant_backup/?uuid={{ router.uuid }}" class="btn btn-xs btn-primary" title="Ejecutar respaldo ahora">
+                                                                            <i class="fas fa-sync-alt"></i> Respaldar
                                                                         </a>
-                                                                        <a href="/backup/backup_list/?router={{ router.uuid }}" class="btn btn-xs btn-outline-success" title="Historial de Respaldos y Descarga">
-                                                                            <i class="fas fa-download"></i> Historial
+                                                                        {% if router.latest_backup_uuid %}
+                                                                        <a href="/backup/backup_details/?uuid={{ router.latest_backup_uuid }}" class="btn btn-xs btn-outline-success" title="Ver último respaldo guardado">
+                                                                            <i class="fas fa-file-code"></i> Último
+                                                                        </a>
+                                                                        {% endif %}
+                                                                        <a href="/backup/backup_list/?router={{ router.uuid }}" class="btn btn-xs btn-outline-secondary" title="Historial completo de respaldos">
+                                                                            <i class="fas fa-history"></i> Historial
                                                                         </a>
                                                                     </div>
                                                                 </td>
@@ -474,11 +479,16 @@
                                         <td class="min-width">
                                             {% if router.router_type != 'monitoring' %}
                                                 <div class="btn-group">
-                                                    <a href="/router/details/?uuid={{ router.uuid }}" class="btn btn-xs btn-outline-info" title="Información">
-                                                        <i class="fas fa-info-circle"></i> Detalles
+                                                    <a href="/router/create_instant_backup/?uuid={{ router.uuid }}" class="btn btn-xs btn-primary" title="Ejecutar respaldo ahora">
+                                                        <i class="fas fa-sync-alt"></i> Respaldar
                                                     </a>
-                                                    <a href="/backup/backup_list/?router={{ router.uuid }}" class="btn btn-xs btn-outline-success" title="Historial de Respaldos y Descarga">
-                                                        <i class="fas fa-download"></i> Historial
+                                                    {% if router.latest_backup_uuid %}
+                                                    <a href="/backup/backup_details/?uuid={{ router.latest_backup_uuid }}" class="btn btn-xs btn-outline-success" title="Ver último respaldo guardado">
+                                                        <i class="fas fa-file-code"></i> Último
+                                                    </a>
+                                                    {% endif %}
+                                                    <a href="/backup/backup_list/?router={{ router.uuid }}" class="btn btn-xs btn-outline-secondary" title="Historial completo de respaldos">
+                                                        <i class="fas fa-history"></i> Historial
                                                     </a>
                                                 </div>
                                             {% endif %}

@@ -109,6 +109,12 @@ def view_router_list(request):
 
     all_groups = list(RouterGroup.objects.all().order_by('name'))
     routers_eval = list(router_list)
+    latest_backups_map = {}
+    for rb in RouterBackup.objects.filter(success=True).order_by('router_id', '-created').values('router_id', 'uuid'):
+        if rb['router_id'] not in latest_backups_map:
+            latest_backups_map[rb['router_id']] = str(rb['uuid'])
+    for r in routers_eval:
+        r.latest_backup_uuid = latest_backups_map.get(r.id)
     grouped_nodes = []
     for grp in all_groups:
         grp_routers = [r for r in routers_eval if grp in r.routergroup_set.all()]
@@ -602,9 +608,20 @@ def view_ajax_test_connection(request):
     )
     
     if success:
-        return JsonResponse({'status': 'success', 'message': '¡Conexión exitosa!'})
+        return JsonResponse({'status': 'success', 'message': 'Conectado correctamente al equipo.'})
     else:
-        return JsonResponse({'status': 'error', 'message': f'Error de conexión: {message}'})
+        raw_msg = str(message or '').lower()
+        if 'authentication' in raw_msg or 'password' in raw_msg or 'login incorrect' in raw_msg or 'auth' in raw_msg:
+            friendly = 'Usuario o contraseña incorrectos. Verifique las credenciales del equipo.'
+        elif 'timed out' in raw_msg or 'timeout' in raw_msg:
+            friendly = f'Tiempo de espera agotado hacia {address}:{port}. Verifique que el equipo esté encendido y el puerto abierto.'
+        elif 'refused' in raw_msg or '111' in raw_msg:
+            friendly = f'Conexión rechazada en {address}:{port}. Verifique que el servicio {connection_protocol.upper()} esté habilitado.'
+        elif 'getaddrinfo' in raw_msg or 'name or service not known' in raw_msg or 'unreachable' in raw_msg:
+            friendly = f'No se pudo alcanzar la dirección {address}. Verifique la IP o la ruta de red.'
+        else:
+            friendly = f'No se pudo conectar: {message}'
+        return JsonResponse({'status': 'error', 'message': friendly})
 
 
 @login_required()

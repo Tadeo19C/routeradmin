@@ -23,15 +23,70 @@
                 <h3 class="card-title mb-0">
                     <i class="fas fa-tachometer-alt"></i> {% if page_title %}{{ page_title }}{% else %}Panel de Control{% endif %}
                 </h3>
-                <div class="card-tools ml-auto">
+                <div class="card-tools ml-auto d-flex align-items-center flex-wrap" style="gap: 6px;">
+                    <a href="/router/manage/" class="btn btn-sm btn-primary" title="Agregar un nuevo equipo">
+                        <i class="fas fa-plus"></i> Nuevo Equipo
+                    </a>
+                    <a href="/backup/backup_list/" class="btn btn-sm btn-outline-secondary" title="Ver historial de respaldos">
+                        <i class="fas fa-box-open"></i> Respaldos
+                    </a>
+                    <a href="/backup/search/" class="btn btn-sm btn-outline-secondary" title="Buscar texto en configuraciones">
+                        <i class="fas fa-search"></i> Buscar Configs
+                    </a>
                     {% if user.is_staff or user.is_superuser %}
-                    <a href="/system/branding/" class="btn btn-sm btn-outline-primary" style="font-size: 0.82rem;" title="Personalizar Logo e Identidad">
-                        <i class="fas fa-paint-brush mr-1"></i> Personalizar Logo
+                    <a href="/system/branding/" class="btn btn-sm btn-outline-secondary" title="Personalizar Logo e Identidad">
+                        <i class="fas fa-paint-brush"></i> Logo
                     </a>
                     {% endif %}
                 </div>
             </div>
             <div class="card-body">
+                {% if offline_routers or recent_failed_backups %}
+                <div class="mb-3">
+                    <h6 class="section-title text-danger" style="color: #ff7b72 !important;">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> Requiere Atención
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Equipo</th>
+                                    <th>IP</th>
+                                    <th>Problema Detectado</th>
+                                    <th class="min-width text-right">Acción Rápida</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in offline_routers %}
+                                <tr>
+                                    <td><a href="/router/details/?uuid={{ r.uuid }}">{{ r.name }}</a></td>
+                                    <td><code>{{ r.address }}</code></td>
+                                    <td><span class="badge-pill-soft danger"><span class="status-dot offline"></span> Equipo Fuera de Línea</span></td>
+                                    <td class="min-width text-right text-nowrap">
+                                        <a href="/router/details/?uuid={{ r.uuid }}" class="btn btn-xs btn-outline-secondary">Ver Detalles</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% for fb in recent_failed_backups %}
+                                <tr>
+                                    <td><a href="/router/details/?uuid={{ fb.router.uuid }}">{{ fb.router.name }}</a></td>
+                                    <td><code>{{ fb.router.address }}</code></td>
+                                    <td>
+                                        <span class="badge-pill-soft warning">Fallo de Respaldo</span>
+                                        <span class="text-muted small ml-1">{{ fb.error_message|default:"Error de conexión"|truncatechars:70 }}</span>
+                                    </td>
+                                    <td class="min-width text-right text-nowrap">
+                                        <a href="/router/create_instant_backup/?uuid={{ fb.router.uuid }}" class="btn btn-xs btn-primary">
+                                            <i class="fas fa-redo"></i> Reintentar
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
                 <!-- Group 1: Red y Estado de Equipos (ControladorGPON KPICard Layout) -->
                 <h6 class="section-title text-center"><i class="fas fa-network-wired mr-1"></i> Estado de la Red</h6>
                 <div class="row mb-2 justify-content-center">

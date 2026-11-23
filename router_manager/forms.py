@@ -110,6 +110,15 @@ class RouterForm(forms.ModelForm):
                 self.initial['custom_weekly_hour'] = profile.weekly_hour
         else:
             delete_html = ''
+            # Pre-seleccionar perfil por defecto y nodo si existe, para simplificar el alta
+            default_prof = BackupProfile.objects.filter(name='default').first() or BackupProfile.objects.first()
+            if default_prof:
+                self.fields['backup_profile'].initial = default_prof
+            default_grp = RouterGroup.objects.filter(default_group=True).first()
+            if not default_grp and RouterGroup.objects.count() == 1:
+                default_grp = RouterGroup.objects.first()
+            if default_grp:
+                self.fields['router_group'].initial = default_grp
 
         # Client-side IP Validation
         self.fields['address'].widget.attrs.update({

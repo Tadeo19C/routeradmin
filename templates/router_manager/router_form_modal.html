@@ -152,6 +152,18 @@
 
 <script>
 $(document).ready(function() {
+    // Auto-ajustar puerto al cambiar entre SSH (22) y Telnet (23)
+    $('#id_connection_protocol').on('change', function() {
+        const proto = $(this).val();
+        const $port = $('#id_port');
+        const currentPort = ($port.val() || '').trim();
+        if (proto === 'telnet' && (!currentPort || currentPort === '22')) {
+            $port.val('23');
+        } else if (proto === 'ssh' && (!currentPort || currentPort === '23')) {
+            $port.val('22');
+        }
+    });
+
     // Subtle Link and Redirect Logic for Node Creation
     function setupNodeRedirectFlow() {
         const $groupField = $('#id_router_group');
