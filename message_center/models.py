@@ -73,8 +73,8 @@ class MessageSettings(models.Model):
     daily_report_time = models.CharField(max_length=5, default='07:00')
     smtp_host = models.CharField(max_length=150, default='smtp.gmail.com', blank=True, null=True)
     smtp_port = models.IntegerField(default=587)
-    smtp_user = models.CharField(max_length=150, default='tadeocastle3@gmail.com', blank=True, null=True)
-    smtp_password = models.CharField(max_length=150, default='khbdmxwtohnznsqj', blank=True, null=True)
+    smtp_user = models.CharField(max_length=150, default='', blank=True, null=True)
+    smtp_password = models.CharField(max_length=150, default='', blank=True, null=True)
     smtp_use_tls = models.BooleanField(default=True)
     attach_backup_on_email = models.BooleanField(default=True)
 

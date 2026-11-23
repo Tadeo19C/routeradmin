@@ -320,14 +320,28 @@ def view_email_backups_config(request):
         send_daily_report = request.POST.get('send_daily_report') == 'on'
         daily_report_time = (request.POST.get('daily_report_time') or '07:00').strip()
 
-        if request.POST.get('smtp_host'):
-            message_settings.smtp_host = request.POST.get('smtp_host').strip()
-        if request.POST.get('smtp_port'):
+        if action == 'clear_smtp':
+            message_settings.smtp_user = ''
+            message_settings.smtp_password = ''
+            message_settings.save()
+            if email_channel:
+                email_channel.destination = ''
+                email_channel.enabled = False
+                email_channel.save()
+            Message.objects.filter(channel__channel_type='email', status__in=['pending', 'failed']).delete()
+            messages.success(request, 'Correo y credenciales removidos correctamente|Se ha desvinculado la cuenta y pausado el envío para proteger tu cuenta de Gmail.')
+            return redirect('/message_center/email_backups/')
+
+        if 'smtp_host' in request.POST:
+            message_settings.smtp_host = request.POST.get('smtp_host', '').strip()
+        if 'smtp_port' in request.POST:
             message_settings.smtp_port = int(request.POST.get('smtp_port') or 587)
-        if request.POST.get('smtp_user'):
-            message_settings.smtp_user = request.POST.get('smtp_user').strip()
-        if request.POST.get('smtp_password'):
-            message_settings.smtp_password = request.POST.get('smtp_password').replace(' ', '').strip()
+        if 'smtp_user' in request.POST:
+            message_settings.smtp_user = request.POST.get('smtp_user', '').strip()
+        if 'smtp_password' in request.POST:
+            raw_p = request.POST.get('smtp_password', '').replace(' ', '').strip()
+            if raw_p:
+                message_settings.smtp_password = raw_p
 
         message_settings.attach_backup_on_email = attach_backup
         message_settings.daily_report_time = daily_report_time
@@ -344,6 +358,10 @@ def view_email_backups_config(request):
             email_channel.status_change_online = send_on_offline
             email_channel.daily_backup_report = send_daily_report
             email_channel.daily_status_report = send_daily_report
+            email_channel.save()
+        elif email_channel:
+            email_channel.destination = ''
+            email_channel.enabled = False
             email_channel.save()
 
         if action == 'test_email':

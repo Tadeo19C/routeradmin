@@ -199,26 +199,38 @@ def send_notification_message(message: Message):
     elif message.channel.channel_type == 'email':
         try:
             import os
-            DEFAULT_SYS_SMTP_USER = os.environ.get('EMAIL_HOST_USER', 'tadeocastle3@gmail.com')
-            DEFAULT_SYS_SMTP_PASS = os.environ.get('EMAIL_HOST_PASSWORD', 'khbdmxwtohnznsqj')
-            smtp_host = (message_settings.smtp_host or os.environ.get('EMAIL_HOST', 'smtp.gmail.com')).strip()
+            dest_list = [d.strip() for d in (message.channel.destination or '').split(',') if d.strip()]
+            if not dest_list:
+                message_response['status'] = 'failed'
+                message_response['error_message'] = 'Envío cancelado: No se ha configurado ningún correo destinatario.'
+                message_response['error_status_code'] = 0
+                return message_response
+
+            DEFAULT_SYS_SMTP_USER = os.environ.get('EMAIL_HOST_USER', '')
+            DEFAULT_SYS_SMTP_PASS = os.environ.get('EMAIL_HOST_PASSWORD', '')
+            smtp_host = (message_settings.smtp_host or os.environ.get('EMAIL_HOST', '')).strip()
             smtp_port = message_settings.smtp_port or int(os.environ.get('EMAIL_PORT', 587))
             smtp_user = (message_settings.smtp_user or DEFAULT_SYS_SMTP_USER).strip()
             raw_pass = message_settings.smtp_password or DEFAULT_SYS_SMTP_PASS
             smtp_pass = raw_pass.replace(' ', '').strip() if raw_pass else ''
             smtp_tls = message_settings.smtp_use_tls
 
+            if not smtp_host or not smtp_user or not smtp_pass:
+                message_response['status'] = 'failed'
+                message_response['error_message'] = 'Envío cancelado: Servidor SMTP o credenciales de correo no configuradas.'
+                message_response['error_status_code'] = 0
+                return message_response
+
             connection = get_connection(
                 backend='django.core.mail.backends.smtp.EmailBackend',
                 host=smtp_host,
                 port=smtp_port,
-                username=smtp_user or None,
-                password=smtp_pass or None,
+                username=smtp_user,
+                password=smtp_pass,
                 use_tls=smtp_tls,
                 fail_silently=False,
             )
             from_addr = f"BACKUP WEB <{smtp_user}>" if smtp_user else getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@backupweb.local')
-            dest_list = [d.strip() for d in (message.channel.destination or '').split(',') if d.strip()]
             email_msg = EmailMessage(
                 subject=message.subject or 'Notificación BACKUP WEB',
                 body=message.message,

@@ -4,50 +4,72 @@
 <div class="row">
     <div class="col-lg-12">
         <div class="card card-primary card-outline">
-            <div class="card-header">
-                <h3 class="card-title">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                <h3 class="card-title mb-0">
                     <i class="fas fa-envelope-open-text text-primary mr-1"></i> {{ page_title }}
                 </h3>
-                <span class="badge-gpon badge-gpon-success">
-                    <i class="fas fa-bolt"></i> Motor de Correo BACKUP WEB preconfigurado y listo
-                </span>
+                <div>
+                    {% if message_settings.smtp_user %}
+                    <span class="badge-gpon badge-gpon-success">
+                        <i class="fas fa-check-circle"></i> Remitente activo: {{ message_settings.smtp_user }}
+                    </span>
+                    {% else %}
+                    <span class="badge-gpon badge-gpon-warning">
+                        <i class="fas fa-shield-alt"></i> Sin correo remitente (Envíos pausados)
+                    </span>
+                    {% endif %}
+                </div>
             </div>
             <div class="card-body">
                 {% include 'message_center/message_center_nav_tabs.html' %}
+
+                {% if messages %}
+                <div class="mt-3">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show py-2 px-3" role="alert" style="font-size: 0.88rem;">
+                        <i class="fas fa-info-circle mr-1"></i> {{ message }}
+                        <button type="button" class="close py-2" data-dismiss="alert" aria-label="Cerrar">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
 
                 <form method="post" class="mt-3">
                     {% csrf_token %}
                     <div class="row justify-content-center">
                         <div class="col-lg-8">
-                            <div class="card border mb-2">
-                                <div class="card-header">
-                                    <h3 class="card-title">
-                                        <i class="fas fa-paper-plane text-primary"></i> Configurar Recepción Automática de Respaldos
-                                    </h3>
+                            <!-- Card: Configuración de Recepción -->
+                            <div class="card border mb-3 shadow-sm" style="border-radius: 8px;">
+                                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0 font-weight-bold" style="font-size: 0.95rem;">
+                                        <i class="fas fa-paper-plane text-primary mr-1"></i> Recepción Automática de Respaldos
+                                    </h5>
                                     <span class="badge-gpon badge-gpon-info">
                                         <i class="fas fa-filter"></i> Cero Spam: Solo cambios reales
                                     </span>
                                 </div>
                                 <div class="card-body">
-                                    <div class="form-group">
-                                        <label>¿A qué correo(s) deseas que lleguen los respaldos importantes?</label>
+                                    <div class="form-group mb-3">
+                                        <label class="font-weight-bold">¿A qué correo(s) deseas que lleguen los respaldos importantes?</label>
                                         <input type="text" name="recipient_email" class="form-control"
                                                placeholder="ejemplo@tuempresa.com (puedes separar varios con coma)"
-                                               value="{{ email_channel.destination|default:'' }}" required>
+                                               value="{{ email_channel.destination|default:'' }}">
                                         <small class="text-muted">
-                                            Solo ingresa tu correo y guarda. El servidor de envío de BACKUP WEB ya está autenticado internamente en segundo plano.
+                                            Deja este campo en blanco si deseas deshabilitar la recepción de correos.
                                         </small>
                                     </div>
 
-                                    <div class="custom-control custom-switch mb-2">
+                                    <div class="custom-control custom-switch mb-3">
                                         <input type="checkbox" class="custom-control-input" id="channel_enabled" name="channel_enabled"
-                                               {% if not email_channel or email_channel.enabled %}checked{% endif %}>
+                                               {% if email_channel and email_channel.enabled %}checked{% endif %}>
                                         <label class="custom-control-label font-weight-bold" for="channel_enabled">
                                             Activar envío automático de respaldos por correo
                                         </label>
                                     </div>
 
-                                    <hr class="my-2">
+                                    <hr class="my-3">
 
                                     <div class="custom-control custom-checkbox mb-2">
                                         <input type="checkbox" class="custom-control-input" id="send_on_config_change" name="send_on_config_change"
@@ -81,7 +103,7 @@
                                         </label>
                                     </div>
 
-                                    <div class="d-flex align-items-center justify-content-between flex-wrap mt-2 pt-2 border-top">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap mt-3 pt-3 border-top">
                                         <div class="custom-control custom-checkbox">
                                             <input type="checkbox" class="custom-control-input" id="send_daily_report" name="send_daily_report"
                                                    {% if email_channel and email_channel.daily_backup_report %}checked{% endif %}>
@@ -92,15 +114,81 @@
                                         <input type="text" name="daily_report_time" class="form-control" style="width: 85px;"
                                                value="{{ message_settings.daily_report_time|default:'07:00' }}" placeholder="07:00">
                                     </div>
+                                </div>
+                            </div>
 
-                                    <div class="d-flex justify-content-between align-items-center flex-wrap mt-3 pt-2 border-top" style="gap: 8px;">
-                                        <button type="submit" name="action" value="test_email" class="btn btn-outline-info">
-                                            <i class="fas fa-paper-plane"></i> Enviar Correo de Prueba Ahora
-                                        </button>
-                                        <button type="submit" name="action" value="save" class="btn btn-primary">
-                                            <i class="fas fa-save"></i> Guardar Correo
-                                        </button>
+                            <!-- Card: Configuración de Cuenta de Envío (SMTP) -->
+                            <div class="card border mb-3 shadow-sm" style="border-radius: 8px;">
+                                <div class="card-header bg-transparent d-flex justify-content-between align-items-center" style="cursor: pointer;" data-toggle="collapse" data-target="#smtpConfigCollapse">
+                                    <h5 class="card-title mb-0 font-weight-bold" style="font-size: 0.95rem;">
+                                        <i class="fas fa-server text-secondary mr-1"></i> Servidor de Envío (SMTP / Remitente)
+                                    </h5>
+                                    <div>
+                                        {% if message_settings.smtp_user %}
+                                            <span class="badge badge-success mr-2">Configurado</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary mr-2">Sin configurar</span>
+                                        {% endif %}
+                                        <i class="fas fa-chevron-down text-muted"></i>
                                     </div>
+                                </div>
+                                <div id="smtpConfigCollapse" class="collapse {% if not message_settings.smtp_user %}show{% endif %}">
+                                    <div class="card-body">
+                                        <div class="alert alert-light border py-2 px-3 small text-muted mb-3">
+                                            <i class="fas fa-shield-alt text-primary mr-1"></i>
+                                            <strong>Seguridad Gmail:</strong> Si utilizas Gmail, debes usar una <em>Contraseña de Aplicación de 16 letras</em> generada desde tu cuenta de Google. Si deseas evitar bloqueos o pausas de cuenta, puedes dejar estos campos en blanco o usar el botón <strong>"Desvincular Correo Remitente"</strong>.
+                                        </div>
+
+                                        <div class="form-row">
+                                            <div class="form-group col-md-8">
+                                                <label class="small font-weight-bold">Correo Remitente (Usuario SMTP)</label>
+                                                <input type="text" name="smtp_user" class="form-control form-control-sm"
+                                                       placeholder="ejemplo@gmail.com"
+                                                       value="{{ message_settings.smtp_user|default:'' }}">
+                                            </div>
+                                            <div class="form-group col-md-4">
+                                                <label class="small font-weight-bold">Puerto SMTP</label>
+                                                <input type="number" name="smtp_port" class="form-control form-control-sm"
+                                                       value="{{ message_settings.smtp_port|default:587 }}" placeholder="587">
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row">
+                                            <div class="form-group col-md-8">
+                                                <label class="small font-weight-bold">Contraseña de Aplicación SMTP</label>
+                                                <input type="password" name="smtp_password" class="form-control form-control-sm"
+                                                       placeholder="{% if message_settings.smtp_password %}••••••••••••••••{% else %}Contraseña de aplicación{% endif %}">
+                                                <small class="text-muted">Déjalo vacío para no modificar la contraseña actual.</small>
+                                            </div>
+                                            <div class="form-group col-md-4">
+                                                <label class="small font-weight-bold">Servidor Host</label>
+                                                <input type="text" name="smtp_host" class="form-control form-control-sm"
+                                                       value="{{ message_settings.smtp_host|default:'smtp.gmail.com' }}" placeholder="smtp.gmail.com">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Botones de Acción -->
+                            <div class="d-flex justify-content-between align-items-center flex-wrap pt-2 mb-4" style="gap: 8px;">
+                                <div>
+                                    {% if message_settings.smtp_user or email_channel.destination %}
+                                    <button type="submit" name="action" value="clear_smtp" class="btn btn-outline-danger btn-sm"
+                                            onclick="return confirm('¿Estás seguro de que deseas desvincular las credenciales de correo y pausar los envíos para evitar que Gmail bloquee la cuenta?');">
+                                        <i class="fas fa-trash-alt mr-1"></i> Desvincular Correo & Pausar Envíos
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex align-items-center" style="gap: 8px;">
+                                    {% if message_settings.smtp_user and email_channel.destination %}
+                                    <button type="submit" name="action" value="test_email" class="btn btn-outline-info">
+                                        <i class="fas fa-paper-plane mr-1"></i> Enviar Correo de Prueba
+                                    </button>
+                                    {% endif %}
+                                    <button type="submit" name="action" value="save" class="btn btn-primary px-4 font-weight-bold">
+                                        <i class="fas fa-save mr-1"></i> Guardar Configuración
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -109,7 +197,7 @@
 
                 {% if recent_email_messages %}
                 <hr class="my-3">
-                <h6 class="font-weight-bold mb-2"><i class="fas fa-history text-muted mr-1"></i> Últimos Respaldos Relevantes enviados por Correo</h6>
+                <h6 class="font-weight-bold mb-2"><i class="fas fa-history text-muted mr-1"></i> Historial de Notificaciones por Correo</h6>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
@@ -125,7 +213,7 @@
                             {% for msg in recent_email_messages %}
                             <tr>
                                 <td>{{ msg.created|date:"d/m/Y H:i:s" }}</td>
-                                <td><code>{{ msg.channel.destination }}</code></td>
+                                <td><code>{{ msg.channel.destination|default:"---" }}</code></td>
                                 <td>{{ msg.subject }}</td>
                                 <td>
                                     {% if msg.router_backup %}
