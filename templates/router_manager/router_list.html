@@ -5,21 +5,18 @@
     .node-accordion-card {
         background: var(--card);
         border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        margin-bottom: 8px;
+        border-radius: 0;
+        margin-bottom: 6px;
         overflow: hidden;
-        transition: var(--transition);
-        box-shadow: var(--shadow-2xs);
     }
     .node-accordion-card:hover {
-        border-color: rgba(59, 130, 246, 0.45);
+        border-color: #424854;
     }
     .node-accordion-card.expanded {
-        border-color: var(--primary);
-        box-shadow: var(--shadow-sm);
+        border-color: #424854;
     }
     .node-accordion-header {
-        padding: 8px 12px;
+        padding: 7px 12px;
         cursor: pointer;
         user-select: none;
         display: flex;
@@ -28,17 +25,16 @@
         flex-wrap: wrap;
         gap: 8px;
         background: transparent;
-        transition: background-color 0.15s ease;
     }
     .node-accordion-header:hover {
-        background: var(--secondary);
+        background: #242a34;
     }
     .node-accordion-card.expanded .node-accordion-header {
-        background: var(--primary-subtle);
+        background: #222730;
         border-bottom: 1px solid var(--border);
     }
     .node-chevron {
-        transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+        transition: transform 0.15s ease;
         color: var(--muted-foreground);
         font-size: 11px;
         width: 14px;
@@ -46,24 +42,24 @@
     }
     .node-accordion-card.expanded .node-chevron {
         transform: rotate(90deg);
-        color: var(--primary);
+        color: #5c8ee6;
     }
     .node-icon-box {
-        width: 26px;
-        height: 26px;
-        border-radius: 6px;
-        background: var(--primary-subtle);
-        color: var(--primary);
+        width: 22px;
+        height: 22px;
+        border-radius: 2px;
+        background: #23272e;
+        border: 1px solid #353b45;
+        color: #5c8ee6;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 12px;
+        font-size: 11px;
     }
     .node-title-text {
-        font-size: 13px;
-        font-weight: 700;
+        font-size: 12.5px;
+        font-weight: 500;
         color: var(--foreground);
-        letter-spacing: -0.011em;
     }
     .node-accordion-body {
         display: none;

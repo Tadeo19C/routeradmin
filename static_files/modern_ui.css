@@ -1,5 +1,5 @@
-/* BACKUP WEB - Unimus-Inspired Clean Technical UI */
-/* Classic Enterprise Sans (Segoe UI / Roboto) + Unimus Charcoal Slate Palette */
+/* BACKUP WEB - Unimus Flat Technical UI Design System */
+/* Classic Enterprise Sans (Segoe UI / Roboto) + Unimus Flat Charcoal Canvas */
 
 :root {
     --background: #f6f8fa;
@@ -26,8 +26,8 @@
     --input: #d0d7de;
     --ring: #3162b2;
 
-    --radius: 3px;
-    --radius-lg: 4px;
+    --radius: 2px;
+    --radius-lg: 3px;
 
     /* Semantic Status */
     --success: #2da44e;
@@ -55,53 +55,53 @@
     --transition: background-color 0.1s ease, border-color 0.1s ease, color 0.1s ease;
 }
 
-/* Dark Mode - Unimus Charcoal / Slate Theme */
+/* Dark Mode - Unimus Flat Charcoal Canvas */
 [data-theme="dark"], body.dark-mode {
-    --background: #16181d;
-    --foreground: #dce1e8;
+    --background: #1b1e23;       /* Main workspace flat charcoal */
+    --foreground: #d0d4dc;       /* Soft high-contrast text */
 
-    --card: #1c2025;
-    --card-foreground: #dce1e8;
+    --card: #1a1d21;             /* Framed grid / panel surface */
+    --card-foreground: #d0d4dc;
 
-    --primary: #4a78c4;
-    --primary-hover: #3b67ad;
+    --primary: #5282d6;          /* Unimus signature blue */
+    --primary-hover: #6492e2;
     --primary-foreground: #ffffff;
-    --primary-subtle: rgba(74, 120, 196, 0.14);
+    --primary-subtle: rgba(82, 130, 214, 0.14);
 
     --brand-navy: #5c8ee6;
-    --header-bg: #14171a;
+    --header-bg: #14171a;        /* Deep dark topbar */
 
-    --secondary: #22262d;
-    --secondary-foreground: #dce1e8;
+    --secondary: #23272e;
+    --secondary-foreground: #d0d4dc;
 
-    --muted: #1c2025;
-    --muted-foreground: #7e8794;
+    --muted: #1f2329;
+    --muted-foreground: #8b919a;
 
-    --border: #2c3239;
-    --input: #23272e;
-    --ring: #4a78c4;
+    --border: #2f343c;           /* Crisp 1px Unimus grid borders */
+    --input: #171a1e;
+    --ring: #5282d6;
 
     --success: #3fb950;
-    --success-subtle: rgba(63, 185, 80, 0.15);
+    --success-subtle: rgba(63, 185, 80, 0.12);
 
     --warning: #d29922;
-    --warning-subtle: rgba(210, 153, 34, 0.15);
+    --warning-subtle: rgba(210, 153, 34, 0.12);
 
     --error: #f85149;
-    --error-subtle: rgba(248, 81, 73, 0.15);
+    --error-subtle: rgba(248, 81, 73, 0.12);
 
     --info: #58a6ff;
-    --info-subtle: rgba(88, 166, 255, 0.15);
+    --info-subtle: rgba(88, 166, 255, 0.12);
 
     --shadow-2xs: none;
     --shadow-xs: none;
     --shadow-sm: none;
     --shadow-md: none;
-    --shadow-lg: 0 6px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 6px 16px rgba(0, 0, 0, 0.45);
 }
 
 /* ========================================================
-   Base Styles - Clean, Classic Sans-Serif (No modern quirky fonts)
+   Base Styles - Classic Enterprise Sans-Serif
    ======================================================== */
 body {
     background-color: var(--background) !important;
@@ -115,10 +115,18 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Scrollbars */
+a {
+    color: #5c8ee6;
+}
+
+a:hover {
+    color: #7ea8f2;
+}
+
+/* Thin Dark Scrollbars */
 ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
 }
 
 ::-webkit-scrollbar-track {
@@ -126,12 +134,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 3px;
+    background: #353a42;
+    border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--muted-foreground);
+    background: #4b525e;
 }
 
 .wrapper {
@@ -140,27 +148,25 @@ body {
 }
 
 /* ========================================================
-   Topbar Header (Compact Unimus-style horizontal bar)
+   Topbar Header (Minimalist Unimus Bar)
    ======================================================== */
 .main-header {
     background: var(--header-bg) !important;
     border-bottom: 1px solid var(--border) !important;
-    padding: 0 1rem !important;
-    height: 44px !important;
-    min-height: 44px !important;
-    max-height: 44px !important;
+    padding: 0 16px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
     display: flex;
     align-items: center;
     margin-left: 0 !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
     position: sticky;
     top: 0;
     z-index: 1030;
 }
 
-/* Brand */
 .brand-wrapper {
     display: inline-flex;
     align-items: center;
@@ -170,22 +176,22 @@ body {
 }
 
 .brand-icon-box {
-    width: 26px;
-    height: 26px;
-    border-radius: 3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 2px;
     background: #1f242c;
-    border: 1px solid #363c47;
+    border: 1px solid #353b45;
     color: #5c8ee6;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 11.5px;
 }
 
 .brand-text {
-    font-size: 14.5px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
     color: var(--foreground);
 }
 
@@ -193,21 +199,21 @@ body {
     color: #e6edf3;
 }
 
-/* Navigation Links (Unimus Tab-style Navigation) */
+/* Top Navigation Links */
 .nav-links {
     display: flex;
-    gap: 4px;
+    gap: 2px;
     align-items: center;
 }
 
 .nav-link-item {
     color: var(--muted-foreground) !important;
     text-decoration: none !important;
-    font-weight: 500;
+    font-weight: 400;
     padding: 4px 11px !important;
     font-size: 12px !important;
     height: 28px;
-    border-radius: var(--radius) !important;
+    border-radius: 2px !important;
     border: 1px solid transparent;
     display: inline-flex;
     align-items: center;
@@ -216,20 +222,20 @@ body {
 }
 
 .nav-link-item i {
-    font-size: 11.5px;
+    font-size: 11px;
+    opacity: 0.85;
 }
 
 .nav-link-item:hover {
-    background: var(--secondary) !important;
-    color: var(--foreground) !important;
-    border-color: var(--border) !important;
+    background: #22262d !important;
+    color: #e6edf3 !important;
 }
 
 .nav-link-item.active {
-    background: #252b34 !important;
-    color: #79a6f2 !important;
-    border: 1px solid #363e4b !important;
-    font-weight: 600;
+    background: #253042 !important;
+    color: #e6edf3 !important;
+    border-color: #36455e !important;
+    font-weight: 500;
 }
 
 [data-theme="light"] .nav-link-item.active, body:not(.dark-mode) .nav-link-item.active {
@@ -238,13 +244,13 @@ body {
     border-color: #d0d7de !important;
 }
 
-/* User Avatar Dropdown */
+/* User Avatar & Theme Toggle */
 .user-avatar-btn {
     display: inline-flex;
     align-items: center;
     gap: 7px;
     padding: 3px 8px;
-    border-radius: var(--radius);
+    border-radius: 2px;
     background: transparent;
     border: 1px solid transparent;
     cursor: pointer;
@@ -260,7 +266,7 @@ body {
 .user-avatar-circle {
     width: 24px;
     height: 24px;
-    border-radius: 3px;
+    border-radius: 2px;
     background: var(--secondary);
     border: 1px solid var(--border);
     color: var(--foreground);
@@ -273,7 +279,7 @@ body {
 
 .user-name-text {
     font-size: 11.5px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--foreground);
     line-height: 1.1;
 }
@@ -282,15 +288,13 @@ body {
     font-size: 9.5px;
     color: var(--muted-foreground);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-weight: 600;
+    letter-spacing: 0.03em;
 }
 
-/* Theme Toggle Button */
 .theme-toggle-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius);
+    width: 26px;
+    height: 26px;
+    border-radius: 2px;
     background: transparent;
     border: 1px solid var(--border);
     color: var(--muted-foreground);
@@ -299,7 +303,7 @@ body {
     justify-content: center;
     cursor: pointer;
     transition: var(--transition);
-    font-size: 11.5px;
+    font-size: 11px;
 }
 
 .theme-toggle-btn:hover {
@@ -307,37 +311,75 @@ body {
     color: var(--foreground);
 }
 
-/* Main Content Area */
+/* ========================================================
+   Full-Width Flat Canvas Workspace (Unimus Layout)
+   ======================================================== */
 .content-wrapper {
     background-color: var(--background) !important;
-    padding: 10px 0 !important;
+    padding: 10px 18px !important;
 }
 
 .container-fluid {
-    max-width: 1440px !important;
-    margin: 0 auto;
+    max-width: 100% !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
 }
 
-/* ========================================================
-   Card Component - Solid Flat Unimus Style
-   ======================================================== */
+/* Flatten Top-Level Page Cards so content sits directly on the canvas */
+.card.card-primary.card-outline {
+    background: transparent !important;
+    border: none !important;
+    border-top: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin-bottom: 12px;
+}
+
+.card.card-primary.card-outline > .card-header {
+    background: transparent !important;
+    border-bottom: none !important;
+    padding: 6px 0 8px 0 !important;
+    min-height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card.card-primary.card-outline > .card-header > .card-title {
+    color: #5c8ee6 !important;
+    font-size: 18px !important;
+    font-weight: 400 !important;
+    letter-spacing: 0 !important;
+    margin: 0 !important;
+}
+
+.card.card-primary.card-outline > .card-header > .card-title i {
+    font-size: 15px;
+    opacity: 0.85;
+}
+
+[data-theme="light"] .card.card-primary.card-outline > .card-header > .card-title,
+body:not(.dark-mode) .card.card-primary.card-outline > .card-header > .card-title {
+    color: #2b5797 !important;
+}
+
+.card.card-primary.card-outline > .card-body {
+    padding: 2px 0 !important;
+}
+
+/* Inner / Secondary Cards (Forms, Charts, Panels) */
 .card {
     background: var(--card) !important;
     border: 1px solid var(--border) !important;
-    border-radius: var(--radius-lg) !important;
+    border-radius: var(--radius) !important;
     box-shadow: none !important;
     margin-bottom: 12px;
-    overflow: hidden;
-}
-
-.card.card-primary.card-outline {
-    border-top: 2px solid var(--primary) !important;
 }
 
 .card-header {
-    background: #181c21 !important;
+    background: #181b20 !important;
     border-bottom: 1px solid var(--border) !important;
-    padding: 6px 12px !important;
+    padding: 7px 12px !important;
     min-height: 34px;
     display: flex;
     align-items: center;
@@ -350,7 +392,7 @@ body {
 
 .card-title {
     color: #5c8ee6 !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
     font-size: 13.5px !important;
     margin-bottom: 0;
     display: flex;
@@ -367,56 +409,94 @@ body {
     color: var(--foreground) !important;
 }
 
-/* Section titles */
+/* Section Titles */
 .section-title {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 700;
+    font-size: 12px;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
     color: #5c8ee6 !important;
-    margin-bottom: 10px;
-}
-
-[data-theme="light"] .section-title, body:not(.dark-mode) .section-title {
-    color: #656d76 !important;
+    margin-bottom: 8px;
+    text-align: left !important;
 }
 
 /* ========================================================
-   KPI Card Component - Flat Sober Technical Metrics
+   Flush Top Tabs (Exact Unimus [Backups | Filter | Flow] Style)
+   ======================================================== */
+.nav-tabs {
+    border-bottom: 1px solid var(--border) !important;
+    margin-bottom: 14px !important;
+    gap: 2px;
+}
+
+.nav-tabs .nav-link {
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    color: var(--muted-foreground) !important;
+    background: #171a1e !important;
+    border: 1px solid #2a2e35 !important;
+    border-bottom-color: var(--border) !important;
+    border-radius: 2px 2px 0 0 !important;
+    padding: 6px 14px !important;
+    margin-bottom: -1px;
+    transition: var(--transition);
+}
+
+.nav-tabs .nav-link:hover {
+    color: #e2e6ec !important;
+    background: #20242a !important;
+}
+
+.nav-tabs .nav-link.active {
+    color: #e6edf3 !important;
+    background: var(--background) !important;
+    border-color: #3a404a #3a404a var(--background) !important;
+    font-weight: 500 !important;
+}
+
+[data-theme="light"] .nav-tabs .nav-link, body:not(.dark-mode) .nav-tabs .nav-link {
+    background: #eef1f4 !important;
+    border-color: #d0d7de !important;
+}
+
+[data-theme="light"] .nav-tabs .nav-link.active, body:not(.dark-mode) .nav-tabs .nav-link.active {
+    background: var(--background) !important;
+    border-color: #d0d7de #d0d7de var(--background) !important;
+    color: #24292f !important;
+}
+
+/* ========================================================
+   KPI Cards - Clean, Flat Technical Boxes
    ======================================================== */
 .kpi-card {
     background: var(--card) !important;
     border: 1px solid var(--border) !important;
-    border-radius: var(--radius-lg) !important;
-    padding: 10px 12px !important;
+    border-radius: var(--radius) !important;
+    padding: 10px 14px !important;
     box-shadow: none !important;
-    position: relative;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 78px;
+    min-height: 72px;
     text-decoration: none !important;
     color: var(--foreground) !important;
     transition: var(--transition);
 }
 
 .kpi-card:hover {
-    border-color: var(--primary) !important;
-    background: var(--secondary) !important;
+    border-color: #4a5260 !important;
+    background: #20242a !important;
 }
 
-.kpi-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+[data-theme="light"] .kpi-card:hover, body:not(.dark-mode) .kpi-card:hover {
+    background: #f3f5f8 !important;
 }
 
 .kpi-card-title {
-    font-size: 10.5px !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
     color: var(--muted-foreground) !important;
     margin-bottom: 4px;
     display: flex;
@@ -427,12 +507,12 @@ body {
 .kpi-card-value-row {
     display: flex;
     align-items: baseline;
-    gap: 6px;
+    gap: 8px;
 }
 
 .kpi-card-value {
-    font-size: 20px !important;
-    font-weight: 700 !important;
+    font-size: 19px !important;
+    font-weight: 600 !important;
     color: var(--foreground) !important;
     line-height: 1;
     font-variant-numeric: tabular-nums;
@@ -442,7 +522,6 @@ body {
     font-size: 11px;
     color: var(--muted-foreground);
     margin-top: 4px;
-    line-height: 1.25;
 }
 
 .kpi-card-watermark {
@@ -450,42 +529,285 @@ body {
 }
 
 /* ========================================================
-   ActionBadge & Status Pills (Compact 3px Rectangular)
+   Sober Monochrome Unimus Toolbar Buttons
    ======================================================== */
-.badge-gpon {
+.btn {
+    font-family: inherit !important;
+    font-weight: 400 !important;
+    padding: 3px 11px !important;
+    height: 27px !important;
+    font-size: 12px !important;
+    border-radius: 2px !important;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 2px 7px;
+    justify-content: center;
+    gap: 5px;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: var(--transition);
+    line-height: 1.2 !important;
+}
+
+.btn:hover {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.btn:disabled, .btn.disabled {
+    opacity: 0.45 !important;
+    cursor: not-allowed;
+}
+
+/* Dark Mode Uniform Unimus Buttons (Zero Rainbow Overload) */
+[data-theme="dark"] .btn-secondary,
+[data-theme="dark"] .btn-default,
+[data-theme="dark"] .btn-outline-secondary,
+[data-theme="dark"] .btn-outline-info,
+[data-theme="dark"] .btn-info,
+body.dark-mode .btn-secondary,
+body.dark-mode .btn-default,
+body.dark-mode .btn-outline-secondary,
+body.dark-mode .btn-outline-info,
+body.dark-mode .btn-info {
+    background: #23262c !important;
+    border: 1px solid #444953 !important;
+    color: #c9cdd4 !important;
+}
+
+[data-theme="dark"] .btn-secondary:hover,
+[data-theme="dark"] .btn-default:hover,
+[data-theme="dark"] .btn-outline-secondary:hover,
+[data-theme="dark"] .btn-outline-info:hover,
+[data-theme="dark"] .btn-info:hover,
+body.dark-mode .btn-secondary:hover,
+body.dark-mode .btn-default:hover,
+body.dark-mode .btn-outline-secondary:hover,
+body.dark-mode .btn-outline-info:hover,
+body.dark-mode .btn-info:hover {
+    background: #2c313a !important;
+    border-color: #5c6472 !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-primary,
+[data-theme="dark"] .btn-outline-primary,
+body.dark-mode .btn-primary,
+body.dark-mode .btn-outline-primary {
+    background: #222b3a !important;
+    border: 1px solid #456aa8 !important;
+    color: #d6e4ff !important;
+}
+
+[data-theme="dark"] .btn-primary:hover,
+[data-theme="dark"] .btn-outline-primary:hover,
+body.dark-mode .btn-primary:hover,
+body.dark-mode .btn-outline-primary:hover {
+    background: #2c3d59 !important;
+    border-color: #5c8ee6 !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-success,
+[data-theme="dark"] .btn-outline-success,
+body.dark-mode .btn-success,
+body.dark-mode .btn-outline-success {
+    background: #1d2922 !important;
+    border: 1px solid #2e6b40 !important;
+    color: #8ce09b !important;
+}
+
+[data-theme="dark"] .btn-success:hover,
+[data-theme="dark"] .btn-outline-success:hover,
+body.dark-mode .btn-success:hover,
+body.dark-mode .btn-outline-success:hover {
+    background: #24382c !important;
+    border-color: #3fb950 !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-danger,
+[data-theme="dark"] .btn-outline-danger,
+body.dark-mode .btn-danger,
+body.dark-mode .btn-outline-danger {
+    background: #2b1e20 !important;
+    border: 1px solid #7d2e33 !important;
+    color: #ff8e88 !important;
+}
+
+[data-theme="dark"] .btn-danger:hover,
+[data-theme="dark"] .btn-outline-danger:hover,
+body.dark-mode .btn-danger:hover,
+body.dark-mode .btn-outline-danger:hover {
+    background: #3d2528 !important;
+    border-color: #f85149 !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-warning,
+[data-theme="dark"] .btn-outline-warning,
+body.dark-mode .btn-warning,
+body.dark-mode .btn-outline-warning {
+    background: #2b261b !important;
+    border: 1px solid #7a5c1d !important;
+    color: #ebd082 !important;
+}
+
+/* Light Mode Buttons */
+[data-theme="light"] .btn-primary, body:not(.dark-mode) .btn-primary {
+    background: #3162b2 !important;
+    border: 1px solid #264e91 !important;
+    color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-secondary,
+[data-theme="light"] .btn-default,
+[data-theme="light"] .btn-outline-secondary,
+body:not(.dark-mode) .btn-secondary {
+    background: #f6f8fa !important;
+    border: 1px solid #d0d7de !important;
+    color: #24292f !important;
+}
+
+.btn-sm, .btn-group-sm > .btn {
+    padding: 2px 9px !important;
+    height: 25px !important;
+    font-size: 11.5px !important;
+}
+
+.btn-xs {
+    padding: 1px 6px !important;
+    height: 22px !important;
+    font-size: 11px !important;
+}
+
+/* ========================================================
+   Framed Data Grids (Exact Unimus Tables)
+   ======================================================== */
+.table-responsive {
+    border: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+    background: var(--card) !important;
+}
+
+.table {
+    margin-bottom: 0 !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+}
+
+.table thead th {
+    background-color: var(--card) !important;
+    color: #9aa0a6 !important;
+    font-size: 11.5px !important;
+    font-weight: 400 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    border-top: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    border-left: none !important;
+    border-right: none !important;
+    padding: 7px 12px !important;
+    height: 32px;
+    white-space: nowrap;
+}
+
+[data-theme="light"] .table thead th, body:not(.dark-mode) .table thead th {
+    background-color: #f1f3f5 !important;
+    color: #57606a !important;
+}
+
+.table tbody tr {
+    transition: background-color 0.08s ease;
+}
+
+.table tbody tr:hover {
+    background-color: #242a34 !important;
+}
+
+[data-theme="light"] .table tbody tr:hover, body:not(.dark-mode) .table tbody tr:hover {
+    background-color: #f3f6fa !important;
+}
+
+.table td {
+    vertical-align: middle !important;
+    border-top: none !important;
+    border-bottom: 1px solid #242830 !important;
+    border-left: none !important;
+    border-right: none !important;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    color: var(--foreground) !important;
+}
+
+[data-theme="light"] .table td, body:not(.dark-mode) .table td {
+    border-bottom-color: #e6eaef !important;
+}
+
+.table td code {
+    background: transparent !important;
+    color: #c9cdd4 !important;
+    padding: 0 !important;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
+    font-size: 11.5px !important;
+}
+
+[data-theme="light"] .table td code, body:not(.dark-mode) .table td code {
+    color: #24292f !important;
+}
+
+/* DataTables Controls - Compact & Integrated */
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+    padding: 6px 10px !important;
+    font-size: 11.5px !important;
+    color: var(--muted-foreground) !important;
+}
+
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate {
+    padding: 6px 10px !important;
+    font-size: 11.5px !important;
+    color: var(--muted-foreground) !important;
+}
+
+/* ========================================================
+   Restrained Minimal Status Badges (No Visual Noise)
+   ======================================================== */
+.badge-gpon, .badge-pill-soft {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 6px;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.2;
-    border-radius: var(--radius);
+    border-radius: 2px !important;
     white-space: nowrap;
     border: 1px solid transparent;
 }
 
 .badge-gpon-info {
-    background-color: var(--primary-subtle);
-    color: var(--primary);
-    border-color: rgba(74, 120, 196, 0.25);
+    background-color: rgba(82, 130, 214, 0.12);
+    color: #7ea8f2;
+    border-color: rgba(82, 130, 214, 0.25);
 }
 
-.badge-gpon-success {
-    background-color: var(--success-subtle);
-    color: var(--success);
+.badge-gpon-success, .badge-pill-soft.success {
+    background-color: rgba(63, 185, 80, 0.1);
+    color: #56d364;
     border-color: rgba(63, 185, 80, 0.25);
 }
 
-.badge-gpon-warning {
-    background-color: var(--warning-subtle);
-    color: var(--warning);
+.badge-gpon-warning, .badge-pill-soft.warning {
+    background-color: rgba(210, 153, 34, 0.1);
+    color: #e3b341;
     border-color: rgba(210, 153, 34, 0.25);
 }
 
-.badge-gpon-error {
-    background-color: var(--error-subtle);
-    color: var(--error);
+.badge-gpon-error, .badge-pill-soft.danger {
+    background-color: rgba(248, 81, 73, 0.1);
+    color: #ff7b72;
     border-color: rgba(248, 81, 73, 0.25);
 }
 
@@ -503,74 +825,7 @@ body {
 .status-dot.muted { background-color: var(--muted-foreground); }
 
 /* ========================================================
-   Tables (High Density Unimus Look)
-   ======================================================== */
-.table-responsive {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--card);
-}
-
-.table {
-    margin-bottom: 0 !important;
-    border-collapse: collapse !important;
-    width: 100% !important;
-}
-
-.table thead th {
-    background-color: #181c21 !important;
-    color: #8b949e !important;
-    font-size: 11px !important;
-    font-weight: 600 !important;
-    text-transform: none !important;
-    letter-spacing: 0 !important;
-    border-top: none !important;
-    border-bottom: 1px solid var(--border) !important;
-    border-left: none !important;
-    border-right: none !important;
-    padding: 6px 10px !important;
-    height: 32px;
-    white-space: nowrap;
-}
-
-[data-theme="light"] .table thead th, body:not(.dark-mode) .table thead th {
-    background-color: #f1f3f5 !important;
-    color: #57606a !important;
-}
-
-.table tbody tr {
-    transition: background-color 0.1s ease;
-    border-bottom: 1px solid var(--border);
-}
-
-.table tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.035) !important;
-}
-
-[data-theme="light"] .table tbody tr:hover, body:not(.dark-mode) .table tbody tr:hover {
-    background-color: #f6f8fa !important;
-}
-
-.table td {
-    vertical-align: middle !important;
-    border-top: none !important;
-    border-bottom: 1px solid var(--border) !important;
-    border-left: none !important;
-    border-right: none !important;
-    padding: 5px 10px !important;
-    font-size: 12px !important;
-    line-height: 1.35 !important;
-    color: var(--foreground) !important;
-}
-
-/* Monospace for IPs, ports, commands */
-.table td code, .table td .font-mono, td a[href*="router_details"] {
-    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace !important;
-    font-size: 11.5px !important;
-}
-
-/* ========================================================
-   Forms, Inputs & Search Bar (Unimus Style)
+   Forms, Inputs & Inline Search
    ======================================================== */
 .form-group {
     margin-bottom: 10px !important;
@@ -578,26 +833,30 @@ body {
 
 .form-group label {
     margin-bottom: 3px;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 11.5px;
+    font-weight: 500;
     text-transform: none;
     color: var(--muted-foreground);
 }
 
 .form-control, .custom-select, .dataTables_wrapper .dataTables_filter input {
     padding: 3px 8px !important;
-    height: 28px !important;
+    height: 27px !important;
     font-size: 12px !important;
-    border-radius: var(--radius) !important;
-    border: 1px solid var(--border) !important;
-    background-color: #1a1e23 !important;
+    border-radius: 2px !important;
+    border: 1px solid #353a44 !important;
+    background-color: #16181c !important;
     color: var(--foreground) !important;
     box-shadow: none !important;
     transition: var(--transition);
 }
 
-[data-theme="light"] .form-control, 
-[data-theme="light"] .custom-select, 
+textarea.form-control {
+    height: auto !important;
+}
+
+[data-theme="light"] .form-control,
+[data-theme="light"] .custom-select,
 [data-theme="light"] .dataTables_wrapper .dataTables_filter input,
 body:not(.dark-mode) .form-control {
     background-color: #ffffff !important;
@@ -605,115 +864,33 @@ body:not(.dark-mode) .form-control {
 }
 
 .form-control:focus, .custom-select:focus, .dataTables_wrapper .dataTables_filter input:focus {
-    border-color: var(--primary) !important;
-    background-color: #1f242a !important;
+    border-color: #5282d6 !important;
+    background-color: #1a1d22 !important;
     outline: none !important;
     box-shadow: none !important;
 }
 
 /* ========================================================
-   Buttons - Clean, Flat, Utilitarian (No 3D effects)
-   ======================================================== */
-.btn {
-    font-family: inherit !important;
-    font-weight: 500 !important;
-    padding: 3px 10px !important;
-    height: 28px !important;
-    font-size: 11.5px !important;
-    border-radius: var(--radius) !important;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    box-shadow: none !important;
-    transform: none !important;
-    transition: var(--transition);
-    line-height: 1.2 !important;
-}
-
-.btn:hover {
-    transform: none !important;
-    box-shadow: none !important;
-}
-
-.btn-primary {
-    background: #3665af !important;
-    border: 1px solid #4a78c4 !important;
-    color: #ffffff !important;
-}
-
-.btn-primary:hover {
-    background: #2e5797 !important;
-    border-color: #3b68af !important;
-}
-
-.btn-secondary, .btn-default, .btn-outline-secondary {
-    background: #22262c !important;
-    border: 1px solid #363c46 !important;
-    color: #b8c0cc !important;
-}
-
-.btn-secondary:hover, .btn-default:hover, .btn-outline-secondary:hover {
-    background: #2a3038 !important;
-    border-color: #49515e !important;
-    color: #ffffff !important;
-}
-
-[data-theme="light"] .btn-secondary,
-[data-theme="light"] .btn-default,
-[data-theme="light"] .btn-outline-secondary,
-body:not(.dark-mode) .btn-secondary {
-    background: #f6f8fa !important;
-    border-color: #d0d7de !important;
-    color: #24292f !important;
-}
-
-.btn-success {
-    background: #238636 !important;
-    border: 1px solid #2ea043 !important;
-    color: #ffffff !important;
-}
-
-.btn-danger {
-    background: #da3633 !important;
-    border: 1px solid #f85149 !important;
-    color: #ffffff !important;
-}
-
-.btn-sm, .btn-group-sm > .btn {
-    padding: 2px 8px !important;
-    height: 26px !important;
-    font-size: 11px !important;
-}
-
-.btn-xs {
-    padding: 1px 6px !important;
-    height: 22px !important;
-    font-size: 10.5px !important;
-}
-
-/* ========================================================
-   Dropdown Menus & Modals
+   Dropdowns, Modals & Pagination
    ======================================================== */
 .dropdown-menu {
     background: #1c2025 !important;
-    border: 1px solid #2c3239 !important;
-    border-radius: var(--radius-lg) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 2px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
     padding: 4px !important;
 }
 
 [data-theme="light"] .dropdown-menu, body:not(.dark-mode) .dropdown-menu {
     background: #ffffff !important;
     border-color: #d0d7de !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }
 
 .dropdown-item {
     font-size: 12px !important;
     padding: 5px 10px !important;
     color: var(--foreground) !important;
-    border-radius: var(--radius);
+    border-radius: 2px;
 }
 
 .dropdown-item:hover {
@@ -724,24 +901,20 @@ body:not(.dark-mode) .btn-secondary {
 .modal-content {
     background: var(--card) !important;
     border: 1px solid var(--border) !important;
-    border-radius: var(--radius-lg) !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    border-radius: 2px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55) !important;
 }
 
 .modal-header {
-    background: #181c21 !important;
+    background: #181b20 !important;
     border-bottom: 1px solid var(--border) !important;
     padding: 8px 14px !important;
 }
 
-[data-theme="light"] .modal-header, body:not(.dark-mode) .modal-header {
-    background: #f6f8fa !important;
-}
-
 .modal-title {
     font-size: 13px !important;
-    font-weight: 600 !important;
-    color: var(--foreground) !important;
+    font-weight: 500 !important;
+    color: #5c8ee6 !important;
 }
 
 .modal-body {
@@ -753,96 +926,27 @@ body:not(.dark-mode) .btn-secondary {
     padding: 8px 14px !important;
 }
 
-/* ========================================================
-   Nav Tabs - Classic Unimus Top Navigation Style
-   ======================================================== */
-.nav-tabs {
-    border-bottom: 1px solid var(--border) !important;
-    margin-bottom: 12px;
-}
-
-.nav-tabs .nav-link {
-    font-size: 12px !important;
-    font-weight: 500 !important;
-    color: var(--muted-foreground) !important;
-    border: 1px solid transparent !important;
-    border-radius: 3px 3px 0 0 !important;
-    padding: 6px 14px !important;
-    background: transparent;
-}
-
-.nav-tabs .nav-link:hover {
-    color: var(--foreground) !important;
-    border-color: var(--border) var(--border) transparent !important;
-}
-
-.nav-tabs .nav-link.active {
-    color: #79a6f2 !important;
-    background: #1c2025 !important;
-    border-color: var(--border) var(--border) #1c2025 !important;
-    font-weight: 600 !important;
-}
-
-[data-theme="light"] .nav-tabs .nav-link.active, body:not(.dark-mode) .nav-tabs .nav-link.active {
-    background: #ffffff !important;
-    border-color: #d0d7de #d0d7de #ffffff !important;
-    color: #24292f !important;
-}
-
-/* ========================================================
-   Soft Pill Badges (router_list.html)
-   ======================================================== */
-.badge-pill-soft {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 7px;
-    font-size: 11px;
-    font-weight: 600;
-    border-radius: var(--radius);
-    line-height: 1.2;
-}
-
-.badge-pill-soft.success {
-    background: var(--success-subtle);
-    color: var(--success);
-    border: 1px solid rgba(63, 185, 80, 0.25);
-}
-
-.badge-pill-soft.danger {
-    background: var(--error-subtle);
-    color: var(--error);
-    border: 1px solid rgba(248, 81, 73, 0.25);
-}
-
-.badge-pill-soft.warning {
-    background: var(--warning-subtle);
-    color: var(--warning);
-    border: 1px solid rgba(210, 153, 34, 0.25);
-}
-
-/* Progress bar */
 .progress {
-    height: 6px !important;
+    height: 5px !important;
     background-color: var(--secondary) !important;
-    border-radius: 2px !important;
+    border-radius: 1px !important;
 }
 
 .progress-bar {
     background-color: var(--primary) !important;
 }
 
-/* DataTables pagination */
 .page-item .page-link {
     background: var(--card) !important;
     border-color: var(--border) !important;
     color: var(--muted-foreground) !important;
     font-size: 11.5px !important;
     padding: 3px 8px !important;
+    border-radius: 0 !important;
 }
 
 .page-item.active .page-link {
-    background: #3665af !important;
-    border-color: #4a78c4 !important;
+    background: #253042 !important;
+    border-color: #456aa8 !important;
     color: #ffffff !important;
 }
