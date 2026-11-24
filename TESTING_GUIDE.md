@@ -8,13 +8,13 @@ Ejecuta estos comandos en la terminal de Linux para confirmar que los contenedor
 
 *   **Estado de Contenedores:**
     ```bash
-    docker compose -f docker-compose.megacom.yml ps
+    docker compose -f docker-compose.netvault.yml ps
     ```
-    *Resultado esperado:* Todos los contenedores (`megacom-app`, `megacom-db`, `megacom-web`) deben mostrar el estado `Up` o `Healthy`.
+    *Resultado esperado:* Todos los contenedores (`netvault-app`, `netvault-db`, `netvault-web`) deben mostrar el estado `Up` o `Healthy`.
 
 *   **Logs de la Aplicación:**
     ```bash
-    docker logs megacom-app
+    docker logs netvault-app
     ```
     *Resultado esperado:* No deben aparecer errores de conexión a la base de datos. Debes ver mensajes indicando que Gunicorn está escuchando en el puerto 8001.
 

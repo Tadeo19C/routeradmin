@@ -1,24 +1,24 @@
 services:
-  megacom-db:
-    container_name: megacom-db
+  netvault-db:
+    container_name: netvault-db
     restart: unless-stopped
     image: postgres:16-bookworm
     security_opt:
       - seccomp:unconfined
     volumes:
-      - megacom_postgres_data:/var/lib/postgresql/data
+      - netvault_postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-megacom}
+      - POSTGRES_DB=${POSTGRES_DB:-netvault}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-megacom} || pg_isready"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-netvault} || pg_isready"]
       interval: 5s
       timeout: 5s
       retries: 15
 
-  megacom-app:
-    container_name: megacom-app
+  netvault-app:
+    container_name: netvault-app
     restart: unless-stopped
     build: .
     security_opt:
@@ -29,26 +29,26 @@ services:
       - DATABASE_ENGINE=postgres
       - COMPOSE_VERSION=08a
       - COMPOSE_TYPE=with-postgres
-      - POSTGRES_HOST=megacom-db
+      - POSTGRES_HOST=netvault-db
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-megacom}
+      - POSTGRES_DB=${POSTGRES_DB:-netvault}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
       - TZ=${TIMEZONE:-America/Managua}
       - DISABLE_EMBEDDED_SCHEDULER=1
     volumes:
-      - megacom_media:/var/lib/routerfleet/
-      - megacom_static:/app_static_files/
-      - megacom_secrets:/app_secrets/
+      - netvault_media:/var/lib/routerfleet/
+      - netvault_static:/app_static_files/
+      - netvault_secrets:/app_secrets/
     ports:
       - "${WEB_PORT_PRIMARY:-80}:80"
       - "${WEB_PORT_SECONDARY:-81}:81"
     command: /bin/bash /app/init.sh
     depends_on:
-      - megacom-db
+      - netvault-db
 
-  megacom-scheduler:
-    container_name: megacom-scheduler
+  netvault-scheduler:
+    container_name: netvault-scheduler
     restart: unless-stopped
     build: .
     security_opt:
@@ -60,21 +60,25 @@ services:
       - DATABASE_ENGINE=postgres
       - COMPOSE_VERSION=08a
       - COMPOSE_TYPE=with-postgres
-      - POSTGRES_HOST=megacom-db
+      - POSTGRES_HOST=netvault-db
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-megacom}
+      - POSTGRES_DB=${POSTGRES_DB:-netvault}
       - POSTGRES_USER=${POSTGRES_USER:-admin}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
       - TZ=${TIMEZONE:-America/Managua}
     volumes:
-      - megacom_media:/var/lib/routerfleet/
-      - megacom_secrets:/app_secrets/
+      - netvault_media:/var/lib/routerfleet/
+      - netvault_secrets:/app_secrets/
     depends_on:
-      - megacom-db
-      - megacom-app
+      - netvault-db
+      - netvault-app
 
 volumes:
-  megacom_postgres_data:
-  megacom_media:
-  megacom_static:
-  megacom_secrets:
+  netvault_postgres_data:
+    name: ${NETVAULT_DB_VOLUME:-netvault_postgres_data}
+  netvault_media:
+    name: ${NETVAULT_MEDIA_VOLUME:-netvault_media}
+  netvault_static:
+    name: ${NETVAULT_STATIC_VOLUME:-netvault_static}
+  netvault_secrets:
+    name: ${NETVAULT_SECRETS_VOLUME:-netvault_secrets}

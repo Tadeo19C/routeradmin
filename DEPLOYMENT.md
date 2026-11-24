@@ -25,7 +25,7 @@ Hemos proporcionado un script automatizado para manejar la instalación en conte
 
 Si prefieres ejecutarlo manualmente, usa el siguiente comando:
 ```bash
-docker-compose -f docker-compose.megacom.yml up -d --build
+docker-compose -f docker-compose.netvault.yml up -d --build
 ```
 
 4.  **Configuración Inicial**:

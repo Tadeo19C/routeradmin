@@ -24,11 +24,11 @@ Sigue estos pasos para desplegar **BACKUP WEB** en tu servidor:
 ### Paso 1: Preparar el Entorno
 Crea un directorio para el proyecto y entra en él.
 ```bash
-mkdir megacom && cd megacom
+mkdir netvault && cd netvault
 ```
 
 ### Paso 2: Obtener los Archivos de Configuración
-Puedes descargar el paquete ZIP preparado o clonar el repositorio. Asegúrate de tener el archivo `docker-compose.megacom.yml`.
+Puedes descargar el paquete ZIP preparado o clonar el repositorio. Asegúrate de tener el archivo `docker-compose.netvault.yml`.
 
 ### Paso 3: Configurar el archivo `.env`
 Crea un archivo `.env` basado en `.env.example` con tus variables:

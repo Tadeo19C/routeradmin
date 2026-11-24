@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# MEGACOM - Script de Configuración Profesional
+# NetVault - Script de Configuración Profesional
 # Construye y levanta la plataforma completa con Docker Compose.
 
 echo "================================================="
-echo "       MEGACOM - Configuración Profesional       "
+echo "       NetVault - Configuración Profesional       "
 echo "================================================="
 
 # Verificar Docker
@@ -33,7 +33,7 @@ if [ ! -f .env ]; then
 fi
 
 # Construir e iniciar
-echo "Construyendo e iniciando contenedores MEGACOM..."
+echo "Construyendo e iniciando contenedores NetVault..."
 echo "  → PostgreSQL 16 (base de datos)"
 echo "  → Redis 7 (broker de tareas)"
 echo "  → App Django + Gunicorn"
@@ -41,11 +41,11 @@ echo "  → Celery Worker (procesamiento asíncrono)"
 echo "  → Celery Beat (programador de tareas)"
 echo "  → Nginx (servidor web)"
 
-$DOCKER_COMPOSE_CMD -f docker-compose.megacom.yml build --no-cache
-$DOCKER_COMPOSE_CMD -f docker-compose.megacom.yml up -d
+$DOCKER_COMPOSE_CMD -f docker-compose.NetVault.yml build --no-cache
+$DOCKER_COMPOSE_CMD -f docker-compose.NetVault.yml up -d
 
 echo "================================================="
-echo "¡MEGACOM se está desplegando!"
+echo "¡NetVault se está desplegando!"
 echo "Espera unos segundos a que la base de datos inicie."
 echo "Accede a la plataforma en: http://tu-ip-servidor"
 echo "================================================="

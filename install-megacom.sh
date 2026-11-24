@@ -1,18 +1,18 @@
 #!/bin/bash
 
-# MEGACOM - Instalador Automático "Todo en Uno"
-# Este script descarga, extrae y configura la última versión de MEGACOM.
+# NetVault - Instalador Automático "Todo en Uno"
+# Este script descarga, extrae y configura la última versión de NetVault.
 
 set -e
 
 echo "================================================="
-echo "        MEGACOM - Instalador Profesional         "
+echo "        NetVault - Instalador Profesional         "
 echo "================================================="
 
 # Variables
 REPO_URL="https://github.com/Tadeo19C/routeradmin/archive/refs/heads/master.zip"
 INSTALL_DIR="routeradmin-master" # GitHub zip extraction folder name usually
-ZIP_FILE="megacom.zip"
+ZIP_FILE="NetVault.zip"
 
 # 1. Verificar dependencias básicas
 echo "[1/5] Verificando dependencias locales..."
@@ -52,8 +52,8 @@ curl -L $REPO_URL -o $ZIP_FILE
 
 # Limpieza preventiva de contenedores viejos
 echo "Limpiando instalaciones previas si existen..."
-docker stop megacom-app megacom-web megacom-db megacom-redis megacom-celery-worker megacom-celery-beat 2>/dev/null || true
-docker rm megacom-app megacom-web megacom-db megacom-redis megacom-celery-worker megacom-celery-beat 2>/dev/null || true
+docker stop NetVault-app NetVault-web NetVault-db NetVault-redis NetVault-celery-worker NetVault-celery-beat 2>/dev/null || true
+docker rm NetVault-app NetVault-web NetVault-db NetVault-redis NetVault-celery-worker NetVault-celery-beat 2>/dev/null || true
 
 # 3. Extraer archivos
 echo "[3/5] Extrayendo archivos..."
@@ -76,5 +76,5 @@ echo "[4/5] Iniciando el proceso de instalación automática..."
 
 echo "================================================="
 echo "¡INSTALACIÓN COMPLETADA EXITOSAMENTE!"
-echo "Accede a MEGACOM en: http://tu-ip-servidor"
+echo "Accede a NetVault en: http://tu-ip-servidor"
 echo "================================================="

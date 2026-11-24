@@ -1,0 +1,84 @@
+services:
+  netvault-db:
+    container_name: netvault-db
+    restart: unless-stopped
+    image: postgres:16-bookworm
+    security_opt:
+      - seccomp:unconfined
+    volumes:
+      - netvault_postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-netvault}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-netvault} || pg_isready"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  netvault-app:
+    container_name: netvault-app
+    restart: unless-stopped
+    build: .
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - SERVER_ADDRESS=${SERVER_ADDRESS:-0.0.0.0}
+      - DEBUG_MODE=False
+      - DATABASE_ENGINE=postgres
+      - COMPOSE_VERSION=08a
+      - COMPOSE_TYPE=with-postgres
+      - POSTGRES_HOST=netvault-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-netvault}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
+      - TZ=${TIMEZONE:-America/Managua}
+      - DISABLE_EMBEDDED_SCHEDULER=1
+    volumes:
+      - netvault_media:/var/lib/routerfleet/
+      - netvault_static:/app_static_files/
+      - netvault_secrets:/app_secrets/
+    ports:
+      - "${WEB_PORT_PRIMARY:-80}:80"
+      - "${WEB_PORT_SECONDARY:-81}:81"
+    command: /bin/bash /app/init.sh
+    depends_on:
+      - netvault-db
+
+  netvault-scheduler:
+    container_name: netvault-scheduler
+    restart: unless-stopped
+    build: .
+    security_opt:
+      - seccomp:unconfined
+    command: python manage.py run_scheduler --interval 45
+    environment:
+      - SERVER_ADDRESS=${SERVER_ADDRESS:-0.0.0.0}
+      - DEBUG_MODE=False
+      - DATABASE_ENGINE=postgres
+      - COMPOSE_VERSION=08a
+      - COMPOSE_TYPE=with-postgres
+      - POSTGRES_HOST=netvault-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-netvault}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
+      - TZ=${TIMEZONE:-America/Managua}
+    volumes:
+      - netvault_media:/var/lib/routerfleet/
+      - netvault_secrets:/app_secrets/
+    depends_on:
+      - netvault-db
+      - netvault-app
+
+volumes:
+  netvault_postgres_data:
+    name: ${NETVAULT_DB_VOLUME:-netvault_postgres_data}
+  netvault_media:
+    name: ${NETVAULT_MEDIA_VOLUME:-netvault_media}
+  netvault_static:
+    name: ${NETVAULT_STATIC_VOLUME:-netvault_static}
+  netvault_secrets:
+    name: ${NETVAULT_SECRETS_VOLUME:-netvault_secrets}

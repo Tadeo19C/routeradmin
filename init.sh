@@ -30,7 +30,7 @@ PYCODE
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput || true
 
-echo "[*] Iniciando servidor BACKUP WEB..."
+echo "[*] Iniciando servidor NetVault..."
 exec gunicorn routerfleet.wsgi:application \
   --bind 0.0.0.0:80 \
   --bind 0.0.0.0:81 \

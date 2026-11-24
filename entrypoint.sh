@@ -11,9 +11,9 @@ if [ -z "$SERVER_ADDRESS" ]; then
     SERVER_ADDRESS="0.0.0.0"
 fi
 
-POSTGRES_HOST="${POSTGRES_HOST:-megacom-db}"
+POSTGRES_HOST="${POSTGRES_HOST:-netvault-db}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
-POSTGRES_DB="${POSTGRES_DB:-megacom}"
+POSTGRES_DB="${POSTGRES_DB:-netvault}"
 POSTGRES_USER="${POSTGRES_USER:-admin}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-password123}"
 
@@ -41,10 +41,11 @@ read -r WORKING_DB WORKING_USER WORKING_PASS < <(python - <<PYCODE
 import psycopg2
 import os
 
-host = os.environ.get("POSTGRES_HOST", "megacom-db")
+host = os.environ.get("POSTGRES_HOST", "netvault-db")
 port = int(os.environ.get("POSTGRES_PORT", "5432"))
 candidates = [
-    (os.environ.get("POSTGRES_DB", "megacom"), os.environ.get("POSTGRES_USER", "admin"), os.environ.get("POSTGRES_PASSWORD", "password123")),
+    (os.environ.get("POSTGRES_DB", "netvault"), os.environ.get("POSTGRES_USER", "admin"), os.environ.get("POSTGRES_PASSWORD", "password123")),
+    ("netvault", "admin", "password123"),
     ("megacom", "admin", "password123"),
     ("routerfleet", "routerfleet", "your_database_password"),
     ("postgres", "admin", "password123"),

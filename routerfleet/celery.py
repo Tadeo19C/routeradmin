@@ -1,5 +1,5 @@
 """
-Celery configuration for the MEGACOM platform.
+Celery configuration for the NetVault platform.
 This module initializes Celery for asynchronous task processing,
 enabling enterprise-scale backup operations for 1000+ routers.
 """
