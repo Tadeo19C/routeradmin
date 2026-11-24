@@ -302,28 +302,21 @@ def view_download_csv_template(request):
 
 @login_required()
 def view_export_routers_csv(request):
-    """Exporta todos los equipos actuales en formato CSV compatible con Excel y con la herramienta de importación."""
+    """Exporta todos los equipos actuales en formato Excel simple, idéntico a la plantilla."""
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=30).exists():
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
-    response['Content-Disposition'] = 'attachment; filename="inventario_equipos_backupweb.csv"'
-    writer = csv.writer(response, quoting=csv.QUOTE_ALL)
-    writer.writerow([
-        'name', 'username', 'password', 'address', 'port',
-        'router_type', 'connection_protocol', 'backup_profile', 'router_group', 'monitoring'
-    ])
-    for r in Router.objects.all().prefetch_related('routergroup_set', 'backup_profile').order_by('name'):
+    response['Content-Disposition'] = 'attachment; filename="inventario_equipos.csv"'
+    writer = csv.writer(response, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(['Nombre', 'IP', 'Usuario', 'Contraseña', 'Marca', 'Nodo'])
+    for r in Router.objects.all().prefetch_related('routergroup_set').order_by('name'):
         grp = r.routergroup_set.first()
         writer.writerow([
             r.name,
-            r.username or '',
-            r.decrypted_password or '',
             r.address,
-            str(r.port),
-            r.router_type,
-            getattr(r, 'connection_protocol', 'ssh') or 'ssh',
-            r.backup_profile.name if r.backup_profile else 'default',
-            grp.name if grp else '',
-            'true' if r.monitoring else 'false',
+            r.username or 'admin',
+            r.decrypted_password or '',
+            r.router_type or 'mikrotik',
+            grp.name if grp else 'General',
         ])
     return response
