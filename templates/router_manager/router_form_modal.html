@@ -100,8 +100,17 @@
     }
 
     /* Hide original select but keep it functional for synergy */
-    #div_id_custom_daily_hour, #div_id_custom_weekly_hour {
+    #div_id_custom_daily_hour, #div_id_custom_weekly_hour, #div_id_backup_profile {
         display: none !important;
+    }
+    .btn-minute.active {
+        background-color: #007bff !important;
+        color: #ffffff !important;
+        border-color: #007bff !important;
+    }
+    [data-theme="dark"] .btn-minute.active, body.dark-mode .btn-minute.active {
+        background-color: #3b82f6 !important;
+        border-color: #3b82f6 !important;
     }
 
     [data-theme="dark"] .clock-face, body.dark-mode .clock-face {
@@ -144,6 +153,16 @@
                     <div id="selected-time-display" style="font-size: 10px; color: #6c757d;">03:00</div>
                 </div>
                 <!-- Hours will be injected via JS -->
+            </div>
+
+            <!-- Selector de Minutos Rápido y Personalizado -->
+            <div class="d-flex align-items-center justify-content-center flex-wrap mt-3" style="gap: 6px;">
+                <span class="small font-weight-bold mr-1 text-muted"><i class="far fa-clock"></i> Minuto:</span>
+                <button type="button" class="btn btn-xs btn-outline-primary btn-minute active" data-min="0">:00</button>
+                <button type="button" class="btn btn-xs btn-outline-primary btn-minute" data-min="15">:15</button>
+                <button type="button" class="btn btn-xs btn-outline-primary btn-minute" data-min="30">:30</button>
+                <button type="button" class="btn btn-xs btn-outline-primary btn-minute" data-min="45">:45</button>
+                <input type="number" id="custom-minute-input" min="0" max="59" class="form-control form-control-sm text-center ml-1" style="width: 58px; height: 26px; padding: 2px 4px; display: inline-block;" placeholder="00" value="00" title="Escriba cualquier minuto (0-59)">
             </div>
         </div>
     </div>
@@ -475,9 +494,12 @@ $(document).ready(function() {
     const timeDisplay = document.getElementById('selected-time-display');
     const dailyHourSelect = $('#id_custom_daily_hour');
     const weeklyHourSelect = $('#id_custom_weekly_hour');
+    const dailyMinuteInput = $('#id_custom_daily_minute');
+    const weeklyMinuteInput = $('#id_custom_weekly_minute');
     const clockWrapper = $('#custom-clock-wrapper');
 
     let currentHour = 3; // 1-12
+    let currentMinute = 0; // 0-59
     let currentAMPM = 'AM';
 
     // Inject Hours
@@ -506,6 +528,28 @@ $(document).ready(function() {
         syncToSelect();
     }
 
+    function selectMinute(m) {
+        let val = parseInt(m);
+        if (isNaN(val)) val = 0;
+        currentMinute = Math.min(59, Math.max(0, val));
+        const formattedMin = currentMinute < 10 ? '0' + currentMinute : currentMinute;
+        $('#custom-minute-input').val(formattedMin);
+        $('.btn-minute').removeClass('active');
+        $(`.btn-minute[data-min="${currentMinute}"]`).addClass('active');
+        updateClockUI();
+        syncToSelect();
+    }
+
+    $(document).on('click', '.btn-minute', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        selectMinute($(this).data('min'));
+    });
+
+    $(document).on('input change', '#custom-minute-input', function() {
+        selectMinute($(this).val());
+    });
+
     function toggleAMPM() {
         currentAMPM = (currentAMPM === 'AM') ? 'PM' : 'AM';
         ampmToggle.innerText = currentAMPM;
@@ -519,20 +563,18 @@ $(document).ready(function() {
     };
 
     function updateClockUI() {
-        // Update hand rotation
         const angle = currentHour * 30;
         clockHand.style.height = '65px';
         clockHand.style.transform = `translateX(-50%) rotate(${angle}deg)`;
         
-        // Update active hour
         $('.clock-hour').removeClass('active');
         $('.clock-hour').filter(function() {
             return $(this).text().trim() === currentHour.toString();
         }).addClass('active');
 
-        // Update display
         const displayHour = currentHour < 10 ? '0' + currentHour : currentHour;
-        timeDisplay.innerText = `${displayHour}:00 ${currentAMPM}`;
+        const displayMin = currentMinute < 10 ? '0' + currentMinute : currentMinute;
+        timeDisplay.innerText = `${displayHour}:${displayMin} ${currentAMPM}`;
     }
 
     function syncToSelect() {
@@ -541,22 +583,25 @@ $(document).ready(function() {
         
         dailyHourSelect.val(hour24).trigger('change');
         weeklyHourSelect.val(hour24).trigger('change');
+        if (dailyMinuteInput.length) dailyMinuteInput.val(currentMinute);
+        if (weeklyMinuteInput.length) weeklyMinuteInput.val(currentMinute);
     }
 
-    // Initial Sync from current select value if it exists
     function initClockFromSelect() {
-        const val = parseInt(dailyHourSelect.val()) || 0;
-        currentAMPM = val >= 12 ? 'PM' : 'AM';
-        currentHour = val % 12;
+        const valHour = parseInt(dailyHourSelect.val()) || 0;
+        const valMin = parseInt(dailyMinuteInput.val()) || 0;
+        currentAMPM = valHour >= 12 ? 'PM' : 'AM';
+        currentHour = valHour % 12;
         if (currentHour === 0) currentHour = 12;
+        currentMinute = valMin;
         
         ampmToggle.innerText = currentAMPM;
+        $('#custom-minute-input').val(currentMinute < 10 ? '0' + currentMinute : currentMinute);
+        $('.btn-minute').removeClass('active');
+        $(`.btn-minute[data-min="${currentMinute}"]`).addClass('active');
         updateClockUI();
     }
     initClockFromSelect();
-
-    initClockFromSelect();
-    
     // Final Initial Trigger
     toggleSubFields();
     handleClockVisibility($('input[name="backup_type"]:checked').val());

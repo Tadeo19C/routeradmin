@@ -279,32 +279,24 @@ def view_import_csv_file(request):
 
     data = {
         'form': form,
-        'page_title': 'Importar Archivo CSV',
-        'form_description': {
-            'size': '',
-            'content': form_description_content
-        },
-
+        'page_title': 'Importar Equipos desde Excel',
     }
 
-    return render(request, 'generic_form.html', context=data)
+    return render(request, 'import_tool/import_csv_form.html', context=data)
 
 
 
 @login_required()
 def view_download_csv_template(request):
-    """Descarga una plantilla CSV lista para abrir en Excel con ejemplos multi-marca."""
+    """Descarga una plantilla CSV clásica lista para abrir en Microsoft Excel con columnas simples."""
     response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
-    response['Content-Disposition'] = 'attachment; filename="plantilla_equipos_backupweb.csv"'
-    writer = csv.writer(response, quoting=csv.QUOTE_ALL)
-    writer.writerow([
-        'name', 'username', 'password', 'address', 'port',
-        'router_type', 'connection_protocol', 'backup_profile', 'router_group', 'monitoring'
-    ])
-    writer.writerow(['rt ejemplo mikrotik', 'admin', 'SuClaveAqui', '192.168.1.1', '22', 'mikrotik', 'ssh', 'default', 'Nodo Central', 'true'])
-    writer.writerow(['sw ejemplo cisco', 'admin', 'SuClaveAqui', '192.168.1.2', '22', 'cisco-ios', 'ssh', 'default', 'Nodo Central', 'true'])
-    writer.writerow(['fw ejemplo huawei', 'admin', 'SuClaveAqui', '192.168.1.3', '23', 'huawei', 'telnet', 'default', 'Nodo Central', 'true'])
-    writer.writerow(['olt ejemplo zte', 'admin', 'SuClaveAqui', '192.168.1.4', '23', 'zte', 'telnet', 'default', 'Nodo Sur', 'true'])
+    response['Content-Disposition'] = 'attachment; filename="plantilla_equipos_excel.csv"'
+    writer = csv.writer(response, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(['Nombre', 'IP', 'Usuario', 'Contraseña', 'Marca', 'Nodo'])
+    writer.writerow(['Router Principal', '192.168.1.1', 'admin', 'clave123', 'mikrotik', 'Nodo Centro'])
+    writer.writerow(['Switch Acceso 1', '10.0.0.2', 'admin', 'clave123', 'cisco-ios', 'Nodo Centro'])
+    writer.writerow(['Firewall Borde', '172.16.0.1', 'admin', 'clave123', 'huawei', 'Nodo Norte'])
+    writer.writerow(['Router Repetidor', '192.168.10.5', 'admin', 'clave123', 'mikrotik', 'General'])
     return response
 
 

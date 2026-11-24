@@ -29,9 +29,10 @@ class RouterForm(forms.ModelForm):
     backup_profile = forms.ModelChoiceField(
         queryset=BackupProfile.objects.all().order_by('name'),
         required=False,
-        empty_label='-- Configuración Personalizada --',
-        label='Perfil de Respaldo'
+        widget=forms.HiddenInput()
     )
+    custom_daily_minute = forms.IntegerField(required=False, initial=0, widget=forms.HiddenInput())
+    custom_weekly_minute = forms.IntegerField(required=False, initial=0, widget=forms.HiddenInput())
     
     backup_type = forms.ChoiceField(
         required=True, 
@@ -106,8 +107,10 @@ class RouterForm(forms.ModelForm):
 
                 self.initial['custom_hourly_interval'] = profile.hourly_interval
                 self.initial['custom_daily_hour'] = profile.daily_hour
+                self.initial['custom_daily_minute'] = getattr(profile, 'daily_minute', 0) or 0
                 self.initial['custom_weekly_day'] = profile.weekly_day
                 self.initial['custom_weekly_hour'] = profile.weekly_hour
+                self.initial['custom_weekly_minute'] = getattr(profile, 'weekly_minute', 0) or 0
         else:
             delete_html = ''
             # Pre-seleccionar perfil por defecto y nodo si existe, para simplificar el alta
@@ -156,6 +159,8 @@ class RouterForm(forms.ModelForm):
             ),
             HTML('<hr class="my-3">'),
             'backup_profile',
+            'custom_daily_minute',
+            'custom_weekly_minute',
             'backup_type',
             # Sub-campos de configuración
             Row(
@@ -267,10 +272,12 @@ class RouterForm(forms.ModelForm):
             elif backup_type == 'daily':
                 profile.daily_backup = True
                 profile.daily_hour = self.cleaned_data.get('custom_daily_hour')
+                profile.daily_minute = self.cleaned_data.get('custom_daily_minute') or 0
             elif backup_type == 'weekly':
                 profile.weekly_backup = True
                 profile.weekly_day = self.cleaned_data.get('custom_weekly_day')
                 profile.weekly_hour = self.cleaned_data.get('custom_weekly_hour')
+                profile.weekly_minute = self.cleaned_data.get('custom_weekly_minute') or 0
                 
             profile.save()
             instance.backup_profile = profile

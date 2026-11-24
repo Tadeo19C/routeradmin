@@ -23,25 +23,25 @@ from router_manager.models import Router, BackupSchedule, RouterStatus
 from routerlib.backup_functions import perform_backup, append_task_console_output
 
 
-def next_weekday(now: datetime, weekday: int, hour: int) -> datetime:
+def next_weekday(now: datetime, weekday: int, hour: int, minute: int = 0) -> datetime:
     now_local = timezone.localtime(timezone.now())
     days_ahead = weekday - now_local.weekday()
-    if days_ahead < 0 or (days_ahead == 0 and now_local.hour >= hour):
+    if days_ahead < 0 or (days_ahead == 0 and (now_local.hour > hour or (now_local.hour == hour and now_local.minute >= minute))):
         days_ahead += 7
     next_backup = now_local + timedelta(days=days_ahead)
-    return next_backup.replace(hour=hour, minute=0, second=0, microsecond=0)
+    return next_backup.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
 
-def find_next_active_day(start_date: datetime, active_days: list, backup_hour: int) -> Optional[datetime]:
+def find_next_active_day(start_date: datetime, active_days: list, backup_hour: int, backup_minute: int = 0) -> Optional[datetime]:
     now_local = timezone.localtime()
     for i in range(7):
         potential_date = timezone.localtime(start_date + timedelta(days=i))
         weekday = potential_date.weekday()
         if active_days[weekday]:
-            next_active_date = potential_date.replace(hour=backup_hour, minute=0, second=0, microsecond=0)
+            next_active_date = potential_date.replace(hour=backup_hour, minute=backup_minute, second=0, microsecond=0)
             if next_active_date > now_local:
                 return next_active_date
-            if i == 0 and now_local.hour >= backup_hour:
+            if i == 0 and (now_local.hour > backup_hour or (now_local.hour == backup_hour and now_local.minute >= backup_minute)):
                 continue
     return None
 
@@ -59,13 +59,15 @@ def calculate_next_backup(backup_profile: BackupProfile) -> Tuple[Optional[datet
             backup_profile.daily_day_saturday,
             backup_profile.daily_day_sunday,
         ]
-        next_daily_backup = find_next_active_day(now, weekdays_enabled, backup_profile.daily_hour)
+        daily_min = getattr(backup_profile, "daily_minute", 0) or 0
+        next_daily_backup = find_next_active_day(now, weekdays_enabled, backup_profile.daily_hour, daily_min)
     else:
         next_daily_backup = None
 
     if backup_profile.weekly_backup:
         weekday = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].index(backup_profile.weekly_day)
-        next_weekly_backup = next_weekday(now, weekday, backup_profile.weekly_hour)
+        weekly_min = getattr(backup_profile, "weekly_minute", 0) or 0
+        next_weekly_backup = next_weekday(now, weekday, backup_profile.weekly_hour, weekly_min)
     else:
         next_weekly_backup = None
 

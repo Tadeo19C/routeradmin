@@ -44,7 +44,9 @@ class BackupProfile(models.Model):
     monthly_day = models.IntegerField(default=1, choices=((1, '1º'), (7, '7º'), (14, '14º'), (21, '21º'), (28, '28º')))
 
     daily_hour = models.IntegerField(default=3, choices=HOUR_CHOICES)
+    daily_minute = models.IntegerField(default=0)
     weekly_hour = models.IntegerField(default=1, choices=HOUR_CHOICES)
+    weekly_minute = models.IntegerField(default=0)
     monthly_hour = models.IntegerField(default=0, choices=HOUR_CHOICES)
 
     max_retry = models.IntegerField(default=3, choices=((1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')))

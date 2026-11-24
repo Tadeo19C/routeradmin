@@ -329,8 +329,10 @@ def view_get_backup_profile_details(request):
         'weekly_backup': profile.weekly_backup,
         'hourly_interval': profile.hourly_interval,
         'daily_hour': profile.daily_hour,
+        'daily_minute': getattr(profile, 'daily_minute', 0) or 0,
         'weekly_day': profile.weekly_day,
         'weekly_hour': profile.weekly_hour,
+        'weekly_minute': getattr(profile, 'weekly_minute', 0) or 0,
         # Add other fields if needed for the UI
     }
     return JsonResponse(data)
