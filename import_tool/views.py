@@ -294,7 +294,7 @@ def view_download_csv_template(request):
     writer = csv.writer(response, delimiter=';', quoting=csv.QUOTE_MINIMAL)
     writer.writerow(['Nombre', 'IP', 'Usuario', 'Contraseña', 'Marca', 'Nodo'])
     writer.writerow(['Router Principal', '192.168.1.1', 'admin', 'clave123', 'mikrotik', 'Nodo Centro'])
-    writer.writerow(['Switch Acceso 1', '10.0.0.2', 'admin', 'clave123', 'cisco-ios', 'Nodo Centro'])
+    writer.writerow(['Switch Acceso 1', '10.0.0.2', 'admin', 'clave123', 'cisco', 'Nodo Centro'])
     writer.writerow(['Firewall Borde', '172.16.0.1', 'admin', 'clave123', 'huawei', 'Nodo Norte'])
     writer.writerow(['Router Repetidor', '192.168.10.5', 'admin', 'clave123', 'mikrotik', 'General'])
     return response
