@@ -215,7 +215,7 @@ def view_download_csv_template(request):
         xlsx_bytes,
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = 'attachment; filename="plantilla_equipos.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="tdox_config_plantilla_equipos.xlsx"'
     return response
 
 
@@ -253,5 +253,5 @@ def view_export_routers_csv(request):
         xlsx_bytes,
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = 'attachment; filename="inventario_equipos.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="tdox_config_inventario_equipos.xlsx"'
     return response

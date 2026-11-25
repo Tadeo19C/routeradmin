@@ -92,7 +92,7 @@ def notify_config_change(router_backup: RouterBackup, previous_backup: RouterBac
         Message.objects.create(
             channel=channel,
             router_backup=router_backup,
-            subject=f"[BACKUP WEB] Respaldo Importante / Cambio en {router.name} (Rev #{router_backup.id})",
+            subject=f"[Tdox-Config] Respaldo Importante / Cambio en {router.name} (Rev #{router_backup.id})",
             message=msg_body,
         )
 
@@ -107,7 +107,7 @@ def generate_backup_report(data):
         message_text = 'Advertencia: Error al calcular la hora del reporte, por favor verifique la configuración de zona horaria.\n\n'
     else:
         message_text = ''
-    message_text += 'Reporte diario de respaldos de BACKUP WEB:\n'
+    message_text += 'Reporte diario de respaldos de Tdox-Config:\n'
     message_text += f'Nuevas versiones respaldadas: {success_backup_list.count()}\n'
     message_text += f'Respaldos fallidos: {failed_backup_list.count()}\n'
     message_text += f'Respaldos pendientes: {pending_backup_list.count()}\n'
@@ -142,7 +142,7 @@ def generate_status_report(data):
         message_text = 'Advertencia: Error al calcular la hora del reporte, por favor verifique la configuración de zona horaria.\n\n'
     else:
         message_text = ''
-    message_text += 'Reporte diario de estado de BACKUP WEB:\n'
+    message_text += 'Reporte diario de estado de Tdox-Config:\n'
     message_text += f'Equipos monitoreados: {router_list.count()}\n'
     message_text += f'En línea: {router_list.filter(routerstatus__status_online=True).count()}\n'
     message_text += f'Fuera de línea: {offline_count}\n'
@@ -230,9 +230,9 @@ def send_notification_message(message: Message):
                 use_tls=smtp_tls,
                 fail_silently=False,
             )
-            from_addr = f"BACKUP WEB <{smtp_user}>" if smtp_user else getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@backupweb.local')
+            from_addr = f"Tdox-Config <{smtp_user}>" if smtp_user else getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@backupweb.local')
             email_msg = EmailMessage(
-                subject=message.subject or 'Notificación BACKUP WEB',
+                subject=message.subject or 'Notificación Tdox-Config',
                 body=message.message,
                 from_email=from_addr,
                 to=dest_list,
@@ -244,7 +244,7 @@ def send_notification_message(message: Message):
             if rb and message_settings.attach_backup_on_email and rb.backup_text:
                 ext = 'rsc' if rb.router.router_type in ('mikrotik', 'mikrotik-branded') else 'cfg'
                 safe_router_name = rb.router.name.replace(' ', '_')
-                fname = f"{safe_router_name}_rev{rb.id}.{ext}"
+                fname = f"tdox-config-{safe_router_name}-rev{rb.id}.{ext}"
                 email_msg.attach(fname, rb.backup_text, 'text/plain; charset=utf-8')
 
             email_msg.send(fail_silently=False)
@@ -379,7 +379,7 @@ def notify_important_backup_email(router_backup: RouterBackup, reason: str = "Re
         msg = Message.objects.create(
             channel=channel,
             router_backup=router_backup,
-            subject=f"[BACKUP WEB] Respaldo Adjunto: {router.name} (Rev #{router_backup.id})",
+            subject=f"[Tdox-Config] Respaldo Adjunto: {router.name} (Rev #{router_backup.id})",
             message=msg_body,
         )
         send_notification_message(msg)

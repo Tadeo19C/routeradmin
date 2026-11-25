@@ -346,10 +346,7 @@ def execute_backup(router_backup: RouterBackup):
             else:
                 router_backup.backup_text = clean_text
                 router_backup.backup_text_filename = f'{backup_name}.{file_extension["text"]}'
-                router_backup.backup_binary.save(
-                    f"{backup_name}.{file_extension['binary']}",
-                    ContentFile(clean_text.encode('utf-8'))
-                )
+
             router_backup.save()
             return True, [f'{backup_name}.{file_extension["text"]}'], error_message
 
@@ -381,10 +378,7 @@ def execute_backup(router_backup: RouterBackup):
             else:
                 router_backup.backup_text = clean_text
                 router_backup.backup_text_filename = f'{backup_name}.{file_extension["text"]}'
-                router_backup.backup_binary.save(
-                    f"{backup_name}.{file_extension['binary']}",
-                    ContentFile(clean_text.encode('utf-8'))
-                )
+
             router_backup.save()
             return True, [f'{backup_name}.{file_extension["text"]}'], error_message
 
@@ -416,10 +410,7 @@ def execute_backup(router_backup: RouterBackup):
             else:
                 router_backup.backup_text = clean_text
                 router_backup.backup_text_filename = f'{backup_name}.{file_extension["text"]}'
-                router_backup.backup_binary.save(
-                    f"{backup_name}.{file_extension['binary']}",
-                    ContentFile(clean_text.encode('utf-8'))
-                )
+
             router_backup.save()
             return True, [f'{backup_name}.{file_extension["text"]}'], error_message
 
@@ -570,11 +561,11 @@ def clean_up_backup_files(router_backup: RouterBackup):
     try:
         if router.router_type in ('mikrotik', 'mikrotik-branded') and protocol == 'ssh':
             ssh_client = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)
-            command = 'file remove [find where name~"backupweb-"]'
+            command = 'file remove [find where name~"tdox-config-" or name~"backupweb-"]'
             run_ssh_command(ssh_client, command, router_backup)
         elif router.router_type == 'openwrt' and protocol == 'ssh':
             ssh_client = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)
-            command = 'rm /tmp/backupweb-*'
+            command = 'rm -f /tmp/tdox-config-* /tmp/backupweb-*'
             run_ssh_command(ssh_client, command, router_backup)
         else:
             return

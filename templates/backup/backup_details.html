@@ -99,9 +99,11 @@
                             <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" class="btn btn-outline-primary mr-1" download title="Descargar archivo de texto">
                                 <i class="fas fa-file-code mr-1"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
                             </a>
+                            {% if backup.router.router_type == 'mikrotik' %}
                             <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" class="btn btn-outline-secondary" download title="Descargar respaldo binario (.backup)">
-                                <i class="fas fa-file-archive mr-1"></i> Binario
+                                <i class="fas fa-file-archive mr-1"></i> Binario (.backup)
                             </a>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -197,12 +199,14 @@
                                        title="Descargar configuración en texto">
                                         <i class="fas fa-file-code mr-1"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
                                     </a>
+                                    {% if backup.router.router_type == 'mikrotik' %}
                                     <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" 
                                        class="btn btn-xs btn-outline-info" 
                                        download 
                                        title="Descargar respaldo binario (.backup)">
                                         <i class="fas fa-file-archive mr-1"></i> Binario (.backup)
                                     </a>
+                                    {% endif %}
                                 {% else %}
                                     <span class="text-muted small">No disponible</span>
                                 {% endif %}

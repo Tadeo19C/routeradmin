@@ -19,13 +19,15 @@ def get_router_backup_file_extension(router_type):
     elif router_type == 'openwrt':
         return {'text': 'txt', 'binary': 'tar.gz'}
     elif router_type in ('ubiquiti-airos', 'cisco-ios', 'huawei', 'zte'):
-        return {'text': 'cfg', 'binary': 'backup'}
+        return {'text': 'cfg', 'binary': None}
     else:
-        return {'text': 'txt', 'binary': 'bin'}
+        return {'text': 'txt', 'binary': None}
 
 
 def gen_backup_name(router_backup):
-    return f'backupweb-{router_backup.id}-{router_backup.schedule_type}-{router_backup.created.strftime("%Y-%m-%d_%H-%M")}'
+    router_name = getattr(router_backup.router, 'name', '') or 'router'
+    safe_name = re.sub(r'[^A-Za-z0-9_-]+', '_', router_name.strip()).strip('_') or 'router'
+    return f'tdox-config-{safe_name}-{router_backup.id}-{router_backup.created.strftime("%Y-%m-%d_%H-%M")}'
 
 
 def load_private_key_from_string(key_str):

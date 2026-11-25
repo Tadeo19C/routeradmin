@@ -271,24 +271,23 @@ def view_backup_download(request):
         return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
     backup = get_object_or_404(RouterBackup, uuid=request.GET.get('uuid'))
     ext_map = get_router_backup_file_extension(backup.router.router_type)
+    base_name = gen_backup_name(backup)
     if request.GET.get('type') == 'text':
         content = backup.backup_text or ''
         response = HttpResponse(content, content_type='text/plain; charset=utf-8')
-        if backup.backup_text_filename:
-            filename = backup.backup_text_filename
-        else:
-            filename = f'{gen_backup_name(backup)}.{ext_map["text"]}'
+        filename = f'{base_name}.{ext_map["text"]}'
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
     elif request.GET.get('type') == 'binary':
+        if backup.router.router_type not in ('mikrotik', 'mikrotik-branded', 'openwrt'):
+            raise Http404("Este fabricante solo genera respaldos de configuración en texto (.cfg).")
+        bin_ext = ext_map.get('binary') or 'backup'
+        filename = f'{base_name}.{bin_ext}'
         if backup.backup_binary and backup.backup_binary.name:
             try:
-                return FileResponse(backup.backup_binary.open('rb'), as_attachment=True)
+                return FileResponse(backup.backup_binary.open('rb'), as_attachment=True, filename=filename)
             except Exception:
                 pass
-        # Fallback binario a partir de la configuración si el archivo físico no existe por separado
-        bin_ext = ext_map.get('binary') or 'backup'
-        filename = f'{gen_backup_name(backup)}.{bin_ext}'
         content = (backup.backup_text or '').encode('utf-8')
         response = HttpResponse(content, content_type='application/octet-stream')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -450,7 +449,7 @@ def view_send_backup_email_now(request):
     sent_to = []
     for ch in email_channels:
         msg_body = (
-            f"📦 Respaldo enviado desde BACKUP WEB\n"
+            f"📦 Respaldo enviado desde Tdox-Config\n"
             f"Equipo: {backup.router.name} ({backup.router.address})\n"
             f"Fabricante / Tipo: {backup.router.get_router_type_display()}\n"
             f"Revisión: #{backup.id} ({backup.created.strftime('%d/%m/%Y %H:%M:%S')})\n\n"
@@ -459,7 +458,7 @@ def view_send_backup_email_now(request):
         msg = Message.objects.create(
             channel=ch,
             router_backup=backup,
-            subject=f"[BACKUP WEB] Respaldo #{backup.id} - {backup.router.name}",
+            subject=f"[Tdox-Config] Respaldo #{backup.id} - {backup.router.name}",
             message=msg_body,
         )
         send_notification_message(msg)

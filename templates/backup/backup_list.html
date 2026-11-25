@@ -105,11 +105,13 @@
                                                title="Descargar archivo de texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})">
                                                 <i class="fas fa-file-code"></i> {% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %}
                                             </a>
+                                            {% if backup.router.router_type == 'mikrotik' %}
                                             <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary"
                                                class="btn btn-xs btn-outline-info mr-1"
                                                title="Descargar archivo binario (.backup)">
                                                 <i class="fas fa-file-archive"></i> .backup
                                             </a>
+                                            {% endif %}
                                             <a href="/backup/send_email/?uuid={{ backup.uuid }}"
                                                class="btn btn-xs btn-outline-secondary"
                                                title="Enviar este respaldo por correo electrónico ahora">
