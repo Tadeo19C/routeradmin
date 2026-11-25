@@ -45,8 +45,13 @@
                                             </span>
                                         </td>
                                         <td class="min-width text-right" onclick="event.stopPropagation();">
-                                            <a href="/router/manage_group/?uuid={{ router_group.uuid }}" class="btn btn-xs btn-outline-primary">
-                                                <i class="fas fa-edit"></i> Editar Nodo
+                                            <a href="/router/manage_group/?uuid={{ router_group.uuid }}" class="btn btn-xs btn-outline-primary mr-1">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </a>
+                                            <a href="/router/manage_group/?uuid={{ router_group.uuid }}&action=delete&confirmation=confirm"
+                                               class="btn btn-xs btn-outline-danger"
+                                               onclick="return confirm('¿Seguro que deseas eliminar el nodo \'{{ router_group.name }}\'?');">
+                                                <i class="fas fa-trash-alt"></i> Eliminar
                                             </a>
                                         </td>
                                     </tr>

@@ -327,7 +327,7 @@ def view_manage_router_group(request):
     if request.GET.get('uuid'):
         router_group = get_object_or_404(RouterGroup, uuid=request.GET.get('uuid'))
         if request.GET.get('action') == 'delete':
-            if request.GET.get('confirmation') == 'delete':
+            if request.GET.get('confirmation') in ('delete', 'borrar', 'confirm'):
                 ActivityLog.objects.create(
                     user=request.user,
                     action="Nodo Eliminado",
