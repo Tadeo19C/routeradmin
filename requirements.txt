@@ -8,9 +8,11 @@ cryptography==46.0.5
 Django==5.2.11
 django-cleanup==9.0.0
 django-crispy-forms==2.5
+et-xmlfile==2.0.0
 gunicorn==25.1.0
 idna==3.11
 invoke==2.2.1
+openpyxl==3.1.5
 packaging==26.0
 paramiko==4.0.0
 psycopg2-binary==2.9.11

@@ -15,27 +15,29 @@ def view_system_branding(request):
         return render(request, 'access_denied.html', status=403)
 
     settings_obj, _ = WebadminSettings.objects.get_or_create(name='webadmin_settings')
+    if settings_obj.app_title != 'Tdox-Config':
+        settings_obj.app_title = 'Tdox-Config'
+        settings_obj.save(update_fields=['app_title'])
 
     if request.method == 'POST':
         action = request.POST.get('action', '')
-        
-        # Action: Restore default branding
+
+        # Action: Restore default logo
         if action == 'restore_default' or request.POST.get('remove_logo') == '1':
             if settings_obj.custom_logo:
                 settings_obj.custom_logo.delete(save=False)
                 settings_obj.custom_logo = None
-            settings_obj.app_title = 'BACKUP WEB'
+            settings_obj.app_title = 'Tdox-Config'
             settings_obj.save()
-            messages.success(request, "Se ha restaurado el logo y la identidad predeterminada de BACKUP WEB.")
+            messages.success(request, "Se ha restaurado el logo predeterminado de Tdox-Config.")
             return redirect('system_branding')
 
         form = SystemBrandingForm(request.POST, request.FILES, instance=settings_obj)
         if form.is_valid():
             branding = form.save(commit=False)
-            if not branding.app_title or not branding.app_title.strip():
-                branding.app_title = 'BACKUP WEB'
+            branding.app_title = 'Tdox-Config'
             branding.save()
-            messages.success(request, "Identidad y logo del sistema actualizados exitosamente.")
+            messages.success(request, "Logo del sistema actualizado exitosamente.")
             return redirect('system_branding')
     else:
         form = SystemBrandingForm(instance=settings_obj)
@@ -43,7 +45,7 @@ def view_system_branding(request):
     context = {
         'form': form,
         'settings_obj': settings_obj,
-        'page_title': 'Personalización de Logo & Marca',
+        'page_title': 'Personalizar Logo',
     }
     return render(request, 'routerfleet_tools/system_branding.html', context)
 

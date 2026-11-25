@@ -6,9 +6,9 @@
     <div class="d-flex align-items-center justify-content-between mb-3">
         <div>
             <h4 class="font-weight-bold mb-1" style="color: var(--foreground); font-size: 1.25rem;">
-                <i class="fas fa-paint-brush text-primary mr-2"></i>Personalización & Logo
+                <i class="fas fa-paint-brush text-primary mr-2"></i>Personalizar Logo
             </h4>
-            <p class="text-muted small mb-0">Personaliza la identidad visual, el logo corporativo y el título de tu plataforma BACKUP WEB.</p>
+            <p class="text-muted small mb-0">Personaliza el logo corporativo de tu plataforma <strong>Tdox-Config</strong>.</p>
         </div>
         <a href="/" class="btn btn-outline-secondary btn-sm">
             <i class="fas fa-arrow-left mr-1"></i> Volver al Inicio
@@ -34,33 +34,19 @@
             <div class="card shadow-sm border-0" style="background: var(--card); border-radius: 12px; border: 1px solid var(--border) !important;">
                 <div class="card-header bg-transparent py-3" style="border-bottom: 1px solid var(--border);">
                     <h5 class="card-title mb-0 font-weight-bold" style="font-size: 0.95rem; color: var(--foreground);">
-                        <i class="fas fa-sliders-h text-primary mr-2"></i>Ajustes de Marca
+                        <i class="fas fa-image text-primary mr-2"></i>Logo del Sistema
                     </h5>
                 </div>
                 <div class="card-body p-4">
                     <form method="POST" enctype="multipart/form-data" id="brandingForm">
                         {% csrf_token %}
 
-                        <!-- App Title Input -->
-                        <div class="form-group mb-4">
-                            <label class="font-weight-bold small text-muted text-uppercase mb-1" style="letter-spacing: 0.05em;">
-                                Nombre de la Plataforma
-                            </label>
-                            {{ form.app_title }}
-                            <small class="form-text text-muted">
-                                Nombre visible en la barra superior, pestaña del navegador y pantalla de inicio de sesión.
-                            </small>
-                            {% if form.app_title.errors %}
-                            <div class="text-danger small mt-1">{{ form.app_title.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
                         <!-- Logo File Upload -->
                         <div class="form-group mb-4">
                             <label class="font-weight-bold small text-muted text-uppercase mb-1" style="letter-spacing: 0.05em;">
                                 Subir Nuevo Logo
                             </label>
-                            <div class="custom-file mb-2">
+                            <div class="custom-file mb-2" style="max-width: 420px; display: block;">
                                 {{ form.custom_logo }}
                                 <label class="custom-file-label text-truncate" for="customLogoInput" id="customLogoLabel">
                                     {% if settings_obj.custom_logo %}
@@ -81,12 +67,12 @@
                         <!-- Action Buttons -->
                         <div class="d-flex align-items-center justify-content-between pt-3 mt-3" style="border-top: 1px solid var(--border);">
                             <button type="submit" name="action" value="save" class="btn btn-primary px-4 font-weight-bold shadow-sm" style="font-size: 0.88rem;">
-                                <i class="fas fa-save mr-1"></i> Guardar Cambios
+                                <i class="fas fa-save mr-1"></i> Guardar Logo
                             </button>
 
-                            {% if settings_obj.custom_logo or settings_obj.app_title != 'BACKUP WEB' %}
-                            <button type="submit" name="action" value="restore_default" class="btn btn-outline-danger btn-sm" onclick="return confirm('¿Seguro que deseas restablecer el logo y nombre original de BACKUP WEB?');">
-                                <i class="fas fa-undo mr-1"></i> Restaurar Predeterminado
+                            {% if settings_obj.custom_logo %}
+                            <button type="submit" name="action" value="restore_default" class="btn btn-outline-danger btn-sm" onclick="return confirm('¿Seguro que deseas restablecer el logo predeterminado?');">
+                                <i class="fas fa-undo mr-1"></i> Restaurar Logo Predeterminado
                             </button>
                             {% endif %}
                         </div>
@@ -127,9 +113,12 @@
                                         <i class="fas fa-network-wired"></i>
                                     </div>
                                 {% endif %}
-                                <span class="brand-text font-weight-bold ml-2" id="topbarPreviewText" style="font-size: 0.95rem; color: var(--foreground);">
-                                    {{ settings_obj.app_title|default:'BACKUP WEB' }}
-                                </span>
+                                <div class="d-flex flex-column justify-content-center ml-2" style="line-height: 1.05;">
+                                    <span class="brand-text font-weight-bold" style="font-size: 0.95rem; color: var(--foreground); line-height: 1.1;">
+                                        Tdox-Config
+                                    </span>
+                                    <small style="font-size: 9.5px; color: var(--muted-foreground); font-weight: 400; letter-spacing: 0.4px; line-height: 1.1;">backup configuration</small>
+                                </div>
                             </div>
                             <span class="badge badge-light border text-muted" style="font-size: 0.7rem;">Demo</span>
                         </div>
@@ -143,14 +132,15 @@
                         <div class="p-4 rounded text-center" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid rgba(255,255,255,0.1);">
                             <div id="loginPreviewContainer" class="d-flex flex-column align-items-center justify-content-center">
                                 {% if settings_obj.custom_logo %}
-                                    <img src="{{ settings_obj.custom_logo.url }}" id="loginPreviewImg" alt="Logo Login" style="max-height: 48px; max-width: 180px; object-fit: contain; margin-bottom: 8px;">
+                                    <img src="{{ settings_obj.custom_logo.url }}" id="loginPreviewImg" alt="Logo Login" style="max-height: 48px; max-width: 180px; object-fit: contain; margin-bottom: 6px;">
                                 {% else %}
-                                    <img src="" id="loginPreviewImg" alt="Logo Login" class="d-none" style="max-height: 48px; max-width: 180px; object-fit: contain; margin-bottom: 8px;">
+                                    <img src="" id="loginPreviewImg" alt="Logo Login" class="d-none" style="max-height: 48px; max-width: 180px; object-fit: contain; margin-bottom: 6px;">
                                     <i class="fas fa-server text-primary mb-2" id="loginDefaultIcon" style="font-size: 2rem;"></i>
                                 {% endif %}
-                                <div class="text-white font-weight-bold" id="loginPreviewText" style="font-size: 1.15rem; letter-spacing: -0.3px;">
-                                    {{ settings_obj.app_title|default:'BACKUP WEB' }}
+                                <div class="text-white font-weight-bold" style="font-size: 1.15rem; letter-spacing: -0.3px; line-height: 1.1;">
+                                    Tdox-Config
                                 </div>
+                                <small style="font-size: 10.5px; color: #94a3b8; font-weight: 400; letter-spacing: 0.5px;">backup configuration</small>
                             </div>
                         </div>
                     </div>
@@ -178,27 +168,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     const inputLogo = document.getElementById('customLogoInput');
     const labelLogo = document.getElementById('customLogoLabel');
-    const inputTitle = document.getElementById('id_app_title');
-    
+
     const topbarPreviewImg = document.getElementById('topbarPreviewImg');
     const topbarLogoBox = document.getElementById('topbarLogoBox');
     const topbarDefaultIconBox = document.getElementById('topbarDefaultIconBox');
-    const topbarPreviewText = document.getElementById('topbarPreviewText');
-    
+
     const loginPreviewImg = document.getElementById('loginPreviewImg');
     const loginDefaultIcon = document.getElementById('loginDefaultIcon');
-    const loginPreviewText = document.getElementById('loginPreviewText');
 
-    // Title live preview
-    if (inputTitle) {
-        inputTitle.addEventListener('input', function() {
-            const val = this.value.trim() || 'BACKUP WEB';
-            if (topbarPreviewText) topbarPreviewText.textContent = val;
-            if (loginPreviewText) loginPreviewText.textContent = val;
-        });
-    }
-
-    // Logo live preview
     if (inputLogo) {
         inputLogo.addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -206,7 +183,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (labelLogo) labelLogo.textContent = file.name;
                 const objectUrl = URL.createObjectURL(file);
 
-                // Update Topbar Preview
                 if (topbarPreviewImg) {
                     topbarPreviewImg.src = objectUrl;
                     topbarLogoBox.classList.remove('d-none');
@@ -214,7 +190,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (topbarDefaultIconBox) topbarDefaultIconBox.classList.add('d-none');
                 }
 
-                // Update Login Preview
                 if (loginPreviewImg) {
                     loginPreviewImg.src = objectUrl;
                     loginPreviewImg.classList.remove('d-none');

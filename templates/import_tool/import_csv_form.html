@@ -1,82 +1,47 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
+{% block page_custom_head %}
+<style>
+    /* Hacer que el campo de archivo y botón Browse sea compacto y no ocupe todo el ancho */
+    #div_id_csv_file {
+        max-width: 360px !important;
+    }
+    #div_id_csv_file .custom-file {
+        max-width: 360px !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-xl-9 col-lg-10">
-        <!-- Navegación de migas rápida -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <a href="/router/list/" class="btn btn-sm btn-outline-secondary mr-2">
-                    <i class="fas fa-arrow-left mr-1"></i> Equipos
-                </a>
-                <h4 class="d-inline-block font-weight-bold mb-0 align-middle">Importar desde Excel</h4>
-            </div>
-            <a href="/router/import_tool/template_csv/" class="btn btn-sm btn-primary">
-                <i class="fas fa-download mr-1"></i> Descargar Plantilla Simple
-            </a>
-        </div>
-
+    <div class="col-xl-8 col-lg-9">
         <div class="card card-primary card-outline shadow-sm">
             <div class="card-header bg-transparent border-bottom">
                 <h3 class="card-title font-weight-bold text-primary">
-                    <i class="fas fa-file-excel mr-2 text-success"></i> Carga Masiva de Equipos (Excel Clásico)
+                    <i class="fas fa-file-excel mr-2 text-success"></i> Importar desde Excel
                 </h3>
             </div>
             <div class="card-body">
-                <!-- Mini guía visual de las 6 columnas -->
-                <div class="mb-4 p-3 rounded border" style="background: var(--card);">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap mb-2" style="gap: 8px;">
-                        <span class="font-weight-bold small text-muted text-uppercase">
-                            <i class="fas fa-table mr-1 text-primary"></i> Estructura del Excel (Solo 6 Columnas Fáciles)
-                        </span>
-                        <span class="badge badge-success px-2 py-1">
-                            <i class="fas fa-check"></i> Puertos y protocolos se configuran solos
-                        </span>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered text-center m-0" style="font-size: 12.5px;">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th class="text-primary font-weight-bold">Nombre</th>
-                                    <th class="text-primary font-weight-bold">IP</th>
-                                    <th>Usuario</th>
-                                    <th>Contraseña</th>
-                                    <th>Marca <small class="text-muted">(Opcional)</small></th>
-                                    <th>Nodo <small class="text-muted">(Opcional)</small></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="text-muted font-weight-bold">Router Central</td>
-                                    <td><code>192.168.1.1</code></td>
-                                    <td>admin</td>
-                                    <td>••••••••</td>
-                                    <td><span class="badge badge-secondary">mikrotik</span></td>
-                                    <td>Nodo Centro</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted font-weight-bold">Switch Borde</td>
-                                    <td><code>10.0.0.2</code></td>
-                                    <td>admin</td>
-                                    <td>••••••••</td>
-                                    <td><span class="badge badge-secondary">cisco</span></td>
-                                    <td>Nodo Centro</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="mt-2 text-muted small">
-                        <i class="fas fa-info-circle text-info mr-1"></i>
-                        Si dejas la <strong>Marca</strong> vacía, el sistema asumirá <strong>MikroTik</strong> automáticamente. Si el <strong>Nodo</strong> no existe, el sistema lo creará sin errores.
-                    </div>
-                </div>
-
-                <!-- Formulario de subida -->
                 {% crispy form %}
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block custom_page_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.querySelector('#div_id_csv_file input[type="file"]');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const label = document.querySelector('#div_id_csv_file .custom-file-label');
+            if (label && e.target.files && e.target.files.length > 0) {
+                label.textContent = e.target.files[0].name;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

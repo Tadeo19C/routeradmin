@@ -171,15 +171,16 @@
 
 <script>
 $(document).ready(function() {
-    // Auto-ajustar puerto al cambiar entre SSH (22) y Telnet (23)
+    // Auto-ajustar puerto al cambiar entre SSH (22), Telnet (23) y API (80)
     $('#id_connection_protocol').on('change', function() {
-        const proto = $(this).val();
+        const proto = ($(this).val() || '').toLowerCase();
         const $port = $('#id_port');
         const currentPort = ($port.val() || '').trim();
-        if (proto === 'telnet' && (!currentPort || currentPort === '22')) {
-            $port.val('23');
-        } else if (proto === 'ssh' && (!currentPort || currentPort === '23')) {
-            $port.val('22');
+        const defaultPorts = ['', '22', '23', '80'];
+        if (defaultPorts.includes(currentPort)) {
+            if (proto === 'telnet') $port.val('23');
+            else if (proto === 'api') $port.val('80');
+            else if (proto === 'ssh') $port.val('22');
         }
     });
 
@@ -371,15 +372,7 @@ $(document).ready(function() {
         }
     });
 
-    // Auto-fill port based on connection protocol
-    $('#id_connection_protocol').on('change', function() {
-        var protocol = $(this).val().toLowerCase();
-        if (protocol === 'ssh') {
-            $('#id_port').val('22');
-        } else if (protocol === 'telnet') {
-            $('#id_port').val('23');
-        }
-    });
+
 
     // Password Visibility Toggle (Eye icon) - Modal
     function setupPasswordToggles() {

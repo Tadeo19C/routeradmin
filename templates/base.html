@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% if page_title %}{{ page_title }} | {% endif %}{{ custom_app_title|default:'BACKUP WEB' }}</title>
+    <title>{% if page_title %}{{ page_title }} | {% endif %}Tdox-Config</title>
 
     <!-- Preconnect to Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -84,14 +84,17 @@
                 <a href="/" class="brand-wrapper">
                     {% if custom_logo_url %}
                         <div class="brand-logo-container d-flex align-items-center mr-2">
-                            <img src="{{ custom_logo_url }}" alt="{{ custom_app_title|default:'BACKUP WEB' }}" style="max-height: 28px; max-width: 130px; object-fit: contain;">
+                            <img src="{{ custom_logo_url }}" alt="Tdox-Config" style="max-height: 28px; max-width: 130px; object-fit: contain;">
                         </div>
                     {% else %}
                         <div class="brand-icon-box">
                             <i class="fas fa-network-wired"></i>
                         </div>
                     {% endif %}
-                    <span class="brand-text">{{ custom_app_title|default:'BACKUP WEB' }}</span>
+                    <div class="d-flex flex-column justify-content-center" style="line-height: 1.05;">
+                        <span class="brand-text" style="line-height: 1.1;">Tdox-Config</span>
+                        <small style="font-size: 9.5px; color: var(--muted-foreground); font-weight: 400; letter-spacing: 0.4px; line-height: 1.1;">backup configuration</small>
+                    </div>
                 </a>
 
                 <!-- Mobile Toggle -->
