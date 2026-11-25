@@ -13,8 +13,8 @@ from backup_data.models import RouterBackup
 from routerfleet_tools.models import WebadminSettings
 from routerlib.router_functions import update_router_information
 from user_manager.models import UserAcl
-from .forms import RouterForm, RouterGroupForm
-from .models import Router, RouterGroup, RouterInformation, RouterStatus, BackupSchedule
+from .forms import RouterForm, RouterGroupForm, RouterClientForm
+from .models import Router, RouterGroup, RouterClient, RouterInformation, RouterStatus, BackupSchedule
 from dashboard.models import ActivityLog
 import threading
 import time
@@ -649,3 +649,105 @@ def view_ajax_router_telemetry(request):
             })
     
     return JsonResponse({'status': 'unsupported', 'message': 'Telemetría por API solo soportada en MikroTik'})
+
+
+
+@login_required()
+def view_router_client_list(request):
+    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=20).exists():
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
+
+    clients = list(
+        RouterClient.objects.all()
+        .prefetch_related('routers', 'routers__routerstatus', 'routers__routergroup_set', 'routers__routerinformation')
+        .order_by('name')
+    )
+
+    # Mapa rápido del último respaldo exitoso por router
+    latest_backup_by_router = {}
+    for b in RouterBackup.objects.filter(success=True).order_by('router_id', '-id').values('router_id', 'uuid'):
+        rid = b['router_id']
+        if rid not in latest_backup_by_router:
+            latest_backup_by_router[rid] = b['uuid']
+
+    for client in clients:
+        r_list = list(client.routers.all().order_by('name'))
+        online_c = 0
+        offline_c = 0
+        for r in r_list:
+            grp = r.routergroup_set.first()
+            r.node_name = grp.name if grp else 'General'
+            r.latest_backup_uuid = latest_backup_by_router.get(r.id)
+            is_online = getattr(getattr(r, 'routerstatus', None), 'status_online', True)
+            if not r.monitoring or is_online:
+                online_c += 1
+            else:
+                offline_c += 1
+        client.router_items = r_list
+        client.total_count = len(r_list)
+        client.online_count = online_c
+        client.offline_count = offline_c
+
+    context = {
+        'router_client_list': clients,
+        'page_title': 'Clientes',
+    }
+    return render(request, 'router_manager/router_client_list.html', context=context)
+
+
+@login_required()
+def view_manage_router_client(request):
+    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=40).exists():
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
+
+    uuid_val = request.GET.get('uuid')
+    if uuid_val:
+        router_client = get_object_or_404(RouterClient, uuid=uuid_val)
+        if request.GET.get('action') == 'delete':
+            if request.GET.get('confirmation') in ('delete', 'borrar', 'confirm'):
+                ActivityLog.objects.create(
+                    user=request.user,
+                    action="Cliente Eliminado",
+                    details=f"Cliente '{router_client.name}'",
+                )
+                router_client.delete()
+                messages.success(request, 'Cliente eliminado correctamente (sus equipos y nodos se mantienen intactos).')
+                return redirect('router_client_list')
+            else:
+                messages.warning(request, 'Cliente no eliminado|Confirmación inválida')
+                return redirect('router_client_list')
+    else:
+        router_client = None
+
+    form = RouterClientForm(request.POST or None, instance=router_client)
+    if form.is_valid():
+        saved_client = form.save()
+        action = "Cliente Editado" if uuid_val else "Cliente Creado"
+        ActivityLog.objects.create(
+            user=request.user,
+            action=action,
+            details=f"Cliente '{saved_client.name}' ({saved_client.routers.count()} equipos)",
+        )
+        messages.success(request, f"Cliente '{saved_client.name}' guardado correctamente.")
+        return redirect('router_client_list')
+
+    all_routers = list(Router.objects.all().prefetch_related('routergroup_set', 'routerstatus').order_by('name'))
+    for r in all_routers:
+        grp = r.routergroup_set.first()
+        r.node_name = grp.name if grp else 'General'
+
+    selected_ids = set()
+    if router_client:
+        selected_ids = set(router_client.routers.values_list('id', flat=True))
+
+    all_nodes = RouterGroup.objects.all().order_by('name')
+
+    context = {
+        'form': form,
+        'instance': router_client,
+        'all_routers': all_routers,
+        'selected_ids': selected_ids,
+        'all_nodes': all_nodes,
+        'page_title': f"Editar Cliente: {router_client.name}" if router_client else "Nuevo Cliente",
+    }
+    return render(request, 'router_manager/manage_router_client.html', context=context)

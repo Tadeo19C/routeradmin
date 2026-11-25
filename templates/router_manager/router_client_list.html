@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+
+{% block page_custom_head %}
+<style>
+    .client-accordion-card {
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        margin-bottom: 8px;
+        background: var(--card);
+        overflow: hidden;
+    }
+    .client-accordion-header {
+        padding: 9px 14px;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        background: transparent;
+    }
+    .client-accordion-header:hover {
+        background: var(--secondary);
+    }
+    .client-accordion-card.expanded .client-accordion-header {
+        background: var(--primary-subtle);
+        border-bottom: 1px solid var(--border);
+    }
+    .client-chevron {
+        transition: transform 0.15s ease;
+        color: var(--muted-foreground);
+        font-size: 11px;
+        width: 14px;
+        text-align: center;
+    }
+    .client-accordion-card.expanded .client-chevron {
+        transform: rotate(90deg);
+        color: #5c8ee6;
+    }
+    .client-icon-box {
+        width: 24px;
+        height: 24px;
+        border-radius: 3px;
+        background: var(--secondary);
+        border: 1px solid var(--border);
+        color: #5c8ee6;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11.5px;
+    }
+    .client-title-text {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--foreground);
+    }
+    .client-accordion-body {
+        display: none;
+        background: var(--card);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Clientes</h3>
+                <span class="text-muted small">
+                    <i class="fas fa-building text-primary mr-1"></i>
+                    Agrupación ordenada de equipos por institución o cliente (sin alterar sus Nodos)
+                </span>
+            </div>
+            <div class="card-body">
+                {% include 'router_manager/router_nav_tabs.html' %}
+
+                <!-- Barra de Control: Buscador + Expandir/Contraer + Añadir Cliente -->
+                <div class="d-flex justify-content-between align-items-center flex-wrap mt-3 mb-3" style="gap: 8px;">
+                    <div class="d-flex align-items-center flex-wrap" style="gap: 8px; flex: 1; min-width: 260px; max-width: 460px;">
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            </div>
+                            <input type="text" id="client-quick-search" class="form-control"
+                                   placeholder="Buscar cliente, equipo o nodo (ej. Policía, crucero, IP...)">
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                        {% if router_client_list %}
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" id="btn-expand-all-clients" class="btn btn-outline-primary">
+                                <i class="fas fa-angle-double-down mr-1"></i> Expandir Todo
+                            </button>
+                            <button type="button" id="btn-collapse-all-clients" class="btn btn-outline-secondary">
+                                <i class="fas fa-angle-double-up mr-1"></i> Contraer Todo
+                            </button>
+                        </div>
+                        {% endif %}
+                        <a href="/router/manage_client/" class="btn btn-primary btn-sm font-weight-bold">
+                            <i class="fas fa-plus mr-1"></i> Añadir Cliente
+                        </a>
+                    </div>
+                </div>
+
+                {% if router_client_list %}
+                <div id="clients-accordion-container">
+                    {% for client in router_client_list %}
+                    <div class="client-accordion-card"
+                         data-client-search="{{ client.name|lower }} {{ client.internal_notes|default:''|lower }} {% for r in client.router_items %}{{ r.name|lower }} {{ r.address|lower }} {{ r.node_name|lower }} {% endfor %}">
+                        <div class="client-accordion-header" onclick="toggleClientAccordion(this)">
+                            <div class="d-flex align-items-center flex-wrap" style="gap: 10px;">
+                                <i class="fas fa-chevron-right client-chevron"></i>
+                                <span class="client-icon-box"><i class="fas fa-building"></i></span>
+                                <span class="client-title-text">{{ client.name }}</span>
+                                {% if client.internal_notes %}
+                                    <span class="text-muted small">&mdash; {{ client.internal_notes }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-flex align-items-center flex-wrap" style="gap: 8px;" onclick="event.stopPropagation();">
+                                <span class="badge-gpon badge-gpon-info">
+                                    {{ client.total_count }} equipo{{ client.total_count|pluralize:"s" }}
+                                </span>
+                                {% if client.online_count > 0 %}
+                                <span class="badge-gpon badge-gpon-success" title="Equipos en línea">
+                                    <i class="fas fa-check-circle"></i> {{ client.online_count }}
+                                </span>
+                                {% endif %}
+                                {% if client.offline_count > 0 %}
+                                <span class="badge-gpon badge-gpon-error" title="Equipos fuera de línea">
+                                    <i class="fas fa-times-circle"></i> {{ client.offline_count }}
+                                </span>
+                                {% endif %}
+
+                                <a href="/router/manage_client/?uuid={{ client.uuid }}" class="btn btn-xs btn-outline-primary ml-1" title="Editar cliente y agrupar equipos">
+                                    <i class="fas fa-edit"></i> Editar / Equipos
+                                </a>
+                                <a href="/router/manage_client/?uuid={{ client.uuid }}&action=delete&confirmation=confirm"
+                                   class="btn btn-xs btn-outline-danger"
+                                   onclick="return confirm('¿Seguro que deseas eliminar el cliente \'{{ client.name }}\'? (Sus equipos y nodos no se borrarán)');"
+                                   title="Eliminar cliente">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="client-accordion-body">
+                            {% if client.router_items %}
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="min-width text-center">Estado</th>
+                                            <th>Nombre del Equipo</th>
+                                            <th>Dirección IP</th>
+                                            <th>Nodo</th>
+                                            <th>Marca</th>
+                                            <th>Protocolo</th>
+                                            <th class="min-width text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for router in client.router_items %}
+                                        <tr class="client-router-row"
+                                            data-router-search="{{ router.name|lower }} {{ router.address|lower }} {{ router.node_name|lower }} {{ router.router_type|lower }}">
+                                            <td class="min-width text-center">
+                                                {% if not router.monitoring %}
+                                                    <span class="badge-gpon badge-gpon-secondary">Sin Monitoreo</span>
+                                                {% elif router.routerstatus.status_online %}
+                                                    <span class="badge-gpon badge-gpon-success"><i class="fas fa-circle" style="font-size: 7px;"></i> En Línea</span>
+                                                {% else %}
+                                                    <span class="badge-gpon badge-gpon-error"><i class="fas fa-circle" style="font-size: 7px;"></i> Fuera de Línea</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="font-weight-bold">
+                                                <a href="/router/details/?uuid={{ router.uuid }}">{{ router.name }}</a>
+                                            </td>
+                                            <td><code>{{ router.address }}</code></td>
+                                            <td>
+                                                <span class="badge badge-secondary">
+                                                    <i class="fas fa-sitemap mr-1"></i>{{ router.node_name }}
+                                                </span>
+                                            </td>
+                                            <td>{{ router.get_router_type_display }}</td>
+                                            <td><span class="text-uppercase small font-weight-bold">{{ router.connection_protocol }}:{{ router.port }}</span></td>
+                                            <td class="min-width text-right text-nowrap">
+                                                <a href="/router/create_instant_backup/?uuid={{ router.uuid }}"
+                                                   class="btn btn-xs btn-outline-primary mr-1"
+                                                   title="Ejecutar respaldo inmediato">
+                                                    <i class="fas fa-sync-alt"></i> Respaldar
+                                                </a>
+                                                {% if router.latest_backup_uuid %}
+                                                <a href="/backup/backup_details/?uuid={{ router.latest_backup_uuid }}"
+                                                   class="btn btn-xs btn-outline-info mr-1"
+                                                   title="Ver último respaldo guardado">
+                                                    <i class="fas fa-file-code"></i> Último
+                                                </a>
+                                                {% endif %}
+                                                <a href="/router/details/?uuid={{ router.uuid }}"
+                                                   class="btn btn-xs btn-outline-secondary"
+                                                   title="Ver detalles del equipo">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="p-3 text-muted small">
+                                No hay equipos asignados a este cliente todavía.
+                                <a href="/router/manage_client/?uuid={{ client.uuid }}" class="text-primary font-weight-bold ml-1">Asignar equipos aquí</a>.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5 border rounded" style="background: var(--card);">
+                    <i class="fas fa-building text-muted mb-2" style="font-size: 2rem;"></i>
+                    <h6 class="font-weight-bold mb-1">Aún no hay Clientes registrados</h6>
+                    <p class="text-muted small mb-3">
+                        Crea un cliente (por ejemplo: <strong>Policía</strong>, <strong>Hospital</strong>, <strong>Banco</strong>) para agrupar y visualizar sus equipos de forma limpia y ordenada.
+                    </p>
+                    <a href="/router/manage_client/" class="btn btn-primary btn-sm font-weight-bold">
+                        <i class="fas fa-plus mr-1"></i> Crear Primer Cliente
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_page_scripts %}
+<script>
+function toggleClientAccordion(headerEl) {
+    const card = headerEl.closest('.client-accordion-card');
+    const body = card.querySelector('.client-accordion-body');
+    const isExpanded = card.classList.contains('expanded');
+    if (isExpanded) {
+        card.classList.remove('expanded');
+        $(body).slideUp(150);
+    } else {
+        card.classList.add('expanded');
+        $(body).slideDown(150);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const expandAllBtn = document.getElementById('btn-expand-all-clients');
+    const collapseAllBtn = document.getElementById('btn-collapse-all-clients');
+    const searchInput = document.getElementById('client-quick-search');
+
+    if (expandAllBtn) {
+        expandAllBtn.addEventListener('click', function() {
+            document.querySelectorAll('.client-accordion-card').forEach(function(card) {
+                card.classList.add('expanded');
+                $(card.querySelector('.client-accordion-body')).slideDown(150);
+            });
+        });
+    }
+
+    if (collapseAllBtn) {
+        collapseAllBtn.addEventListener('click', function() {
+            document.querySelectorAll('.client-accordion-card').forEach(function(card) {
+                card.classList.remove('expanded');
+                $(card.querySelector('.client-accordion-body')).slideUp(150);
+            });
+        });
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const q = this.value.trim().toLowerCase();
+            document.querySelectorAll('.client-accordion-card').forEach(function(card) {
+                const hay = card.getAttribute('data-client-search') || '';
+                const body = card.querySelector('.client-accordion-body');
+                if (!q) {
+                    card.style.display = '';
+                    card.querySelectorAll('.client-router-row').forEach(r => r.style.display = '');
+                } else if (hay.includes(q)) {
+                    card.style.display = '';
+                    card.classList.add('expanded');
+                    $(body).show();
+                    const clientNameMatch = (card.querySelector('.client-title-text').textContent || '').toLowerCase().includes(q);
+                    card.querySelectorAll('.client-router-row').forEach(function(r) {
+                        const rHay = r.getAttribute('data-router-search') || '';
+                        r.style.display = (clientNameMatch || rHay.includes(q)) ? '' : 'none';
+                    });
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -9,7 +9,9 @@
             Nodos
         </a>
     </li>
-    {% if request.path == '/router/list/' %}
-    {% endif %}
-
+    <li class="nav-item">
+        <a class="nav-link {% if '/router/client' in request.path %}active{% endif %}" href="/router/client_list/" role="tab">
+            Clientes
+        </a>
+    </li>
 </ul>

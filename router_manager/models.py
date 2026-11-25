@@ -135,3 +135,20 @@ class RouterInformation(models.Model):
 
     def __str__(self):
         return str(self.router)
+
+
+class RouterClient(models.Model):
+    class Meta:
+        verbose_name = "Cliente"
+        verbose_name_plural = "Clientes"
+
+    name = models.CharField(max_length=100, unique=True)
+    internal_notes = models.TextField(null=True, blank=True)
+    routers = models.ManyToManyField(Router, blank=True, related_name='clients')
+
+    updated = models.DateTimeField(auto_now=True)
+    created = models.DateTimeField(auto_now_add=True)
+    uuid = models.UUIDField(unique=True, editable=False, default=uuid.uuid4)
+
+    def __str__(self):
+        return self.name

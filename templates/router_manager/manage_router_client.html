@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-9 col-lg-10">
+        <div class="card card-primary card-outline">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold">
+                    <i class="fas fa-building text-primary mr-2"></i>
+                    {% if instance %}Editar Cliente: {{ instance.name }}{% else %}Nuevo Cliente{% endif %}
+                </h3>
+                <a href="/router/client_list/" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left mr-1"></i> Volver a Clientes
+                </a>
+            </div>
+
+            <div class="card-body">
+                <form method="post" id="client-manage-form">
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger py-2 px-3 small">
+                        Por favor verifique los datos ingresados: {{ form.errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6 mb-3">
+                            <label class="font-weight-bold small text-uppercase text-muted">Nombre del Cliente *</label>
+                            {{ form.name }}
+                        </div>
+                        <div class="form-group col-md-6 mb-3">
+                            <label class="font-weight-bold small text-uppercase text-muted">Notas / Descripción (Opcional)</label>
+                            <input type="text" name="internal_notes" class="form-control"
+                                   value="{{ form.internal_notes.value|default_if_none:'' }}"
+                                   placeholder="Ej: Enlaces de estaciones de Policía, contacto, referencia...">
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <!-- Buscador y Filtro de Equipos para agrupar rápidamente (ej. "policia x, x, x...") -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap mb-2" style="gap: 8px;">
+                        <div>
+                            <label class="font-weight-bold mb-0">
+                                <i class="fas fa-network-wired text-primary mr-1"></i> Seleccionar Equipos de este Cliente
+                            </label>
+                            <span class="badge badge-primary ml-2" id="selected-counter-badge">0 seleccionados</span>
+                        </div>
+
+                        <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
+                            <button type="button" id="btn-check-visible" class="btn btn-xs btn-outline-primary">
+                                <i class="fas fa-check-square mr-1"></i> Marcar filtrados
+                            </button>
+                            <button type="button" id="btn-uncheck-visible" class="btn btn-xs btn-outline-secondary">
+                                <i class="far fa-square mr-1"></i> Desmarcar filtrados
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-row mb-2">
+                        <div class="col-md-7 mb-2 mb-md-0">
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input type="text" id="filter-router-text" class="form-control"
+                                       placeholder="Filtrar equipos por nombre o IP (ej. escribe 'policia' para ver todos los equipos de policía)...">
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <select id="filter-router-node" class="form-control form-control-sm">
+                                <option value="">-- Todos los Nodos --</option>
+                                {% for node in all_nodes %}
+                                <option value="{{ node.name|lower }}">Nodo: {{ node.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de selección de equipos -->
+                    <div class="table-responsive border rounded" style="max-height: 380px; overflow-y: auto; background: var(--card);">
+                        <table class="table table-hover table-sm mb-0" id="client-routers-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 38px;" class="text-center">Sel.</th>
+                                    <th>Nombre del Equipo</th>
+                                    <th>Dirección IP</th>
+                                    <th>Nodo Actual</th>
+                                    <th>Marca</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in all_routers %}
+                                <tr class="selectable-router-row"
+                                    style="cursor: pointer;"
+                                    data-name="{{ r.name|lower }} {{ r.address|lower }}"
+                                    data-node="{{ r.node_name|lower }}"
+                                    onclick="toggleRowCheckbox(this, event)">
+                                    <td class="text-center" onclick="event.stopPropagation();">
+                                        <input type="checkbox"
+                                               name="routers"
+                                               value="{{ r.id }}"
+                                               class="client-router-checkbox"
+                                               {% if r.id in selected_ids %}checked{% endif %}
+                                               onchange="updateSelectedCounter()">
+                                    </td>
+                                    <td class="font-weight-bold">{{ r.name }}</td>
+                                    <td><code>{{ r.address }}</code></td>
+                                    <td>
+                                        <span class="badge badge-secondary">
+                                            <i class="fas fa-sitemap mr-1"></i>{{ r.node_name }}
+                                        </span>
+                                    </td>
+                                    <td>{{ r.get_router_type_display }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">
+                                        No hay equipos registrados todavía.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-2 border-top">
+                        <div>
+                            <button type="submit" class="btn btn-success font-weight-bold">
+                                <i class="fas fa-save mr-1"></i> Guardar Cliente
+                            </button>
+                            <a href="/router/client_list/" class="btn btn-outline-secondary ml-1">
+                                Cancelar
+                            </a>
+                        </div>
+                        {% if instance %}
+                        <a href="/router/manage_client/?uuid={{ instance.uuid }}&action=delete&confirmation=confirm"
+                           class="btn btn-outline-danger btn-sm"
+                           onclick="return confirm('¿Seguro que deseas eliminar el cliente \'{{ instance.name }}\'? (Sus equipos y nodos no se borrarán)');">
+                            <i class="fas fa-trash-alt mr-1"></i> Eliminar Cliente
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_page_scripts %}
+<script>
+function toggleRowCheckbox(rowEl, ev) {
+    const cb = rowEl.querySelector('.client-router-checkbox');
+    if (cb && ev.target !== cb) {
+        cb.checked = !cb.checked;
+        updateSelectedCounter();
+    }
+}
+
+function updateSelectedCounter() {
+    const count = document.querySelectorAll('.client-router-checkbox:checked').length;
+    const badge = document.getElementById('selected-counter-badge');
+    if (badge) {
+        badge.textContent = count + (count === 1 ? ' seleccionado' : ' seleccionados');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateSelectedCounter();
+
+    const textInput = document.getElementById('filter-router-text');
+    const nodeSelect = document.getElementById('filter-router-node');
+    const checkVisibleBtn = document.getElementById('btn-check-visible');
+    const uncheckVisibleBtn = document.getElementById('btn-uncheck-visible');
+
+    function applyFilter() {
+        const q = (textInput.value || '').trim().toLowerCase();
+        const node = (nodeSelect.value || '').trim().toLowerCase();
+
+        document.querySelectorAll('.selectable-router-row').forEach(function(row) {
+            const rName = row.getAttribute('data-name') || '';
+            const rNode = row.getAttribute('data-node') || '';
+            const matchText = !q || rName.includes(q);
+            const matchNode = !node || rNode === node;
+            row.style.display = (matchText && matchNode) ? '' : 'none';
+        });
+    }
+
+    if (textInput) textInput.addEventListener('input', applyFilter);
+    if (nodeSelect) nodeSelect.addEventListener('change', applyFilter);
+
+    if (checkVisibleBtn) {
+        checkVisibleBtn.addEventListener('click', function() {
+            document.querySelectorAll('.selectable-router-row').forEach(function(row) {
+                if (row.style.display !== 'none') {
+                    const cb = row.querySelector('.client-router-checkbox');
+                    if (cb) cb.checked = true;
+                }
+            });
+            updateSelectedCounter();
+        });
+    }
+
+    if (uncheckVisibleBtn) {
+        uncheckVisibleBtn.addEventListener('click', function() {
+            document.querySelectorAll('.selectable-router-row').forEach(function(row) {
+                if (row.style.display !== 'none') {
+                    const cb = row.querySelector('.client-router-checkbox');
+                    if (cb) cb.checked = false;
+                }
+            });
+            updateSelectedCounter();
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -3,7 +3,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Row, Column, HTML, Field
 from crispy_forms.bootstrap import InlineRadios
 from django.core.validators import RegexValidator
-from .models import Router, RouterGroup
+from .models import Router, RouterGroup, RouterClient
 from backup.models import BackupProfile, HOUR_CHOICES
 from routerlib.functions import test_authentication, connect_to_ssh
 import ipaddress
@@ -343,3 +343,24 @@ class RouterGroupForm(forms.ModelForm):
         if default_group:
             RouterGroup.objects.filter(default_group=True).update(default_group=False)
         return cleaned_data
+
+
+
+class RouterClientForm(forms.ModelForm):
+    class Meta:
+        model = RouterClient
+        fields = ['name', 'internal_notes', 'routers']
+        labels = {
+            'name': 'Nombre del Cliente',
+            'internal_notes': 'Notas / Descripción (Opcional)',
+            'routers': 'Equipos del Cliente',
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Policía Nacional, Banco Central, Alcaldía...'}),
+            'internal_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Descripción o contacto del cliente (opcional)'}),
+            'routers': forms.CheckboxSelectMultiple(),
+        }
+
+    def clean_name(self):
+        name = (self.cleaned_data.get('name') or '').strip()
+        return name
