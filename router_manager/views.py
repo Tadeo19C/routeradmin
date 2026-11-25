@@ -282,6 +282,13 @@ def view_manage_router(request):
             group.routers.remove(saved_router)
         if selected_group:
             selected_group.routers.add(saved_router)
+        # Cliente (opcional): solo se modifica si el campo viene en el formulario
+        if 'router_client' in request.POST:
+            selected_client = form.cleaned_data.get('router_client')
+            for client in RouterClient.objects.filter(routers=saved_router):
+                client.routers.remove(saved_router)
+            if selected_client:
+                selected_client.routers.add(saved_router)
         messages.success(request, 'Equipo guardado correctamente|Sincronizando información y calendario del equipo.')
         router_status, router_status_created = RouterStatus.objects.get_or_create(router=saved_router)
         BackupSchedule.objects.filter(router=saved_router).delete()

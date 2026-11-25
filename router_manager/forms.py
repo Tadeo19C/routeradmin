@@ -26,6 +26,12 @@ class RouterForm(forms.ModelForm):
         empty_label='-- Seleccione un Nodo --',
         label='Nodo'
     )
+    router_client = forms.ModelChoiceField(
+        queryset=RouterClient.objects.all().order_by('name'),
+        required=False,
+        empty_label='-- Sin Cliente (Opcional) --',
+        label='Cliente'
+    )
     backup_profile = forms.ModelChoiceField(
         queryset=BackupProfile.objects.all().order_by('name'),
         required=False,
@@ -92,6 +98,9 @@ class RouterForm(forms.ModelForm):
             current_group = self.instance.routergroup_set.first()
             if current_group:
                 self.fields['router_group'].initial = current_group
+            current_client = self.instance.clients.first()
+            if current_client:
+                self.fields['router_client'].initial = current_client
             
             # Populate custom backup fields from the assigned profile
             if self.instance.backup_profile:
@@ -146,6 +155,10 @@ class RouterForm(forms.ModelForm):
             Row(
                 Column('connection_protocol', css_class='form-group col-md-6 mb-2'),
                 Column('router_group', css_class='form-group col-md-6 mb-2'),
+                css_class='form-row'
+            ),
+            Row(
+                Column('router_client', css_class='form-group col-md-6 mb-2'),
                 css_class='form-row'
             ),
             Row(
