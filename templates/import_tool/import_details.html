@@ -1,117 +1,147 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <div class='row'>
-        <div class='col-lg-12'>
-            <div class="card card-primary card-outline">
-                {% if page_title %}
-                    <div class="card-header">
-                        <h3 class="card-title">{{ page_title }}</h3>
-                    </div>
-                {% endif %}
-                <div class="card-body">
-                    <ul class="nav nav-tabs border-0" role="tablist">
-                        <li class="nav-item">
-                            <a class="nav-link {% if import_view == 'tasks' %}active{% endif %} text-bold" href="?uuid={{ csv_data.uuid }}&view=tasks" role="tab">
-                                <i class="fas fa-tasks mr-1"></i> Tareas de Importación
-                            </a>
-                        </li>
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card card-primary card-outline">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h3 class="card-title font-weight-bold">
+                        <i class="fas fa-file-excel text-success mr-2"></i> Vista Previa y Proceso de Importación
+                    </h3>
+                </div>
+                <span class="badge badge-primary px-2 py-1" id="import-counter-badge">
+                    <span id="completed-count">{{ completed_tasks }}</span> / <span id="total-count">{{ total_tasks }}</span> equipos procesados
+                </span>
+            </div>
 
-                        <li class="nav-item">
-                            <a class="nav-link {% if import_view == 'processed' %}active{% endif %}" href="?uuid={{ csv_data.uuid }}&view=processed" role="tab">
-                                <i class="fas fa-code mr-1"></i> Datos Procesados
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link {% if import_view == 'raw' %}active{% endif %}" href="?uuid={{ csv_data.uuid }}&view=raw" role="tab">
-                                <i class="fas fa-file-csv mr-1"></i> Datos Originales
-                            </a>
-                        </li>
-                    </ul>
-                    <div class="row">
-                        <div class="col-lg-12">
-                            {% if import_view == 'tasks' %}
-                                {% include 'import_tool/import_details_tasks.html' %}
-                            {% elif import_view == 'processed' %}
-                                {% include 'import_tool/import_details_processed.html' %}
-                            {% elif import_view == 'raw' %}
-                                {% include 'import_tool/import_details_raw.html' %}
+            <div class="card-body">
+                <!-- Barra de progreso en tiempo real -->
+                <div class="mb-3" id="progress-wrapper" style="{% if completed_tasks == 0 %}display: none;{% endif %}">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span id="progress-status-text" class="font-weight-bold text-primary">
+                            {% if completed_tasks == total_tasks and total_tasks > 0 %}
+                                <i class="fas fa-check-circle text-success mr-1"></i> ¡Importación finalizada con éxito!
+                            {% else %}
+                                Procesando equipos...
                             {% endif %}
-                        </div>
+                        </span>
+                        <span id="progress-percent-text" class="text-muted">0%</span>
                     </div>
-                    <div class="row">
-                        <div class="col-lg-12 mt-4 d-flex align-items-center gap-2">
-                             <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=start_import" class="btn btn-success btn-lg elevation-2 mr-2">
-                                <i class="fas fa-play mr-1"></i> Iniciar / Reanudar Importación
-                             </a>
-                             <a href="/router/import_tool/" class="btn btn-outline-secondary mr-2">
-                                <i class="fas fa-arrow-left mr-1"></i> Volver al Listado
-                             </a>
-                             <div class="ml-auto">
-                                <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=delete_errors" onclick="return confirm('¿Eliminar tareas fallidas?\n\nEsto te permitirá reintentar solo los equipos que tuvieron problemas.')" class="btn btn-outline-warning mr-2">
-                                    Eliminar Errores
-                                </a>
-                                <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=delete" onclick="return confirm('¿Estás seguro de eliminar esta importación completa?');" class="btn btn-outline-danger">
-                                    Eliminar Importación
-                                </a>
-                             </div>
-                        </div>
+                    <div class="progress" style="height: 8px; border-radius: 4px;">
+                        <div id="import-progress-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%; transition: width 0.25s ease;"></div>
                     </div>
                 </div>
+
+                <!-- Botones de Acción Superiores -->
+                <div class="d-flex align-items-center flex-wrap mb-3" style="gap: 8px;">
+                    <button type="button" id="btn-start-import" class="btn btn-success font-weight-bold" {% if completed_tasks == total_tasks and total_tasks > 0 %}style="display: none;"{% endif %}>
+                        <i class="fas fa-play mr-1"></i> Confirmar e Iniciar Importación
+                    </button>
+                    <a href="/router/list/" id="btn-go-routers" class="btn btn-primary font-weight-bold" style="{% if completed_tasks < total_tasks %}display: none;{% endif %}">
+                        <i class="fas fa-network-wired mr-1"></i> Ir a Lista de Equipos
+                    </a>
+                    <a href="/router/import_tool/csv/" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left mr-1"></i> Subir otro Excel
+                    </a>
+                    <div class="ml-auto">
+                        <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=delete"
+                           onclick="return confirm('¿Cancelar y descartar esta vista previa de importación?');"
+                           class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-trash-alt mr-1"></i> Descartar
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Tabla de Vista Previa -->
+                {% include 'import_tool/import_details_tasks.html' %}
             </div>
         </div>
     </div>
-    </div>
+</div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const startBtn = document.getElementById('btn-start-import');
+    const goRoutersBtn = document.getElementById('btn-go-routers');
+    const progressWrapper = document.getElementById('progress-wrapper');
+    const progressBar = document.getElementById('import-progress-bar');
+    const progressStatusText = document.getElementById('progress-status-text');
+    const progressPercentText = document.getElementById('progress-percent-text');
+    const completedCountEl = document.getElementById('completed-count');
+    const totalTasks = {{ total_tasks|default:0 }};
+    let processedCount = {{ completed_tasks|default:0 }};
+
+    function updateProgressBar() {
+        if (totalTasks <= 0) return;
+        const pct = Math.min(100, Math.round((processedCount / totalTasks) * 100));
+        progressBar.style.width = pct + '%';
+        progressPercentText.textContent = pct + '%';
+        completedCountEl.textContent = processedCount;
+    }
+
+    updateProgressBar();
+
+    async function processTaskRow(row) {
+        const uuid = row.getAttribute('data-uuid');
+        const statusCell = document.getElementById(`status-${uuid}`);
+        const detailCell = document.getElementById(`errormessage-${uuid}`);
+        const nameCell = document.getElementById(`name-${uuid}`);
+
+        statusCell.innerHTML = '<span class="badge-gpon badge-gpon-info"><i class="fas fa-spinner fa-spin"></i> Procesando...</span>';
+
+        try {
+            const response = await fetch(`/router/import_tool/run_import_task/?uuid=${uuid}`);
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                statusCell.innerHTML = '<span class="badge-gpon badge-gpon-success"><i class="fas fa-check-circle"></i> Importado</span>';
+                detailCell.textContent = data.message || 'Completado';
+                if (data.router_uuid && nameCell) {
+                    const currentName = nameCell.textContent.trim();
+                    nameCell.innerHTML = `<a href="/router/details/?uuid=${data.router_uuid}">${currentName}</a>`;
+                }
+                row.setAttribute('data-pending', '0');
+                processedCount++;
+                updateProgressBar();
+            } else {
+                statusCell.innerHTML = '<span class="badge-gpon badge-gpon-error"><i class="fas fa-times-circle"></i> Error</span>';
+                detailCell.textContent = data.error_message || 'Error al procesar';
+                detailCell.classList.add('text-danger');
+            }
+        } catch (err) {
+            statusCell.innerHTML = '<span class="badge-gpon badge-gpon-error"><i class="fas fa-times-circle"></i> Error</span>';
+            detailCell.textContent = 'Error de conexión con el servidor.';
+        }
+    }
+
+    async function startLiveImport() {
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Importando equipos...';
+        }
+        progressWrapper.style.display = 'block';
+        progressStatusText.innerHTML = '<i class="fas fa-cog fa-spin mr-1"></i> Importando equipos en el sistema...';
+
+        const rows = document.querySelectorAll('tr.import-task-row[data-pending="1"]');
+        for (const row of rows) {
+            await processTaskRow(row);
+        }
+
+        progressStatusText.innerHTML = '<i class="fas fa-check-circle text-success mr-1"></i> ¡Proceso de importación completado!';
+        if (startBtn) startBtn.style.display = 'none';
+        if (goRoutersBtn) goRoutersBtn.style.display = 'inline-block';
+    }
+
+    if (startBtn) {
+        startBtn.addEventListener('click', function () {
+            startLiveImport();
+        });
+    }
 
     {% if action == 'start_import' %}
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                // Function to fetch and update the status
-                async function fetchAndProcessStatus(uuid) {
-                    // Set the status to "Procesando..."
-                    let statusCell = document.getElementById(`status-${uuid}`);
-                    statusCell.innerHTML = '<span class="badge badge-info">Procesando...</span>';
-
-                    try {
-                        let response = await fetch(`/router/import_tool/run_import_task/?uuid=${uuid}`);
-                        let data = await response.json();
-
-                        if (data.status === 'success') {
-                            statusCell.innerHTML = '<span class="badge badge-success">Éxito</span>';
-                        } else if (data.status === 'error') {
-                            statusCell.innerHTML = '<span class="badge badge-danger">Error</span>';
-                            let errorMessageCell = document.getElementById(`errormessage-${uuid}`);
-                            errorMessageCell.textContent = data.error_message;
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        statusCell.innerHTML = '<span class="badge badge-danger">Error</span>';
-                        let errorMessageCell = document.getElementById(`errormessage-${uuid}`);
-                        errorMessageCell.textContent = 'Request failed.';
-                    }
-                }
-
-                // Function to process all rows synchronously
-                async function processRows() {
-                    let rows = document.querySelectorAll('table tbody tr');
-                    for (let row of rows) {
-                        let uuidCell = row.querySelector('td:nth-child(2)');
-                        let uuid = uuidCell.textContent.trim();
-                        let statusCell = document.getElementById(`status-${uuid}`);
-                        let statusBadge = statusCell.querySelector('.badge');
-
-                        if (statusBadge && statusBadge.textContent.trim() === 'Pendiente') {
-                            await fetchAndProcessStatus(uuid);
-                        }
-                    }
-                }
-
-                // Start processing rows
-                processRows();
-            });
-        </script>
+    startLiveImport();
     {% endif %}
-
+});
+</script>
 {% endblock %}

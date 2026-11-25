@@ -1,42 +1,58 @@
-<table id="example1" class="table table-hover datatables-with-export">
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th style="display: none;">UUID</th>
-        <th>Nombre del Equipo</th>
-        <th>Dirección IP / Host</th>
-        <th>Estado</th>
-        <th>Mensaje de Error</th>
-    </tr>
-    </thead>
-    <tbody>
-    {% for task in import_task_list %}
-        <tr>
-        <td>{{ task.import_id }}</td>
-        <td style="display: none;">{{ task.uuid }}</td>
-        <td>
-            {% if task.router %}
-            <a href="/router/details/?uuid={{ task.router.uuid }}" title="Task name: {{ task.name }}">{{ task.router.name }}</a>
-            {% else %}
-            {{ task.name }}
-            {% endif %}
-        </td>
-        <td>{{ task.address }}</td>
-        <td id="status-{{ task.uuid }}">
-            {% if task.import_success %}
-            <span class="badge badge-success">Éxito</span>
-            {% elif task.import_error %}
-            <span class="badge badge-danger">Error</span>
-            {% else %}
-            <span class="badge badge-warning">Pendiente</span>
-            {% endif %}
-            {% comment %}
-            <span class="badge badge-info">Procesando...</span>
-            {% endcomment %}
-        </td>
-        <td id="errormessage-{{ task.uuid }}">{{ task.import_error_message|default_if_none:'' }}</td>
-        </tr>
-    
-    {% endfor %}
-    </tbody>
-</table>
+<div class="table-responsive">
+    <table class="table table-hover mb-0" id="import-preview-table">
+        <thead>
+            <tr>
+                <th class="min-width">#</th>
+                <th>Nombre del Equipo</th>
+                <th>Dirección IP</th>
+                <th>Usuario</th>
+                <th>Marca</th>
+                <th>Protocolo</th>
+                <th>Puerto</th>
+                <th>Nodo</th>
+                <th>Estado / Acción</th>
+                <th>Detalle</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for task in import_task_list %}
+            <tr class="import-task-row" data-uuid="{{ task.uuid }}" data-pending="{% if not task.import_success and not task.import_error %}1{% else %}0{% endif %}">
+                <td class="min-width text-muted">{{ task.import_id }}</td>
+                <td class="font-weight-bold" id="name-{{ task.uuid }}">
+                    {% if task.router %}
+                        <a href="/router/details/?uuid={{ task.router.uuid }}">{{ task.router.name }}</a>
+                    {% else %}
+                        {{ task.name }}
+                    {% endif %}
+                </td>
+                <td><code>{{ task.address }}</code></td>
+                <td>{{ task.username }}</td>
+                <td><span class="badge badge-secondary text-uppercase">{{ task.router_type }}</span></td>
+                <td><span class="badge badge-info text-uppercase">{{ task.connection_protocol }}</span></td>
+                <td><code>{{ task.port }}</code></td>
+                <td><i class="fas fa-sitemap text-primary mr-1"></i>{{ task.router_group_name|default:"General" }}</td>
+                <td id="status-{{ task.uuid }}">
+                    {% if task.import_success %}
+                        <span class="badge-gpon badge-gpon-success"><i class="fas fa-check-circle"></i> Importado</span>
+                    {% elif task.import_error %}
+                        <span class="badge-gpon badge-gpon-error"><i class="fas fa-times-circle"></i> Error</span>
+                    {% else %}
+                        {% if task.will_update %}
+                            <span class="badge-gpon badge-gpon-info status-pending"><i class="fas fa-sync-alt"></i> Listo (Actualizar)</span>
+                        {% else %}
+                            <span class="badge-gpon badge-gpon-warning status-pending"><i class="far fa-clock"></i> Listo (Nuevo)</span>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td class="small text-muted" id="errormessage-{{ task.uuid }}">
+                    {% if task.import_error_message %}
+                        {{ task.import_error_message }}
+                    {% elif not task.import_success %}
+                        {% if task.will_update %}Se actualizarán los datos del equipo existente{% else %}Se creará como nuevo equipo{% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -3,8 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 
 from backup.models import BackupProfile
-from router_manager.models import Router, SUPPORTED_ROUTER_TYPES, RouterGroup, RouterStatus, BackupSchedule
-from routerlib.functions import test_authentication
+from router_manager.models import Router, SUPPORTED_ROUTER_TYPES, RouterGroup, RouterStatus
 from user_manager.models import UserAcl
 from .models import CsvData, ImportTask
 from .forms import CsvDataForm
@@ -20,12 +19,15 @@ SUPPORTED_ROUTER_TYPES = [rt[0] for rt in SUPPORTED_ROUTER_TYPES]
 def run_import_task(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
-    import_task = get_object_or_404(ImportTask, uuid=request.GET.get('uuid'), import_success=False, import_error=False)
+    import_task = get_object_or_404(ImportTask, uuid=request.GET.get('uuid'))
+    if import_task.import_success:
+        return JsonResponse({'status': 'success', 'message': 'Completado'})
+
     backup_profile = None
     router_group = None
 
-    name = import_task.name.strip()
-    address = import_task.address.lower().strip()
+    name = (import_task.name or '').strip()
+    address = (import_task.address or '').lower().strip()
 
     try:
         socket.gethostbyname(address)
@@ -56,8 +58,11 @@ def run_import_task(request):
 
     protocol = (getattr(import_task, 'connection_protocol', 'ssh') or 'ssh').lower()
 
-    existing_router = Router.objects.filter(address=address).first() or Router.objects.filter(name=name).first()
+    existing_router = Router.objects.filter(address=address).first()
+    action_label = 'Nuevo equipo creado'
     if existing_router:
+        if name and name != existing_router.name and not Router.objects.filter(name=name).exclude(pk=existing_router.pk).exists():
+            existing_router.name = name
         existing_router.username = import_task.username or existing_router.username
         if import_task.password:
             existing_router.password = import_task.password
@@ -65,13 +70,19 @@ def run_import_task(request):
         existing_router.router_type = import_task.router_type
         existing_router.connection_protocol = protocol
         existing_router.monitoring = import_task.monitoring
+        if not existing_router.backup_profile:
+            existing_router.backup_profile = backup_profile
         existing_router.save()
         target_router = existing_router
+        action_label = 'Equipo actualizado'
     else:
+        unique_name = name
+        if Router.objects.filter(name=unique_name).exists():
+            unique_name = f"{name} ({address})"
         target_router = Router.objects.create(
-            name=name,
-            username=import_task.username,
-            password=import_task.password,
+            name=unique_name,
+            username=import_task.username or 'admin',
+            password=import_task.password or '',
             address=address,
             port=import_task.port,
             router_type=import_task.router_type,
@@ -89,11 +100,23 @@ def run_import_task(request):
 
     import_task.router = target_router
     import_task.import_success = True
+    import_task.import_error = False
+    import_task.import_error_message = action_label
     import_task.backup_profile = backup_profile
     import_task.router_group = router_group
     import_task.save()
 
-    return JsonResponse({'status': 'success', 'message': 'Equipo importado correctamente.'})
+    try:
+        from backup_data.services import service_generate_backup_schedule
+        service_generate_backup_schedule()
+    except Exception:
+        pass
+
+    return JsonResponse({
+        'status': 'success',
+        'message': action_label,
+        'router_uuid': str(target_router.uuid),
+    })
 
 
 @login_required()
@@ -107,33 +130,29 @@ def view_import_details(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     csv_data = get_object_or_404(CsvData, uuid=request.GET.get('uuid'))
-    import_task_list = ImportTask.objects.filter(csv_data=csv_data).order_by('import_id')
-    action = None
-    if request.GET.get('view') == 'raw':
-        import_view = 'raw'
-    elif request.GET.get('view') == 'processed':
-        import_view = 'processed'
-    else:
-        import_view = 'tasks'
+    import_task_list = list(ImportTask.objects.filter(csv_data=csv_data).order_by('import_id'))
+    action = request.GET.get('action')
 
-    if request.GET.get('action') == 'start_import':
-        action = 'start_import'
-        import_view = 'tasks'
-    elif request.GET.get('action') == 'delete_errors':
-        for task in import_task_list.filter(import_error=True):
-            task.delete()
+    if action == 'delete_errors':
+        ImportTask.objects.filter(csv_data=csv_data, import_error=True).delete()
         return redirect(f'/router/import_tool/details/?uuid={csv_data.uuid}')
-    elif request.GET.get('action') == 'delete':
-        import_task_list.delete()
+    elif action == 'delete':
+        ImportTask.objects.filter(csv_data=csv_data).delete()
         csv_data.delete()
         return redirect('/router/import_tool/csv/')
+
+    # Anotar en cada tarea de preview si la IP ya existe (se actualizará) o si es nueva (se creará)
+    existing_ips = set(Router.objects.values_list('address', flat=True))
+    for t in import_task_list:
+        t.will_update = (t.address.lower().strip() in existing_ips)
 
     data = {
         'csv_data': csv_data,
         'action': action,
         'import_task_list': import_task_list,
-        'import_view': import_view,
-        'page_title': f'Detalles de Importación - {csv_data.id}',
+        'total_tasks': len(import_task_list),
+        'completed_tasks': sum(1 for t in import_task_list if t.import_success),
+        'page_title': 'Vista Previa y Proceso de Importación',
     }
     return render(request, 'import_tool/import_details.html', context=data)
 
@@ -150,100 +169,29 @@ def view_import_csv_file(request):
         csv_data_instance.raw_csv_data = form.cleaned_data.get('raw_csv_data', '')
         csv_data_instance.save()
 
-        created_count = 0
-        updated_count = 0
-
+        tasks_created = 0
         for task in csv_data_instance.import_data:
-            name = (task.get('name') or '').strip()
-            address = (task.get('address') or '').lower().strip()
-            username = task.get('username') or 'admin'
-            password = task.get('password') or ''
-            port = int(task.get('port', 22))
-            router_type = task.get('router_type') or 'mikrotik'
-            protocol = (task.get('connection_protocol') or 'ssh').lower()
-            profile_name = task.get('backup_profile') or 'default'
-            group_name = task.get('router_group') or 'General'
-            monitoring = True if str(task.get('monitoring', 'true')).lower() == 'true' else False
-
-            backup_profile, _ = BackupProfile.objects.get_or_create(name=profile_name)
-            router_group, _ = RouterGroup.objects.get_or_create(name=group_name)
-
-            existing_router = Router.objects.filter(address=address).first()
-            if existing_router:
-                # Si el nombre nuevo no choca con otro equipo, lo actualizamos
-                if name and name != existing_router.name and not Router.objects.filter(name=name).exclude(pk=existing_router.pk).exists():
-                    existing_router.name = name
-                existing_router.username = username
-                if password:
-                    existing_router.password = password
-                existing_router.port = port
-                existing_router.router_type = router_type
-                existing_router.connection_protocol = protocol
-                existing_router.monitoring = monitoring
-                if not existing_router.backup_profile:
-                    existing_router.backup_profile = backup_profile
-                existing_router.save()
-                target_router = existing_router
-                updated_count += 1
-            else:
-                # Asegurar nombre único si ya existe otro equipo con el mismo nombre pero distinta IP
-                unique_name = name
-                if Router.objects.filter(name=unique_name).exists():
-                    unique_name = f"{name} ({address})"
-                target_router = Router.objects.create(
-                    name=unique_name,
-                    username=username,
-                    password=password,
-                    address=address,
-                    port=port,
-                    router_type=router_type,
-                    connection_protocol=protocol,
-                    backup_profile=backup_profile,
-                    monitoring=monitoring,
-                )
-                created_count += 1
-
-            RouterStatus.objects.get_or_create(router=target_router)
-
-            for grp in RouterGroup.objects.filter(routers=target_router):
-                grp.routers.remove(target_router)
-            router_group.routers.add(target_router)
-
-            ImportTask.objects.get_or_create(
+            _, created = ImportTask.objects.get_or_create(
                 csv_data=csv_data_instance,
                 import_id=task['import_id'],
                 defaults={
-                    'router': target_router,
-                    'name': target_router.name,
-                    'username': username,
-                    'password': password,
-                    'address': address,
-                    'port': port,
-                    'router_type': router_type,
-                    'connection_protocol': protocol,
-                    'backup_profile': backup_profile,
-                    'backup_profile_name': profile_name,
-                    'router_group': router_group,
-                    'router_group_name': group_name,
-                    'monitoring': monitoring,
-                    'import_success': True,
+                    'name': task.get('name'),
+                    'username': task.get('username') or 'admin',
+                    'password': task.get('password') or '',
+                    'address': task.get('address'),
+                    'port': int(task.get('port', 22)),
+                    'router_type': task.get('router_type') or 'mikrotik',
+                    'connection_protocol': (task.get('connection_protocol') or 'ssh').lower(),
+                    'backup_profile_name': task.get('backup_profile') or 'default',
+                    'router_group_name': task.get('router_group') or 'General',
+                    'monitoring': True if str(task.get('monitoring', 'true')).lower() == 'true' else False,
                 }
             )
+            if created:
+                tasks_created += 1
 
-        try:
-            from backup_data.services import service_generate_backup_schedule
-            service_generate_backup_schedule()
-        except Exception:
-            pass
-
-        if created_count > 0 and updated_count > 0:
-            messages.success(request, f'Importación completada: {created_count} equipos nuevos agregados y {updated_count} actualizados.')
-        elif created_count > 0:
-            messages.success(request, f'Importación completada: {created_count} equipos agregados exitosamente.')
-        else:
-            messages.success(request, f'Importación completada: {updated_count} equipos actualizados exitosamente.')
-
-        return redirect('/router/list/')
+        messages.info(request, f'Archivo Excel leído correctamente: {tasks_created} equipos listos en la vista previa para importar.')
+        return redirect(f'/router/import_tool/details/?uuid={csv_data_instance.uuid}')
 
     data = {
         'form': form,
