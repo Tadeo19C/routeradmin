@@ -52,6 +52,11 @@ def run_soft_cron_thread():
 
 @login_required
 def view_router_list(request):
+    qs = request.META.get('QUERY_STRING', '')
+    return redirect('/router/group_list/' + ('?' + qs if qs else ''))
+
+
+def _legacy_view_router_list(request):
     run_soft_cron_thread()
     router_list = Router.objects.all().prefetch_related(
         'routerstatus', 
@@ -322,11 +327,22 @@ def view_router_group_list(request):
             'routers', 'routers__routerstatus', 'routers__routerinformation', 'routers__clients'
         ).all().order_by('name')
     )
-    all_routers = list(
+    routers_qs = (
         Router.objects.select_related('routerstatus', 'routerinformation', 'backup_profile')
         .prefetch_related('routergroup_set', 'clients')
         .order_by('name')
     )
+    status_filter = request.GET.get('status')
+    if status_filter == 'online':
+        routers_qs = routers_qs.filter(routerstatus__status_online=True, monitoring=True)
+    elif status_filter == 'offline':
+        routers_qs = routers_qs.filter(routerstatus__status_online=False, monitoring=True)
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        routers_qs = routers_qs.filter(
+            Q(name__icontains=q) | Q(address__icontains=q) | Q(router_type__icontains=q)
+        ).distinct()
+    all_routers = list(routers_qs)
 
     latest_backups_map = {}
     for rb in RouterBackup.objects.filter(success=True).order_by('router_id', '-created').values('router_id', 'uuid'):
@@ -419,9 +435,10 @@ def view_manage_router_group(request):
             details=f"Nodo '{saved_group.name}'",
         )
         messages.success(request, 'Nodo guardado correctamente')
-        next_url = request.GET.get('next')
+        next_url = request.POST.get('next') or request.GET.get('next')
         if next_url:
-            return redirect(next_url)
+            sep = '&' if '?' in next_url else '?'
+            return redirect(f"{next_url}{sep}created_group={saved_group.id}")
         return redirect('router_group_list')
 
     context = {
@@ -795,6 +812,10 @@ def view_manage_router_client(request):
             details=f"Cliente '{saved_client.name}' ({saved_client.routers.count()} equipos)",
         )
         messages.success(request, f"Cliente '{saved_client.name}' guardado correctamente.")
+        next_url = request.POST.get('next') or request.GET.get('next')
+        if next_url:
+            sep = '&' if '?' in next_url else '?'
+            return redirect(f"{next_url}{sep}created_client={saved_client.id}")
         return redirect('router_client_list')
 
     all_routers = list(Router.objects.all().prefetch_related('routergroup_set', 'routerstatus').order_by('name'))
@@ -814,6 +835,7 @@ def view_manage_router_client(request):
         'all_routers': all_routers,
         'selected_ids': selected_ids,
         'all_nodes': all_nodes,
+        'next_url': request.GET.get('next') or request.POST.get('next') or '',
         'page_title': f"Editar Cliente: {router_client.name}" if router_client else "Nuevo Cliente",
     }
     return render(request, 'router_manager/manage_router_client.html', context=context)

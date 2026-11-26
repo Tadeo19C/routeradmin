@@ -69,7 +69,7 @@ class RouterForm(forms.ModelForm):
             'address': 'Dirección IP',
             'port': 'Puerto',
             'username': 'Usuario',
-            'password': 'Contraseña',
+            'password': 'Password',
         }
         widgets = {
             'monitoring': forms.HiddenInput(),
@@ -81,14 +81,11 @@ class RouterForm(forms.ModelForm):
         self.helper = FormHelper()
         self.helper.form_tag = False
         self.helper.form_method = 'post'
-        self.helper.form_class = 'form-horizontal'
-        self.helper.label_class = 'col-sm-4 col-form-label col-form-label-sm font-weight-bold text-primary mb-0'
-        self.helper.field_class = 'col-sm-8'
+        self.helper.label_class = 'small font-weight-bold text-primary mb-1'
         self.helper.form_error_title = 'Error'
-        
-        # Simple class assignment
+
         for field in self.fields:
-            if not isinstance(self.fields[field].widget, forms.HiddenInput):
+            if not isinstance(self.fields[field].widget, (forms.HiddenInput, forms.RadioSelect, forms.CheckboxInput)):
                 self.fields[field].widget.attrs['class'] = 'form-control form-control-sm'
         if self.instance.pk:
             delete_html = "<a href='javascript:void(0)' class='btn btn-outline-danger' data-command='delete' onclick='openCommandDialog(this)'>Borrar</a>"
@@ -149,47 +146,50 @@ class RouterForm(forms.ModelForm):
             ),
             Row(
                 Column('address', css_class='form-group col-md-6 mb-2'),
-                Column('port', css_class='form-group col-md-6 mb-2'),
+                Column('connection_protocol', css_class='form-group col-md-3 mb-2'),
+                Column('port', css_class='form-group col-md-3 mb-2'),
                 css_class='form-row'
             ),
             Row(
-                Column('connection_protocol', css_class='form-group col-md-6 mb-2'),
                 Column('router_group', css_class='form-group col-md-6 mb-2'),
-                css_class='form-row'
-            ),
-            Row(
                 Column('router_client', css_class='form-group col-md-6 mb-2'),
                 css_class='form-row'
             ),
             Row(
                 Column('username', css_class='form-group col-md-4 mb-2'),
-                Column('password', css_class='form-group col-md-4 mb-2'),
+                Column('password', css_class='form-group col-md-5 mb-2'),
                 Column(
-                    HTML('<div class="form-group mb-2"><label>&nbsp;</label><div><button type="button" id="btn-test-connection" class="btn btn-outline-info btn-sm btn-block"><i class="fas fa-plug"></i> Probar Conexión</button></div></div>'),
-                    css_class='col-md-4'
+                    HTML('<div class="form-group mb-2"><label class="small mb-1 d-block">&nbsp;</label><button type="button" id="btn-test-connection" class="btn btn-outline-info btn-sm btn-block"><i class="fas fa-plug mr-1"></i> Probar Conexión</button></div>'),
+                    css_class='col-md-3'
                 ),
-                css_class='form-row align-items-end'
+                css_class='form-row'
             ),
-            HTML('<hr class="my-3">'),
+            HTML('<hr class="my-2">'),
             'backup_profile',
             'custom_daily_minute',
             'custom_weekly_minute',
-            'backup_type',
-            # Sub-campos de configuración
+            HTML('<div class="text-center mb-1"><span class="small font-weight-bold text-uppercase text-muted" style="letter-spacing:0.4px;"><i class="far fa-calendar-check text-primary mr-1"></i> Frecuencia de Respaldo</span></div>'),
             Row(
-                Column('custom_hourly_interval', css_class='col-md-4'),
-                Column('custom_daily_hour', css_class='col-md-4'),
-                Column('custom_weekly_day', 'custom_weekly_hour', css_class='col-md-4'),
+                Column(InlineRadios('backup_type'), css_class='col-12 text-center mb-1'),
                 css_class='form-row'
+            ),
+            Row(
+                Column('custom_hourly_interval', css_class='col-md-5'),
+                Column('custom_daily_hour', css_class='col-md-5'),
+                Column('custom_weekly_day', 'custom_weekly_hour', css_class='col-md-5'),
+                css_class='form-row justify-content-center'
             ),
             'monitoring',
             'enabled',
+            HTML('<hr class="my-2">'),
             Row(
                 Column(
-                    Submit('submit', 'Guardar Dispositivo', css_class='btn btn-success btn-sm'),
+                    HTML('<button type="button" class="btn btn-outline-secondary btn-sm mr-1" data-dismiss="modal">Cancelar</button>'),
+                    Submit('submit', 'Guardar Dispositivo', css_class='btn btn-success btn-sm font-weight-bold px-3'),
                     HTML(delete_html),
-                    css_class='col-md-12 text-right'),
-                css_class='form-row mt-3'
+                    css_class='col-md-12 text-right'
+                ),
+                css_class='form-row mt-2'
             )
         )
 

@@ -9,7 +9,7 @@
                     <i class="fas fa-building text-primary mr-2"></i>
                     {% if instance %}Editar Cliente: {{ instance.name }}{% else %}Nuevo Cliente{% endif %}
                 </h3>
-                <a href="/router/client_list/" class="btn btn-sm btn-outline-secondary">
+                <a href="{{ next_url|default:'/router/client_list/' }}" class="btn btn-sm btn-outline-secondary">
                     <i class="fas fa-arrow-left mr-1"></i> Volver a Clientes
                 </a>
             </div>
@@ -17,6 +17,7 @@
             <div class="card-body">
                 <form method="post" id="client-manage-form">
                     {% csrf_token %}
+                    {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
 
                     {% if form.errors %}
                     <div class="alert alert-danger py-2 px-3 small">
@@ -130,7 +131,7 @@
                             <button type="submit" class="btn btn-success font-weight-bold">
                                 <i class="fas fa-save mr-1"></i> Guardar Cliente
                             </button>
-                            <a href="/router/client_list/" class="btn btn-outline-secondary ml-1">
+                            <a href="{{ next_url|default:'/router/client_list/' }}" class="btn btn-outline-secondary ml-1">
                                 Cancelar
                             </a>
                         </div>

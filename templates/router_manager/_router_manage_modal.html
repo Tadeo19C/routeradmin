@@ -47,6 +47,18 @@
                     console.error("Restore failed", e);
                 }
             }
+
+            if (!uuid) {
+                const params = new URLSearchParams(window.location.search);
+                const createdGroup = params.get('created_group');
+                const createdClient = params.get('created_client');
+                if (createdGroup && $('#id_router_group').length) {
+                    $('#id_router_group').val(createdGroup).trigger('change');
+                }
+                if (createdClient && $('#id_router_client').length) {
+                    $('#id_router_client').val(createdClient).trigger('change');
+                }
+            }
         });
     }
 
