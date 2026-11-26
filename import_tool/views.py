@@ -195,7 +195,7 @@ def view_import_csv_file(request):
 
     data = {
         'form': form,
-        'page_title': 'Importar desde Excel',
+        'page_title': 'Herramientas',
     }
     return render(request, 'import_tool/import_csv_form.html', context=data)
 

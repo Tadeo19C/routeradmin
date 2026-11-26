@@ -110,12 +110,16 @@
                             <i class="fas fa-home"></i> Inicio
                         </a>
                         <a href="/router/list/"
-                            class="nav-link-item {% if '/router/' in request.path %}active{% endif %}">
-                            <i class="fas fa-network-wired"></i> Equipos
+                            class="nav-link-item {% if '/router/' in request.path and '/import_tool/' not in request.path %}active{% endif %}">
+                            <i class="fas fa-network-wired"></i> Dispositivos
                         </a>
                         <a href="/backup/backup_list/"
                             class="nav-link-item {% if '/backup/' in request.path %}active{% endif %}">
                             <i class="fas fa-box-open"></i> Respaldos
+                        </a>
+                        <a href="/router/import_tool/csv/"
+                            class="nav-link-item {% if '/import_tool/' in request.path %}active{% endif %}">
+                            <i class="fas fa-tools"></i> Herramientas
                         </a>
                         <a href="/user/list/" class="nav-link-item {% if '/user/' in request.path %}active{% endif %}">
                             <i class="fas fa-users"></i> Usuarios

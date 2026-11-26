@@ -156,7 +156,7 @@ def view_router_list(request):
     context = {
         'router_list': routers_eval,
         'grouped_nodes': grouped_nodes,
-        'page_title': 'Directorio de Equipos',
+        'page_title': 'Dispositivos',
         'filter_group_list': all_groups,
         'filter_group': filter_group,
         'last_status_change_timestamp': last_status_change_timestamp,
@@ -317,12 +317,71 @@ def view_manage_router(request):
 
 @login_required()
 def view_router_group_list(request):
-    groups = RouterGroup.objects.prefetch_related(
-        'routers', 'routers__routerstatus', 'routers__routerinformation'
-    ).all().order_by('name')
+    all_groups = list(
+        RouterGroup.objects.prefetch_related(
+            'routers', 'routers__routerstatus', 'routers__routerinformation', 'routers__clients'
+        ).all().order_by('name')
+    )
+    all_routers = list(
+        Router.objects.select_related('routerstatus', 'routerinformation', 'backup_profile')
+        .prefetch_related('routergroup_set', 'clients')
+        .order_by('name')
+    )
+
+    latest_backups_map = {}
+    for rb in RouterBackup.objects.filter(success=True).order_by('router_id', '-created').values('router_id', 'uuid'):
+        if rb['router_id'] not in latest_backups_map:
+            latest_backups_map[rb['router_id']] = str(rb['uuid'])
+
+    for r in all_routers:
+        r.latest_backup_uuid = latest_backups_map.get(r.id)
+
+    grouped_nodes = []
+    for grp in all_groups:
+        grp_routers = [r for r in all_routers if grp in r.routergroup_set.all()]
+        online_cnt = sum(
+            1 for r in grp_routers
+            if not r.monitoring or (getattr(r, 'routerstatus', None) and r.routerstatus.status_online)
+        )
+        offline_cnt = len(grp_routers) - online_cnt
+        grouped_nodes.append({
+            'group': grp,
+            'name': grp.name,
+            'uuid': str(grp.uuid),
+            'default_group': grp.default_group,
+            'internal_notes': grp.internal_notes or '',
+            'routers': grp_routers,
+            'total_count': len(grp_routers),
+            'online_count': online_cnt,
+            'offline_count': offline_cnt,
+        })
+
+    ungrouped_routers = [r for r in all_routers if not r.routergroup_set.all()]
+    if ungrouped_routers:
+        online_cnt = sum(
+            1 for r in ungrouped_routers
+            if not r.monitoring or (getattr(r, 'routerstatus', None) and r.routerstatus.status_online)
+        )
+        grouped_nodes.append({
+            'group': None,
+            'name': 'Dispositivos Sin Nodo Asignado',
+            'uuid': 'ungrouped',
+            'default_group': False,
+            'internal_notes': '',
+            'routers': ungrouped_routers,
+            'total_count': len(ungrouped_routers),
+            'online_count': online_cnt,
+            'offline_count': len(ungrouped_routers) - online_cnt,
+        })
+
+    last_router_status_change = RouterStatus.objects.filter(last_status_change__isnull=False).order_by('-last_status_change').first()
+    last_status_change_timestamp = last_router_status_change.last_status_change.isoformat() if last_router_status_change else 0
+
     context = {
-        'router_group_list': groups,
-        'page_title': 'Listado de Nodos',
+        'router_group_list': all_groups,
+        'grouped_nodes': grouped_nodes,
+        'last_status_change_timestamp': last_status_change_timestamp,
+        'page_title': 'Nodos',
     }
     return render(request, 'router_manager/router_group_list.html', context=context)
 

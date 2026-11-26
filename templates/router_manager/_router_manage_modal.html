@@ -1,0 +1,70 @@
+<!-- Router Manage Modal (Compartido en Dispositivos, Nodos y Clientes) -->
+<div class="modal fade" id="routerManageModal" tabindex="-1" role="dialog" aria-labelledby="routerManageModalLabel" aria-hidden="true" style="z-index: 2050;">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="text-center p-4">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p>Cargando formulario...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function confirmDeleteRouter(uuid, name) {
+        if (confirm('¿Estás seguro de que deseas eliminar el dispositivo "' + name + '"?')) {
+            var confirmation = prompt('Por favor, escribe "borrar" para confirmar la eliminación:');
+            if (confirmation === 'borrar') {
+                window.location.href = '/router/manage/?uuid=' + uuid + '&action=delete&confirmation=borrar';
+            } else if (confirmation !== null) {
+                alert('Confirmación incorrecta. El dispositivo no ha sido eliminado.');
+            }
+        }
+    }
+
+    function openRouterModal(uuid) {
+        var url = uuid ? '/router/manage/?uuid=' + uuid + '&ajax=1' : '/router/manage/?ajax=1';
+        $('#routerManageModal .modal-content').load(url, function() {
+            $('#routerManageModal').appendTo("body").modal('show');
+
+            const savedData = sessionStorage.getItem('pending_router_form');
+            if (savedData && !uuid) {
+                try {
+                    const formData = JSON.parse(savedData);
+                    formData.forEach(field => {
+                        if (field.name === 'csrfmiddlewaretoken') return;
+                        const $el = $(`[name="${field.name}"]`);
+                        if ($el.length) {
+                            if ($el.is(':checkbox') || $el.is(':radio')) {
+                                $(`[name="${field.name}"][value="${field.value}"]`).prop('checked', true).trigger('change');
+                            } else {
+                                $el.val(field.value).trigger('change');
+                            }
+                        }
+                    });
+                    sessionStorage.removeItem('pending_router_form');
+                } catch (e) {
+                    console.error("Restore failed", e);
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('action') === 'resume_create') {
+            openRouterModal(null);
+        }
+
+        $(document).on('click', '#add-router-btn, .add-router-btn', function(e) {
+            e.preventDefault();
+            openRouterModal(null);
+        });
+
+        $(document).on('click', '.manage-router-btn', function(e) {
+            e.preventDefault();
+            var uuid = $(this).data('uuid');
+            openRouterModal(uuid);
+        });
+    });
+</script>

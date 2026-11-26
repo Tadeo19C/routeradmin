@@ -94,7 +94,7 @@ class CsvDataForm(forms.ModelForm):
             ),
             Row(
                 Column(
-                    Submit('submit', 'Procesar e Importar Equipos', css_class='btn btn-success font-weight-bold'),
+                    Submit('submit', 'Procesar e Importar Dispositivos', css_class='btn btn-success font-weight-bold'),
                     HTML(' <a class="btn btn-outline-secondary ml-1" href="/router/list/">Volver</a> '),
                     css_class='col-md-12 mt-2'
                 ),

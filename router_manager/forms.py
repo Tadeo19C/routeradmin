@@ -64,7 +64,7 @@ class RouterForm(forms.ModelForm):
         fields = ['name', 'router_type', 'connection_protocol', 'address', 'port', 'username', 'password', 'monitoring', 'enabled']
         labels = {
             'name': 'Nombre',
-            'router_type': 'Tipo de Equipo',
+            'router_type': 'Fabricante / Tipo',
             'connection_protocol': 'Protocolo',
             'address': 'Dirección IP',
             'port': 'Puerto',
@@ -186,7 +186,7 @@ class RouterForm(forms.ModelForm):
             'enabled',
             Row(
                 Column(
-                    Submit('submit', 'Guardar Equipo', css_class='btn btn-success btn-sm'),
+                    Submit('submit', 'Guardar Dispositivo', css_class='btn btn-success btn-sm'),
                     HTML(delete_html),
                     css_class='col-md-12 text-right'),
                 css_class='form-row mt-3'
@@ -312,7 +312,7 @@ class RouterGroupForm(forms.ModelForm):
             'name': 'Nombre',
             'default_group': 'Nodo por Defecto',
             'internal_notes': 'Notas Internas',
-            'routers': 'Equipos',
+            'routers': 'Dispositivos',
         }
         widgets = {
             'internal_notes': forms.Textarea(attrs={'rows': 4, 'cols': 40}),  # Define como um Textarea simples
@@ -366,7 +366,7 @@ class RouterClientForm(forms.ModelForm):
         labels = {
             'name': 'Nombre del Cliente',
             'internal_notes': 'Notas / Descripción (Opcional)',
-            'routers': 'Equipos del Cliente',
+            'routers': 'Dispositivos del Cliente',
         }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Policía Nacional, Banco Central, Alcaldía...'}),
