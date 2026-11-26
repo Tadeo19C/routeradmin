@@ -4,10 +4,18 @@
 <style>
     .client-accordion-card {
         border: 1px solid var(--border);
-        border-radius: 3px;
+        border-radius: 4px;
         margin-bottom: 8px;
         background: var(--card);
         overflow: hidden;
+        width: 100%;
+        max-width: 620px;
+        transition: max-width 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .client-accordion-card.expanded {
+        max-width: 100%;
+        border-color: rgba(92, 142, 230, 0.45);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
     }
     .client-accordion-header {
         padding: 9px 14px;
@@ -286,11 +294,12 @@ function toggleClientAccordion(headerEl, event) {
     const body = card.querySelector('.client-accordion-body');
     const isExpanded = card.classList.contains('expanded');
     if (isExpanded) {
-        card.classList.remove('expanded');
-        $(body).slideUp(150);
+        $(body).stop(true, true).slideUp(160, function() {
+            card.classList.remove('expanded');
+        });
     } else {
         card.classList.add('expanded');
-        $(body).slideDown(150);
+        $(body).stop(true, true).slideDown(180);
     }
 }
 
@@ -318,8 +327,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (collapseAllBtn) {
         collapseAllBtn.addEventListener('click', function() {
             document.querySelectorAll('.client-accordion-card').forEach(function(card) {
-                card.classList.remove('expanded');
-                $(card.querySelector('.client-accordion-body')).slideUp(150);
+                $(card.querySelector('.client-accordion-body')).slideUp(160, function() {
+                    card.classList.remove('expanded');
+                });
             });
         });
     }
