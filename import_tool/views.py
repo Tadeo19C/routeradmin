@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 
 from backup.models import BackupProfile
 from router_manager.models import Router, SUPPORTED_ROUTER_TYPES, RouterGroup, RouterStatus
+from router_manager.normalization import resolve_or_create_node, canonical_key
 from user_manager.models import UserAcl
 from .models import CsvData, ImportTask
 from .forms import CsvDataForm
@@ -53,16 +54,23 @@ def run_import_task(request):
     else:
         backup_profile, _ = BackupProfile.objects.get_or_create(name='default')
 
-    if import_task.router_group_name:
-        router_group, _ = RouterGroup.objects.get_or_create(name=import_task.router_group_name)
+    router_group = resolve_or_create_node(import_task.router_group_name)
+    if import_task.router_group_name != router_group.name:
+        import_task.router_group_name = router_group.name
 
     protocol = (getattr(import_task, 'connection_protocol', 'ssh') or 'ssh').lower()
 
-    existing_router = Router.objects.filter(address=address).first()
-    action_label = 'Nuevo equipo creado'
+    existing_router = Router.objects.filter(address__iexact=address).first()
+    action_label = 'Nuevo dispositivo creado'
     if existing_router:
-        if name and name != existing_router.name and not Router.objects.filter(name=name).exclude(pk=existing_router.pk).exists():
-            existing_router.name = name
+        if name and name != existing_router.name:
+            name_ck = canonical_key(name)
+            other_collision = any(
+                canonical_key(n) == name_ck
+                for n in Router.objects.exclude(pk=existing_router.pk).values_list('name', flat=True)
+            )
+            if not other_collision:
+                existing_router.name = name
         existing_router.username = import_task.username or existing_router.username
         if import_task.password:
             existing_router.password = import_task.password
@@ -74,10 +82,12 @@ def run_import_task(request):
             existing_router.backup_profile = backup_profile
         existing_router.save()
         target_router = existing_router
-        action_label = 'Equipo actualizado'
+        action_label = 'Dispositivo actualizado'
     else:
         unique_name = name
-        if Router.objects.filter(name=unique_name).exists():
+        name_canon = canonical_key(unique_name)
+        name_collision = any(canonical_key(n) == name_canon for n in Router.objects.values_list('name', flat=True))
+        if name_collision or Router.objects.filter(name__iexact=unique_name).exists():
             unique_name = f"{name} ({address})"
         target_router = Router.objects.create(
             name=unique_name,
@@ -88,7 +98,8 @@ def run_import_task(request):
             router_type=import_task.router_type,
             connection_protocol=protocol,
             backup_profile=backup_profile,
-            monitoring=import_task.monitoring
+            monitoring=import_task.monitoring,
+            device_scope='node'
         )
 
     RouterStatus.objects.get_or_create(router=target_router)
@@ -142,7 +153,7 @@ def view_import_details(request):
         return redirect('/router/import_tool/csv/')
 
     # Anotar en cada tarea de preview si la IP ya existe (se actualizará) o si es nueva (se creará)
-    existing_ips = set(Router.objects.values_list('address', flat=True))
+    existing_ips = set(a.lower().strip() for a in Router.objects.values_list('address', flat=True) if a)
     for t in import_task_list:
         t.will_update = (t.address.lower().strip() in existing_ips)
 
@@ -183,7 +194,7 @@ def view_import_csv_file(request):
                     'router_type': task.get('router_type') or 'mikrotik',
                     'connection_protocol': (task.get('connection_protocol') or 'ssh').lower(),
                     'backup_profile_name': task.get('backup_profile') or 'default',
-                    'router_group_name': task.get('router_group') or 'General',
+                    'router_group_name': task.get('router_group') or 'GENERAL',
                     'monitoring': True if str(task.get('monitoring', 'true')).lower() == 'true' else False,
                 }
             )
@@ -205,10 +216,11 @@ def view_download_csv_template(request):
     """Descarga una plantilla nativa de Microsoft Excel (.xlsx) con las 8 columnas solicitadas."""
     headers = ['Nombre', 'IP', 'Usuario', 'Password', 'Marca', 'Protocolo', 'Puerto', 'Nodo']
     rows = [
-        ['Router Principal', '192.168.1.1', 'admin', 'clave123', 'mikrotik', 'SSH', '22', 'Nodo Centro'],
-        ['Switch Acceso 1', '10.0.0.2', 'admin', 'clave123', 'cisco', 'SSH', '22', 'Nodo Centro'],
-        ['Firewall Borde', '172.16.0.1', 'admin', 'clave123', 'huawei', 'Telnet', '23', 'Nodo Norte'],
-        ['Router API', '192.168.10.5', 'admin', 'clave123', 'mikrotik', 'API', '80', 'General'],
+        ['Router Principal', '192.168.1.1', 'admin', 'clave123', 'mikrotik', 'SSH', '22', 'NODO CENTRO'],
+        ['Switch Acceso 1', '10.0.0.2', 'admin', 'clave123', 'cisco', 'SSH', '22', 'NODO CENTRO'],
+        ['Firewall Borde', '172.16.0.1', 'admin', 'clave123', 'huawei', 'Telnet', '23', 'NODO NORTE'],
+        ['FortiGate Perimetral', '172.16.0.10', 'admin', 'clave123', 'fortinet', 'SSH', '22', 'NODO NORTE'],
+        ['Router API', '192.168.10.5', 'admin', 'clave123', 'mikrotik', 'API', '80', 'GENERAL'],
     ]
     xlsx_bytes = generate_excel_bytes(headers, rows, sheet_name="Plantilla Equipos")
     response = HttpResponse(
@@ -227,7 +239,7 @@ def view_export_routers_csv(request):
 
     headers = ['Nombre', 'IP', 'Usuario', 'Password', 'Marca', 'Protocolo', 'Puerto', 'Nodo']
     rows = []
-    for r in Router.objects.all().prefetch_related('routergroup_set').order_by('name'):
+    for r in Router.objects.filter(device_scope='node').prefetch_related('routergroup_set').order_by('name'):
         grp = r.routergroup_set.first()
         proto = (getattr(r, 'connection_protocol', 'ssh') or 'ssh').upper()
         if proto == 'TELNET':
@@ -245,7 +257,7 @@ def view_export_routers_csv(request):
             r.router_type or 'mikrotik',
             proto_display,
             str(r.port or 22),
-            grp.name if grp else 'General',
+            grp.name if grp else 'GENERAL',
         ])
 
     xlsx_bytes = generate_excel_bytes(headers, rows, sheet_name="Inventario Equipos")

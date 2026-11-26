@@ -34,6 +34,7 @@ def create_default_commands():
         'cisco-ios': 'show version\nshow ip interface brief',
         'huawei': 'display version\ndisplay ip interface brief',
         'zte': 'show version\nshow ip interface brief',
+        'fortinet': 'get system status\nget router info routing-table all',
     }
     for r_type, payload in default_variants.items():
         CommandVariant.objects.get_or_create(

@@ -71,7 +71,7 @@
                             <i class="fas fa-code text-primary"></i> Configuración de Respaldo
                         </span>
                         <span class="badge badge-secondary" style="font-size: 11px;">
-                            {% if backup.router.router_type == 'mikrotik' %}RouterOS Script (.rsc){% else %}Texto (.cfg){% endif %}
+                            {% if backup.router.router_type == 'mikrotik' %}RouterOS Script (.rsc){% elif backup.router.router_type == 'fortinet' %}FortiOS Config (.conf){% else %}Texto (.cfg){% endif %}
                         </span>
                         {% if backup.success %}
                             <span class="badge-gpon badge-gpon-success ml-2">
@@ -97,7 +97,7 @@
                         </button>
                         {% if backup.success or backup.backup_text %}
                             <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" class="btn btn-outline-primary mr-1" download title="Descargar archivo de texto">
-                                <i class="fas fa-file-code mr-1"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
+                                <i class="fas fa-file-code mr-1"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% elif backup.router.router_type == 'fortinet' %}.conf{% else %}.cfg{% endif %})
                             </a>
                             {% if backup.router.router_type == 'mikrotik' %}
                             <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" class="btn btn-outline-secondary" download title="Descargar respaldo binario (.backup)">
@@ -197,7 +197,7 @@
                                        class="btn btn-xs btn-outline-primary mr-1" 
                                        download 
                                        title="Descargar configuración en texto">
-                                        <i class="fas fa-file-code mr-1"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})
+                                        <i class="fas fa-file-code mr-1"></i> Texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% elif backup.router.router_type == 'fortinet' %}.conf{% else %}.cfg{% endif %})
                                     </a>
                                     {% if backup.router.router_type == 'mikrotik' %}
                                     <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" 

@@ -10,6 +10,7 @@ from routerlib.functions import (
     execute_cisco_commands,
     execute_huawei_commands,
     execute_zte_commands,
+    execute_fortinet_commands,
     execute_mikrotik_telnet_commands,
 )
 
@@ -98,6 +99,17 @@ def execute_command_task(task):
                 router.address, router.port, router.username, router.password,
                 payload_lines, protocol=protocol, sshkey=router.ssh_key,
                 enable_password=router.enable_password, timeout=45
+            )
+            for cmd_line in payload_lines:
+                out_str = outputs.get(cmd_line, '')
+                if out_str:
+                    all_stdout.append(f"$ {cmd_line}\n{out_str}")
+
+        elif router.router_type == 'fortinet':
+            outputs = execute_fortinet_commands(
+                router.address, router.port, router.username, router.password,
+                payload_lines, protocol=protocol, sshkey=router.ssh_key,
+                enable_password=router.enable_password, timeout=60
             )
             for cmd_line in payload_lines:
                 out_str = outputs.get(cmd_line, '')

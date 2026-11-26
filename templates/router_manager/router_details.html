@@ -256,7 +256,7 @@
                                                     </td>
                                                     <td class="min-width text-nowrap">
                                                         {% if backup.success %}
-                                                            <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" class="btn btn-xs btn-outline-primary mr-1" title="Descargar Configuración (Texto)"><i class="fas fa-file-code"></i> Texto ({% if router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})</a>
+                                                            <a href="/backup/download/?uuid={{ backup.uuid }}&type=text" class="btn btn-xs btn-outline-primary mr-1" title="Descargar Configuración (Texto)"><i class="fas fa-file-code"></i> Texto ({% if router.router_type == 'mikrotik' %}.rsc{% elif router.router_type == 'fortinet' %}.conf{% else %}.cfg{% endif %})</a>
                                                             {% if router.router_type == 'mikrotik' %}<a href="/backup/download/?uuid={{ backup.uuid }}&type=binary" class="btn btn-xs btn-outline-info" title="Descargar Respaldo (Binario)"><i class="fas fa-file-archive"></i> Binario (.backup)</a>{% endif %}
                                                         {% endif %}
                                                     </td>

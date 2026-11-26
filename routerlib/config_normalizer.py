@@ -139,6 +139,39 @@ def normalize_openwrt_config(text: str) -> str:
     return '\n'.join(lines).strip()
 
 
+
+
+def normalize_fortinet_config(text: str) -> str:
+    """
+    Normaliza configuraciones de Fortinet FortiGate (FortiOS 'show' / backup .conf):
+    - Ignora cabeceras volátiles de revisión (#conf_file_ver=...)
+    - Normaliza hashes ENC re-salteados automáticamente por FortiOS en cada exportación
+      para evitar respaldos duplicados falsos cuando no hubo cambios reales.
+    """
+    import re as _re
+    if not text:
+        return ""
+
+    lines = []
+    for raw_line in text.replace('\r\n', '\n').split('\n'):
+        line = raw_line.rstrip()
+        stripped = line.strip()
+        if not stripped:
+            continue
+        low = stripped.lower()
+        if low.startswith('#conf_file_ver=') or low.startswith('#last_commit'):
+            continue
+        # FortiOS re-genera el salt de 'ENC <base64>' en cada 'show'; normalizamos solo para comparación de hash
+        line = _re.sub(
+            r'^(\s*set\s+[\w\-]+\s+ENC)\s+\S+',
+            r'\1 <FORTIOS_VOLATILE_ENC>',
+            line
+        )
+        lines.append(line)
+
+    return '\n'.join(lines).strip()
+
+
 def normalize_config(text: str, router_type: str = 'mikrotik') -> str:
     """
     Función unificada de normalización según el fabricante/sistema del router.
@@ -155,6 +188,8 @@ def normalize_config(text: str, router_type: str = 'mikrotik') -> str:
         return normalize_huawei_config(text)
     elif 'zte' in r_type:
         return normalize_zte_config(text)
+    elif 'forti' in r_type:
+        return normalize_fortinet_config(text)
     elif 'openwrt' in r_type:
         return normalize_openwrt_config(text)
     else:

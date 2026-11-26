@@ -7,7 +7,7 @@ from routerlib.crypto import decrypt_credential
 
 
 def get_router_features(router_type):
-    if router_type in ['openwrt', 'mikrotik', 'mikrotik-branded', 'ubiquiti-airos', 'cisco-ios', 'cisco-xe', 'huawei', 'zte']:
+    if router_type in ['openwrt', 'mikrotik', 'mikrotik-branded', 'ubiquiti-airos', 'cisco-ios', 'cisco-xe', 'huawei', 'zte', 'fortinet']:
         return ['backup', 'reverse_monitoring', 'ssh', 'telnet', 'ssh_key']
     else:
         return []
@@ -18,6 +18,8 @@ def get_router_backup_file_extension(router_type):
         return {'text': 'rsc', 'binary': 'backup'}
     elif router_type == 'openwrt':
         return {'text': 'txt', 'binary': 'tar.gz'}
+    elif router_type == 'fortinet':
+        return {'text': 'conf', 'binary': None}
     elif router_type in ('ubiquiti-airos', 'cisco-ios', 'huawei', 'zte'):
         return {'text': 'cfg', 'binary': None}
     else:
@@ -344,6 +346,181 @@ def execute_zte_commands(address, port, username, password, commands, protocol='
     )
 
 
+
+
+def _read_fortinet_channel(chan, timeout=30, idle_wait=0.5):
+    """
+    Lee de un canal interactivo FortiOS (FortiGate) manejando:
+    - Prompts de super_admin (#) y read-only / operador ($), con o sin VDOMs: 'FGT # ', 'FGT (global) $ '
+    - Banner post-login: "(Press 'a' to accept):"
+    - Paginación '--More-- ' enviando espacio automáticamente cuando la cuenta no permite cambiar console output.
+    """
+    buf = ""
+    start = time.time()
+    last_recv = time.time()
+    while time.time() - start < timeout:
+        if chan.recv_ready():
+            chunk = chan.recv(65535).decode('utf-8', errors='ignore')
+            buf += chunk
+            last_recv = time.time()
+
+            tail = buf[-160:]
+            if "(press 'a' to accept)" in tail.lower():
+                chan.send('a')
+                last_recv = time.time()
+            elif '--more--' in tail.lower():
+                buf = re.sub(r'--More--\s*', '', buf, flags=re.IGNORECASE)
+                chan.send(' ')
+                last_recv = time.time()
+        else:
+            stripped = buf.rstrip()
+            if stripped and (stripped.endswith('#') or stripped.endswith('$')):
+                if time.time() - last_recv >= idle_wait:
+                    break
+            time.sleep(0.1)
+    buf = re.sub(r'\x08+\s*\x08*', '', buf)
+    buf = re.sub(r'--More--\s*', '', buf, flags=re.IGNORECASE)
+    return buf
+
+
+def _clean_fortinet_output(raw_output: str, command: str) -> str:
+    lines = raw_output.replace('\r\n', '\n').replace('\r', '\n').split('\n')
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    if lines and command.strip().lower() in lines[0].strip().lower():
+        lines = lines[1:]
+    while lines and not lines[-1].strip():
+        lines.pop()
+    # Prompts típicos de FortiGate: 'FGT60F #', 'FG100F (global) #', 'FW-BORDE $'
+    if lines and re.match(r'^[\w\-\.\(\)\s]+[#$]\s*$', lines[-1].strip()):
+        lines.pop()
+    return '\n'.join(lines).strip()
+
+
+def execute_fortinet_commands(address, port, username, password, commands, protocol='ssh', sshkey=None, enable_password=None, timeout=60):
+    """
+    Ejecuta comandos nativos de FortiOS en equipos Fortinet (FortiGate) por SSH, Telnet o REST API:
+    - Desactiva paginación automáticamente ('config system console' -> 'set output standard' -> 'end',
+      con soporte automático para VDOMs vía 'config global' y manejo de '--More--' para cuentas read-only).
+    - Soporta respaldo vía REST API FortiOS (token en password) cuando protocol == 'api'.
+    """
+    decrypted_password = decrypt_credential(password)
+    proto = (protocol or 'ssh').lower().strip()
+    port_num = int(port) if port else (23 if proto == 'telnet' else (443 if proto == 'api' else 22))
+    outputs = {}
+
+    if proto == 'api':
+        import requests
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        schemes = ['http', 'https'] if port_num == 80 else ['https', 'http']
+        headers = {'Authorization': f'Bearer {decrypted_password}'}
+        for cmd in commands:
+            cmd_l = cmd.strip().lower()
+            ep = '/api/v2/monitor/system/config/backup?scope=global' if cmd_l in ('show', 'show full-configuration') else '/api/v2/monitor/system/status'
+            req_timeout = timeout if cmd_l in ('show', 'show full-configuration') else 25
+            last_err = None
+            for sch in schemes:
+                try:
+                    resp = requests.get(f"{sch}://{address}:{port_num}{ep}", headers=headers, timeout=req_timeout, verify=False)
+                    resp.raise_for_status()
+                    outputs[cmd] = resp.text
+                    last_err = None
+                    break
+                except requests.exceptions.HTTPError as he:
+                    raise he
+                except Exception as ex:
+                    last_err = ex
+            if last_err is not None:
+                raise last_err
+        return outputs
+
+    if proto == 'telnet':
+        tn = None
+        try:
+            tn = telnetlib.Telnet(address, port_num, timeout=15)
+            idx, _, _ = tn.expect([b'[Ll]ogin:\s*', b'[Uu]sername:\s*'], timeout=12)
+            if idx < 0:
+                raise Exception("No se recibió prompt de Login Telnet del equipo Fortinet")
+            tn.write(username.encode('ascii', errors='ignore') + b"\n")
+            idx_p, _, _ = tn.expect([b'[Pp]assword:\s*'], timeout=10)
+            if idx_p == 0:
+                tn.write(decrypted_password.encode('ascii', errors='ignore') + b"\n")
+
+            idx_pr, _, banner_b = tn.expect([b'[#$]\s*$', b"Press 'a' to accept", b'[Ll]ogin incorrect'], timeout=12)
+            if idx_pr == 1:
+                tn.write(b"a")
+                idx_pr, _, banner_b = tn.expect([b'[#$]\s*$'], timeout=10)
+            if idx_pr != 0 or b'incorrect' in banner_b.lower():
+                raise Exception("Credenciales Telnet rechazadas por FortiGate")
+
+            tn.write(b"config system console\nset output standard\nend\n")
+            tn.expect([b'[#$]\s*$'], timeout=6)
+
+            for cmd in commands:
+                tn.write(cmd.encode('ascii', errors='ignore') + b"\n")
+                collected = b""
+                deadline = time.time() + timeout
+                while time.time() < deadline:
+                    i_m, _, chunk = tn.expect([b'--More--\s*', b'[\w\-\.\(\)\s]+[#$]\s*$'], timeout=min(15, max(2, deadline - time.time())))
+                    collected += chunk
+                    if i_m == 0:
+                        tn.write(b" ")
+                    elif i_m == 1:
+                        break
+                    else:
+                        break
+                raw_str = collected.decode('utf-8', errors='ignore')
+                raw_str = re.sub(r'--More--\s*', '', raw_str, flags=re.IGNORECASE)
+                outputs[cmd] = _clean_fortinet_output(raw_str, cmd)
+
+            tn.write(b"exit\n")
+            return outputs
+        finally:
+            if tn:
+                try:
+                    tn.close()
+                except Exception:
+                    pass
+    else:
+        ssh_client = None
+        try:
+            ssh_client = connect_to_ssh(address, port_num, username, password, sshkey)
+            chan = ssh_client.invoke_shell(width=250, height=1000)
+            chan.settimeout(timeout)
+
+            banner = _read_fortinet_channel(chan, timeout=12, idle_wait=0.4)
+
+            # Desactivar paginación en FortiOS (directo, y si tiene VDOMs activos usa config global)
+            chan.send('config system console\n')
+            res_con = _read_fortinet_channel(chan, timeout=6, idle_wait=0.3)
+            if 'command parse error' in res_con.lower() or 'unknown action' in res_con.lower():
+                chan.send('config global\nconfig system console\nset output standard\nend\nend\n')
+                _read_fortinet_channel(chan, timeout=8, idle_wait=0.3)
+            else:
+                chan.send('set output standard\nend\n')
+                _read_fortinet_channel(chan, timeout=6, idle_wait=0.3)
+
+            for cmd in commands:
+                while chan.recv_ready():
+                    chan.recv(65535)
+                chan.send(cmd + '\n')
+                raw_out = _read_fortinet_channel(chan, timeout=timeout, idle_wait=0.7)
+                outputs[cmd] = _clean_fortinet_output(raw_out, cmd)
+
+            try:
+                chan.send('exit\n')
+            except Exception:
+                pass
+            return outputs
+        finally:
+            if ssh_client:
+                try:
+                    ssh_client.close()
+                except Exception:
+                    pass
+
+
 def execute_mikrotik_telnet_commands(address, port, username, password, commands, timeout=25):
     """
     Ejecuta comandos en MikroTik RouterOS vía Telnet (usando +ct para evitar códigos ANSI).
@@ -400,6 +577,45 @@ def test_authentication(router_type, address, port, username, password, sshkey=N
     proto = (connection_protocol or 'ssh').lower().strip()
     if proto == 'telnet':
         return test_telnet_authentication(router_type, address, port, username, password, sshkey=sshkey, enable_password=enable_password)
+    elif proto == 'api':
+        port_num = int(port) if port else (443 if router_type == 'fortinet' else 8728)
+        if router_type == 'fortinet':
+            try:
+                outputs = execute_fortinet_commands(address, port_num, username, password, ['get system status'], protocol='api', timeout=20)
+                if outputs.get('get system status'):
+                    return True, f'Éxito: FortiGate confirmado por API en puerto {port_num}'
+                return False, 'El equipo Fortinet no devolvió estado por API'
+            except Exception as e:
+                return False, f'Error API Fortinet (puerto {port_num}): {str(e)}'
+        elif router_type in ('mikrotik', 'mikrotik-branded'):
+            # 1) Probar API nativa RouterOS en el puerto elegido por el usuario
+            try:
+                from routerlib.mikrotik_api import fetch_mikrotik_telemetry
+                tel = fetch_mikrotik_telemetry(address, port_num, username, password, timeout=4.5)
+                if tel.get('success'):
+                    return True, f'Éxito: MikroTik confirmado por API en puerto {port_num}'
+            except Exception:
+                pass
+            # 2) Probar REST API RouterOS v7 (HTTP/HTTPS en el puerto elegido)
+            try:
+                import requests, urllib3
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                dec_pw = decrypt_credential(password) or ''
+                schemes = ['http', 'https'] if port_num in (80, 8080) else ['https', 'http']
+                for sch in schemes:
+                    try:
+                        r = requests.get(f"{sch}://{address}:{port_num}/rest/system/resource", auth=(username, dec_pw), timeout=5, verify=False)
+                        if r.status_code == 200 and ('version' in r.text or 'board-name' in r.text):
+                            return True, f'Éxito: MikroTik REST API confirmado en puerto {port_num}'
+                        elif r.status_code in (401, 403):
+                            return False, 'Credenciales rechazadas por MikroTik REST API'
+                    except Exception:
+                        continue
+            except Exception as e:
+                return False, f'Error API MikroTik (puerto {port_num}): {str(e)}'
+            return False, f'No se pudo conectar por API al puerto {port_num}. Verifique el puerto configurado en el dispositivo.'
+        else:
+            return test_ssh_authentication(router_type, address, port_num, username, password, sshkey=sshkey, enable_password=enable_password)
     else:
         return test_ssh_authentication(router_type, address, port, username, password, sshkey=sshkey, enable_password=enable_password)
 
@@ -439,6 +655,17 @@ def test_ssh_authentication(router_type, address, port, username, password, sshk
                 return True, 'Éxito: Equipo ZTE confirmado por SSH'
             else:
                 return False, 'El equipo respondió pero no se identificó como ZTE'
+
+        elif router_type == 'fortinet':
+            outputs = execute_fortinet_commands(
+                address, port, username, password, ['get system status'],
+                protocol='ssh', sshkey=sshkey, enable_password=enable_password, timeout=25
+            )
+            output = outputs.get('get system status', '')
+            if any(k in output.lower() for k in ['fortigate', 'fortios', 'fortinet', 'serial-number:', 'version:']):
+                return True, 'Éxito: Equipo Fortinet (FortiGate) confirmado por SSH'
+            else:
+                return False, 'El equipo respondió pero no se identificó como Fortinet FortiOS'
 
         ssh_client = connect_to_ssh(address, port, username, password, sshkey, max_retries=2, retry_delay=1)
         if router_type == 'mikrotik' or router_type == 'mikrotik-branded':
@@ -517,6 +744,16 @@ def test_telnet_authentication(router_type, address, port=23, username='', passw
             if any(k in output.lower() for k in ['zte', 'zxr10', 'zxa10', 'zxan', 'zxros']):
                 return True, 'Éxito: Equipo ZTE confirmado por Telnet'
             return False, 'Conectado por Telnet, pero no se identificó como ZTE'
+
+        elif router_type == 'fortinet':
+            outputs = execute_fortinet_commands(
+                address, port or 23, username, password, ['get system status'],
+                protocol='telnet', enable_password=enable_password, timeout=25
+            )
+            output = outputs.get('get system status', '')
+            if any(k in output.lower() for k in ['fortigate', 'fortios', 'fortinet', 'serial-number:', 'version:']):
+                return True, 'Éxito: Equipo Fortinet (FortiGate) confirmado por Telnet'
+            return False, 'Conectado por Telnet, pero no se identificó como Fortinet FortiOS'
 
         elif router_type in ('mikrotik', 'mikrotik-branded'):
             outputs = execute_mikrotik_telnet_commands(

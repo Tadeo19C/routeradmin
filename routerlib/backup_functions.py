@@ -16,6 +16,7 @@ from routerlib.functions import (
     execute_cisco_commands,
     execute_huawei_commands,
     execute_zte_commands,
+    execute_fortinet_commands,
     execute_mikrotik_telnet_commands,
 )
 from routerlib.config_normalizer import normalize_config
@@ -224,7 +225,7 @@ def perform_backup(router_backup: RouterBackup):
             # Para equipos donde execute_backup ya obtiene la configuración completa (Cisco IOS, Huawei VRP, ZTE o Telnet),
             # completamos en un solo paso sin esperar retrieve_interval.
             protocol = (getattr(router_backup.router, 'connection_protocol', 'ssh') or 'ssh').lower()
-            if router_backup.router.router_type in ('cisco-ios', 'huawei', 'zte') or protocol == 'telnet':
+            if router_backup.router.router_type in ('cisco-ios', 'huawei', 'zte', 'fortinet') or protocol in ('telnet', 'api'):
                 router_backup.backup_pending_retrieval = True
                 router_backup.save()
                 perform_backup(router_backup)
@@ -264,6 +265,45 @@ def execute_backup(router_backup: RouterBackup):
                     additional_parameters += ' show-sensitive'
                 if router.backup_profile.parameter_terse:
                     additional_parameters += ' terse'
+
+            if protocol == 'api':
+                import requests, urllib3
+                from routerlib.crypto import decrypt_credential
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                port_num = int(router.port) if router.port else 80
+                dec_pw = decrypt_credential(router.password) or ''
+                append_task_console_output(router_backup, f'$ POST /rest/export (MikroTik REST API port {port_num})')
+                schemes = ['http', 'https'] if port_num in (80, 8080) else ['https', 'http']
+                raw_export = ''
+                last_api_err = None
+                for sch in schemes:
+                    try:
+                        resp = requests.post(
+                            f"{sch}://{router.address}:{port_num}/rest/export",
+                            json={}, auth=(router.username, dec_pw), timeout=45, verify=False
+                        )
+                        if resp.status_code == 200:
+                            data_j = resp.json() if resp.headers.get('content-type', '').startswith('application/json') else {}
+                            raw_export = data_j.get('ret', resp.text) if isinstance(data_j, dict) else resp.text
+                            last_api_err = None
+                            break
+                        resp.raise_for_status()
+                    except Exception as ex:
+                        last_api_err = ex
+                cleaned = '\n'.join(
+                    line for line in (raw_export or '').splitlines() if not line.strip().startswith('#')
+                ).strip()
+                if not cleaned:
+                    return False, [], f"No se pudo exportar configuración por REST API en puerto {port_num}: {last_api_err or 'Configuración vacía'}"
+                has_change, _ = _has_real_config_change(router, cleaned, router_backup.id)
+                if not has_change:
+                    router_backup.identical_to_previous = True
+                    append_task_console_output(router_backup, '[Deduplication] Configuration matches previous backup (normalized).')
+                else:
+                    router_backup.backup_text = cleaned
+                    router_backup.backup_text_filename = f'{backup_name}.{file_extension["text"]}'
+                router_backup.save()
+                return True, [f'{backup_name}.{file_extension["text"]}'], error_message
 
             if protocol == 'telnet':
                 cmd = f'/export{additional_parameters}'
@@ -414,6 +454,37 @@ def execute_backup(router_backup: RouterBackup):
             router_backup.save()
             return True, [f'{backup_name}.{file_extension["text"]}'], error_message
 
+        elif router.router_type == 'fortinet':
+            append_task_console_output(router_backup, f'$ show (FortiOS config via {protocol.upper()})')
+            outputs = execute_fortinet_commands(
+                router.address,
+                router.port,
+                router.username,
+                router.password,
+                ['show'],
+                protocol=protocol,
+                sshkey=router.ssh_key,
+                enable_password=router.enable_password,
+                timeout=90
+            )
+            clean_text = (outputs.get('show') or '').strip()
+
+            if not clean_text or not any(k in clean_text.lower() for k in ['#config-version=', 'config system', 'config firewall', 'config router', 'config vdom']):
+                return False, [], "No se pudo obtener la configuración 'show' del equipo Fortinet (verifique permisos de lectura en FortiGate)"
+
+            append_task_console_output(router_backup, '[FortiOS configuration retrieved successfully]')
+
+            has_change, _ = _has_real_config_change(router, clean_text, router_backup.id)
+            if not has_change:
+                router_backup.identical_to_previous = True
+                append_task_console_output(router_backup, '[Deduplication] Configuration matches previous backup (normalized).')
+            else:
+                router_backup.backup_text = clean_text
+                router_backup.backup_text_filename = f'{backup_name}.{file_extension["text"]}'
+
+            router_backup.save()
+            return True, [f'{backup_name}.{file_extension["text"]}'], error_message
+
         else:
             error_message = f"Router type not supported: {router_backup.router.get_router_type_display()}"
             return False, [], error_message
@@ -437,7 +508,7 @@ def retrieve_backup(router_backup: RouterBackup):
 
     try:
         if router.router_type in ('mikrotik', 'mikrotik-branded'):
-            if protocol == 'telnet':
+            if protocol in ('telnet', 'api'):
                 return True, ''
 
             rsc_file_path = os.path.join(tempfile.gettempdir(), f'{backup_name}.{file_extension["text"]}')
@@ -534,7 +605,7 @@ def retrieve_backup(router_backup: RouterBackup):
             os.remove(local_path)
             success = True
 
-        elif router.router_type in ('cisco-ios', 'huawei', 'zte'):
+        elif router.router_type in ('cisco-ios', 'huawei', 'zte', 'fortinet'):
             if router_backup.identical_to_previous or router_backup.backup_text:
                 success = True
             else:

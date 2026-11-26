@@ -1,3 +1,4 @@
+import re
 import json
 from urllib.parse import unquote
 
@@ -15,6 +16,7 @@ from routerlib.router_functions import update_router_information
 from user_manager.models import UserAcl
 from .forms import RouterForm, RouterGroupForm, RouterClientForm
 from .models import Router, RouterGroup, RouterClient, RouterInformation, RouterStatus, BackupSchedule
+from .normalization import find_matching_node
 from dashboard.models import ActivityLog
 import threading
 import time
@@ -218,41 +220,44 @@ def view_router_details(request):
     return render(request, 'router_manager/router_details.html', context=context)
 
 
+def _delete_router_cleanly(router):
+    if router.backup_profile and router.backup_profile.name.startswith("Perfil Automático -"):
+        profile_to_delete = router.backup_profile
+        router.backup_profile = None
+        router.save(update_fields=['backup_profile'])
+        if profile_to_delete.router_set.count() == 0:
+            profile_to_delete.delete()
+    router.delete()
+
+
 @login_required()
 def view_manage_router(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=30).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
-    webadmin_settings, webadmin_settings_created = WebadminSettings.objects.get_or_create(name='webadmin_settings')
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
+    webadmin_settings, _ = WebadminSettings.objects.get_or_create(name='webadmin_settings')
 
     uuid = request.GET.get('uuid')
     if uuid:
         router = get_object_or_404(Router, uuid=uuid)
+        back_list_view = 'router_client_list' if router.device_scope == 'client' else 'router_group_list'
         if request.GET.get('action') == 'delete':
-            if request.GET.get('confirmation') in ['delete', 'borrar']:
-                # Log the activity before deleting
+            if request.GET.get('confirmation') in ['delete', 'borrar', 'confirm']:
                 ActivityLog.objects.create(
                     user=request.user,
-                    action="Equipo Eliminado",
-                    details=f"Equipo '{router.name}' ({router.address})",
-                    router=None # Router is being deleted
+                    action="Dispositivo Eliminado",
+                    details=f"Dispositivo '{router.name}' ({router.address})",
+                    router=None
                 )
-                # Cleanup: Delete the automated profile if it belongs to this router
-                if router.backup_profile and router.backup_profile.name.startswith("Perfil Automático -"):
-                    profile_to_delete = router.backup_profile
-                    router.backup_profile = None # Disconnect
-                    router.save()
-                    profile_to_delete.delete()
-
-                router.delete()
-                messages.success(request, 'Equipo eliminado correctamente')
+                _delete_router_cleanly(router)
+                messages.success(request, 'Dispositivo eliminado correctamente')
                 webadmin_settings.router_config_last_updated = timezone.now()
                 webadmin_settings.save()
-                return redirect('router_list')
+                return redirect(back_list_view)
             else:
-                messages.warning(request, 'Equipo no eliminado|Confirmación inválida')
-                return redirect('router_list')
+                messages.warning(request, 'Dispositivo no eliminado|Confirmación inválida')
+                return redirect(back_list_view)
         elif request.GET.get('action') == 'refresh_information':
-            router_information, created = RouterInformation.objects.get_or_create(router=router)
+            router_information, _ = RouterInformation.objects.get_or_create(router=router)
             router_information.next_retry = timezone.now()
             router_information.retry_count = 0
             router_information.success = False
@@ -261,41 +266,70 @@ def view_manage_router(request):
             router_information.save()
             success, error_msg = update_router_information(router_information)
             if success:
-                messages.success(request, 'Información del equipo actualizada correctamente')
+                messages.success(request, 'Información del dispositivo actualizada correctamente')
             else:
-                messages.warning(request, f'Error al actualizar información del equipo: {error_msg}')
+                messages.warning(request, f'Error al actualizar información del dispositivo: {error_msg}')
             return redirect('/router/details/?uuid=' + str(router.uuid))
     else:
         router = None
 
-    form = RouterForm(request.POST or None, instance=router)
+    req_scope = request.GET.get('scope') or request.POST.get('device_scope')
+    if router:
+        scope = req_scope if req_scope in ('node', 'client') else (router.device_scope or 'node')
+    else:
+        scope = 'client' if req_scope == 'client' else 'node'
+
+    preselect_group = None
+    preselect_client = None
+    if not router:
+        gid = request.GET.get('group_id')
+        cid = request.GET.get('client_id')
+        if gid and str(gid).isdigit():
+            preselect_group = RouterGroup.objects.filter(pk=int(gid)).first()
+        if cid and str(cid).isdigit():
+            preselect_client = RouterClient.objects.filter(pk=int(cid)).first()
+
+    form = RouterForm(
+        request.POST or None,
+        instance=router,
+        scope=scope,
+        preselect_group=preselect_group,
+        preselect_client=preselect_client,
+    )
     if form.is_valid():
         saved_router = form.save()
-        
-        # Log the activity
-        action = "Equipo Editado" if uuid else "Equipo Creado"
+
+        action = "Dispositivo Editado" if uuid else "Dispositivo Creado"
         ActivityLog.objects.create(
             user=request.user,
             action=action,
-            details=f"Equipo '{saved_router.name}' ({saved_router.address})",
+            details=f"Dispositivo '{saved_router.name}' ({saved_router.address}) [{scope.upper()}]",
             router=saved_router
         )
 
-        # Handle group assignment (M2M)
-        selected_group = form.cleaned_data.get('router_group')
-        for group in RouterGroup.objects.filter(routers=saved_router):
-            group.routers.remove(saved_router)
-        if selected_group:
-            selected_group.routers.add(saved_router)
-        # Cliente (opcional): solo se modifica si el campo viene en el formulario
-        if 'router_client' in request.POST:
+        if scope == 'client':
+            # Dispositivo exclusivo de Clientes: desvincular cualquier Nodo
+            for group in RouterGroup.objects.filter(routers=saved_router):
+                group.routers.remove(saved_router)
             selected_client = form.cleaned_data.get('router_client')
             for client in RouterClient.objects.filter(routers=saved_router):
                 client.routers.remove(saved_router)
             if selected_client:
                 selected_client.routers.add(saved_router)
-        messages.success(request, 'Equipo guardado correctamente|Sincronizando información y calendario del equipo.')
-        router_status, router_status_created = RouterStatus.objects.get_or_create(router=saved_router)
+            target_redirect = 'router_client_list'
+        else:
+            # Dispositivo exclusivo de Nodos: desvincular cualquier Cliente
+            for client in RouterClient.objects.filter(routers=saved_router):
+                client.routers.remove(saved_router)
+            selected_group = form.cleaned_data.get('router_group')
+            for group in RouterGroup.objects.filter(routers=saved_router):
+                group.routers.remove(saved_router)
+            if selected_group:
+                selected_group.routers.add(saved_router)
+            target_redirect = 'router_group_list'
+
+        messages.success(request, 'Dispositivo guardado correctamente|Sincronizando información y calendario de respaldo.')
+        RouterStatus.objects.get_or_create(router=saved_router)
         BackupSchedule.objects.filter(router=saved_router).delete()
         from backup_data.services import service_generate_backup_schedule
         service_generate_backup_schedule()
@@ -307,13 +341,16 @@ def view_manage_router(request):
         webadmin_settings.router_config_last_updated = timezone.now()
         webadmin_settings.save()
         if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax'):
-            return JsonResponse({'status': 'success', 'message': 'Equipo guardado correctamente'})
-        return redirect('router_list')
+            return JsonResponse({'status': 'success', 'message': 'Dispositivo guardado correctamente'})
+        return redirect(target_redirect)
 
     context = {
         'form': form,
-        'page_title': 'Gestionar Nodo',
-        'instance': router
+        'page_title': 'Gestionar Dispositivo',
+        'instance': router,
+        'scope': scope,
+        'preselect_group': preselect_group,
+        'preselect_client': preselect_client,
     }
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax'):
         return render(request, 'router_manager/router_form_modal.html', context=context, status=400 if form.errors else 200)
@@ -324,12 +361,13 @@ def view_manage_router(request):
 def view_router_group_list(request):
     all_groups = list(
         RouterGroup.objects.prefetch_related(
-            'routers', 'routers__routerstatus', 'routers__routerinformation', 'routers__clients'
+            'routers', 'routers__routerstatus', 'routers__routerinformation'
         ).all().order_by('name')
     )
     routers_qs = (
-        Router.objects.select_related('routerstatus', 'routerinformation', 'backup_profile')
-        .prefetch_related('routergroup_set', 'clients')
+        Router.objects.filter(device_scope='node')
+        .select_related('routerstatus', 'routerinformation', 'backup_profile')
+        .prefetch_related('routergroup_set')
         .order_by('name')
     )
     status_filter = request.GET.get('status')
@@ -349,8 +387,13 @@ def view_router_group_list(request):
         if rb['router_id'] not in latest_backups_map:
             latest_backups_map[rb['router_id']] = str(rb['uuid'])
 
+    total_online = 0
     for r in all_routers:
         r.latest_backup_uuid = latest_backups_map.get(r.id)
+        if not r.monitoring or (getattr(r, 'routerstatus', None) and r.routerstatus.status_online):
+            total_online += 1
+    total_devices = len(all_routers)
+    total_offline = total_devices - total_online
 
     grouped_nodes = []
     for grp in all_groups:
@@ -380,7 +423,7 @@ def view_router_group_list(request):
         )
         grouped_nodes.append({
             'group': None,
-            'name': 'Dispositivos Sin Nodo Asignado',
+            'name': 'SIN NODO ASIGNADO',
             'uuid': 'ungrouped',
             'default_group': False,
             'internal_notes': '',
@@ -396,6 +439,10 @@ def view_router_group_list(request):
     context = {
         'router_group_list': all_groups,
         'grouped_nodes': grouped_nodes,
+        'total_nodes_count': len(all_groups),
+        'total_devices_count': total_devices,
+        'total_online_count': total_online,
+        'total_offline_count': total_offline,
         'last_status_change_timestamp': last_status_change_timestamp,
         'page_title': 'Nodos',
     }
@@ -410,13 +457,19 @@ def view_manage_router_group(request):
         router_group = get_object_or_404(RouterGroup, uuid=request.GET.get('uuid'))
         if request.GET.get('action') == 'delete':
             if request.GET.get('confirmation') in ('delete', 'borrar', 'confirm'):
+                grp_name = router_group.name
+                devices_in_group = list(router_group.routers.select_related('backup_profile').all())
+                deleted_count = len(devices_in_group)
+                for dev in devices_in_group:
+                    _delete_router_cleanly(dev)
+                router_group.delete()
                 ActivityLog.objects.create(
                     user=request.user,
                     action="Nodo Eliminado",
-                    details=f"Nodo '{router_group.name}'",
+                    details=f"Nodo '{grp_name}' eliminado junto con {deleted_count} dispositivo(s)",
                 )
-                router_group.delete()
-                messages.success(request, 'Nodo eliminado correctamente')
+                WebadminSettings.objects.filter(name='webadmin_settings').update(router_config_last_updated=timezone.now())
+                messages.success(request, f"Nodo '{grp_name}' y sus {deleted_count} dispositivo(s) fueron eliminados correctamente.")
                 return redirect('router_group_list')
             else:
                 messages.warning(request, 'Nodo no eliminado|Confirmación inválida')
@@ -424,18 +477,17 @@ def view_manage_router_group(request):
     else:
         router_group = None
 
-    form = RouterGroupForm(request.POST or None, instance=router_group)
+    next_url = request.POST.get('next') or request.GET.get('next') or ''
+    form = RouterGroupForm(request.POST or None, instance=router_group, next_url=next_url)
     if form.is_valid():
         saved_group = form.save()
-        # Log the activity
         action = "Nodo Editado" if request.GET.get('uuid') else "Nodo Creado"
         ActivityLog.objects.create(
             user=request.user,
             action=action,
             details=f"Nodo '{saved_group.name}'",
         )
-        messages.success(request, 'Nodo guardado correctamente')
-        next_url = request.POST.get('next') or request.GET.get('next')
+        messages.success(request, f"Nodo '{saved_group.name}' guardado correctamente")
         if next_url:
             sep = '&' if '?' in next_url else '?'
             return redirect(f"{next_url}{sep}created_group={saved_group.id}")
@@ -443,18 +495,14 @@ def view_manage_router_group(request):
 
     context = {
         'form': form,
-        'page_title': 'Gestionar Nodo',
-        'instance': router_group
+        'form_size': 'col-xl-7 col-lg-8 mx-auto',
+        'page_title': f"Editar Nodo: {router_group.name}" if router_group else 'Nuevo Nodo',
+        'delete_confirmation_message': "Al eliminar el nodo también se eliminarán todos sus dispositivos. Escriba 'borrar' para confirmar:",
+        'instance': router_group,
     }
     return render(request, 'generic_form.html', context=context)
 
 
-
-
-
-import time
-
-from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 @login_required()
@@ -462,22 +510,23 @@ from django.views.decorators.http import require_POST
 def view_ajax_quick_create_group(request):
     if not UserAcl.objects.filter(user=request.user, user_level__gte=40).exists():
         return JsonResponse({'status': 'error', 'message': 'Acceso Denegado'}, status=403)
-    
-    name = request.POST.get('name', '').strip()
+
+    name = re.sub(r'\s+', ' ', request.POST.get('name', '').strip()).upper()
     if not name:
         return JsonResponse({'status': 'error', 'message': 'El nombre del nodo es requerido.'}, status=400)
-    
-    if RouterGroup.objects.filter(name=name).exists():
-        return JsonResponse({'status': 'error', 'message': 'Ya existe un nodo con este nombre.'}, status=400)
-    
+
+    existing_grp = RouterGroup.objects.filter(name__iexact=name).first() or find_matching_node(name)
+    if existing_grp:
+        return JsonResponse({'status': 'error', 'message': f"Ya existe este nodo registrado como '{existing_grp.name}'."}, status=400)
+
     group = RouterGroup.objects.create(name=name)
-    
+
     ActivityLog.objects.create(
         user=request.user,
         action="Nodo Creado (Rápido)",
-        details=f"Nodo '{group.name}' creado desde formulario de equipo",
+        details=f"Nodo '{group.name}' creado desde formulario de dispositivo",
     )
-    
+
     return JsonResponse({
         'status': 'success',
         'uuid': str(group.uuid),
@@ -721,7 +770,8 @@ def view_ajax_router_telemetry(request):
     
     if router.router_type in ('mikrotik', 'mikrotik-branded'):
         from routerlib.mikrotik_api import fetch_mikrotik_telemetry
-        telemetry = fetch_mikrotik_telemetry(router.address, 8728, router.username, router.password, timeout=3.0)
+        mk_port = int(router.port) if (getattr(router, 'connection_protocol', 'ssh') == 'api' and router.port) else 8728
+        telemetry = fetch_mikrotik_telemetry(router.address, mk_port, router.username, router.password, timeout=3.0)
         if telemetry.get('success'):
             return JsonResponse({'status': 'success', 'telemetry': telemetry})
         else:
@@ -740,39 +790,90 @@ def view_router_client_list(request):
     if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=20).exists():
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
-    clients = list(
+    all_clients = list(
         RouterClient.objects.all()
-        .prefetch_related('routers', 'routers__routerstatus', 'routers__routergroup_set', 'routers__routerinformation')
+        .prefetch_related('routers', 'routers__routerstatus', 'routers__routerinformation')
         .order_by('name')
     )
+    routers_qs = (
+        Router.objects.filter(device_scope='client')
+        .select_related('routerstatus', 'routerinformation', 'backup_profile')
+        .prefetch_related('clients')
+        .order_by('name')
+    )
+    status_filter = request.GET.get('status')
+    if status_filter == 'online':
+        routers_qs = routers_qs.filter(routerstatus__status_online=True, monitoring=True)
+    elif status_filter == 'offline':
+        routers_qs = routers_qs.filter(routerstatus__status_online=False, monitoring=True)
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        routers_qs = routers_qs.filter(
+            Q(name__icontains=q) | Q(address__icontains=q) | Q(router_type__icontains=q)
+        ).distinct()
+    all_client_routers = list(routers_qs)
 
-    # Mapa rápido del último respaldo exitoso por router
     latest_backup_by_router = {}
     for b in RouterBackup.objects.filter(success=True).order_by('router_id', '-id').values('router_id', 'uuid'):
         rid = b['router_id']
         if rid not in latest_backup_by_router:
-            latest_backup_by_router[rid] = b['uuid']
+            latest_backup_by_router[rid] = str(b['uuid'])
 
-    for client in clients:
-        r_list = list(client.routers.all().order_by('name'))
-        online_c = 0
-        offline_c = 0
-        for r in r_list:
-            grp = r.routergroup_set.first()
-            r.node_name = grp.name if grp else 'General'
-            r.latest_backup_uuid = latest_backup_by_router.get(r.id)
-            is_online = getattr(getattr(r, 'routerstatus', None), 'status_online', True)
-            if not r.monitoring or is_online:
-                online_c += 1
-            else:
-                offline_c += 1
-        client.router_items = r_list
-        client.total_count = len(r_list)
-        client.online_count = online_c
-        client.offline_count = offline_c
+    total_online = 0
+    for r in all_client_routers:
+        r.latest_backup_uuid = latest_backup_by_router.get(r.id)
+        if not r.monitoring or (getattr(r, 'routerstatus', None) and r.routerstatus.status_online):
+            total_online += 1
+    total_devices = len(all_client_routers)
+    total_offline = total_devices - total_online
+
+    grouped_clients = []
+    for client in all_clients:
+        r_list = [r for r in all_client_routers if client in r.clients.all()]
+        online_c = sum(
+            1 for r in r_list
+            if not r.monitoring or (getattr(r, 'routerstatus', None) and r.routerstatus.status_online)
+        )
+        offline_c = len(r_list) - online_c
+        grouped_clients.append({
+            'client': client,
+            'name': client.name,
+            'uuid': str(client.uuid),
+            'internal_notes': client.internal_notes or '',
+            'routers': r_list,
+            'total_count': len(r_list),
+            'online_count': online_c,
+            'offline_count': offline_c,
+        })
+
+    unassigned_client_routers = [r for r in all_client_routers if not r.clients.all()]
+    if unassigned_client_routers:
+        online_c = sum(
+            1 for r in unassigned_client_routers
+            if not r.monitoring or (getattr(r, 'routerstatus', None) and r.routerstatus.status_online)
+        )
+        grouped_clients.append({
+            'client': None,
+            'name': 'Sin Cliente Asignado',
+            'uuid': 'unassigned_client',
+            'internal_notes': '',
+            'routers': unassigned_client_routers,
+            'total_count': len(unassigned_client_routers),
+            'online_count': online_c,
+            'offline_count': len(unassigned_client_routers) - online_c,
+        })
+
+    last_router_status_change = RouterStatus.objects.filter(last_status_change__isnull=False).order_by('-last_status_change').first()
+    last_status_change_timestamp = last_router_status_change.last_status_change.isoformat() if last_router_status_change else 0
 
     context = {
-        'router_client_list': clients,
+        'router_client_list': all_clients,
+        'grouped_clients': grouped_clients,
+        'total_clients_count': len(all_clients),
+        'total_devices_count': total_devices,
+        'total_online_count': total_online,
+        'total_offline_count': total_offline,
+        'last_status_change_timestamp': last_status_change_timestamp,
         'page_title': 'Clientes',
     }
     return render(request, 'router_manager/router_client_list.html', context=context)
@@ -788,13 +889,19 @@ def view_manage_router_client(request):
         router_client = get_object_or_404(RouterClient, uuid=uuid_val)
         if request.GET.get('action') == 'delete':
             if request.GET.get('confirmation') in ('delete', 'borrar', 'confirm'):
+                cli_name = router_client.name
+                devices_in_client = list(router_client.routers.select_related('backup_profile').all())
+                deleted_count = len(devices_in_client)
+                for dev in devices_in_client:
+                    _delete_router_cleanly(dev)
+                router_client.delete()
                 ActivityLog.objects.create(
                     user=request.user,
                     action="Cliente Eliminado",
-                    details=f"Cliente '{router_client.name}'",
+                    details=f"Cliente '{cli_name}' eliminado junto con {deleted_count} dispositivo(s)",
                 )
-                router_client.delete()
-                messages.success(request, 'Cliente eliminado correctamente (sus equipos y nodos se mantienen intactos).')
+                WebadminSettings.objects.filter(name='webadmin_settings').update(router_config_last_updated=timezone.now())
+                messages.success(request, f"Cliente '{cli_name}' y sus {deleted_count} dispositivo(s) fueron eliminados correctamente.")
                 return redirect('router_client_list')
             else:
                 messages.warning(request, 'Cliente no eliminado|Confirmación inválida')
@@ -802,40 +909,27 @@ def view_manage_router_client(request):
     else:
         router_client = None
 
-    form = RouterClientForm(request.POST or None, instance=router_client)
+    next_url = request.POST.get('next') or request.GET.get('next') or ''
+    form = RouterClientForm(request.POST or None, instance=router_client, next_url=next_url)
     if form.is_valid():
         saved_client = form.save()
         action = "Cliente Editado" if uuid_val else "Cliente Creado"
         ActivityLog.objects.create(
             user=request.user,
             action=action,
-            details=f"Cliente '{saved_client.name}' ({saved_client.routers.count()} equipos)",
+            details=f"Cliente '{saved_client.name}' ({saved_client.routers.count()} dispositivos)",
         )
         messages.success(request, f"Cliente '{saved_client.name}' guardado correctamente.")
-        next_url = request.POST.get('next') or request.GET.get('next')
         if next_url:
             sep = '&' if '?' in next_url else '?'
             return redirect(f"{next_url}{sep}created_client={saved_client.id}")
         return redirect('router_client_list')
 
-    all_routers = list(Router.objects.all().prefetch_related('routergroup_set', 'routerstatus').order_by('name'))
-    for r in all_routers:
-        grp = r.routergroup_set.first()
-        r.node_name = grp.name if grp else 'General'
-
-    selected_ids = set()
-    if router_client:
-        selected_ids = set(router_client.routers.values_list('id', flat=True))
-
-    all_nodes = RouterGroup.objects.all().order_by('name')
-
     context = {
         'form': form,
+        'form_size': 'col-xl-7 col-lg-8 mx-auto',
+        'page_title': f"Editar Cliente: {router_client.name}" if router_client else 'Nuevo Cliente',
+        'delete_confirmation_message': "Al eliminar el cliente también se eliminarán todos sus dispositivos. Escriba 'borrar' para confirmar:",
         'instance': router_client,
-        'all_routers': all_routers,
-        'selected_ids': selected_ids,
-        'all_nodes': all_nodes,
-        'next_url': request.GET.get('next') or request.POST.get('next') or '',
-        'page_title': f"Editar Cliente: {router_client.name}" if router_client else "Nuevo Cliente",
     }
-    return render(request, 'router_manager/manage_router_client.html', context=context)
+    return render(request, 'generic_form.html', context=context)

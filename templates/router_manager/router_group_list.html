@@ -2,31 +2,74 @@
 
 {% block page_custom_head %}
 <style>
+    .focused-inventory-shell {
+        max-width: 1120px;
+        margin: 0 auto;
+    }
+    .focused-card-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px 18px !important;
+    }
+    .focused-header-left {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .focused-header-left .card-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+    }
+    .inventory-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 9px 12px;
+        margin: 12px 0 14px 0;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: rgba(148, 163, 184, 0.04);
+    }
     .node-accordion-card {
         border: 1px solid var(--border);
-        border-radius: 4px;
+        border-left: 3px solid rgba(92, 142, 230, 0.4);
+        border-radius: 6px;
         margin-bottom: 8px;
         background: var(--card);
         overflow: hidden;
         width: 100%;
-        max-width: 620px;
-        transition: max-width 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .node-accordion-card:hover {
+        border-color: rgba(92, 142, 230, 0.55);
+        border-left-color: #5c8ee6;
+    }
+    .node-accordion-card.has-offline {
+        border-left-color: rgba(239, 68, 68, 0.65);
     }
     .node-accordion-card.expanded {
-        max-width: 100%;
-        border-color: rgba(92, 142, 230, 0.45);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+        border-color: rgba(92, 142, 230, 0.55);
+        border-left-color: #3b82f6;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.16);
     }
     .node-accordion-header {
-        padding: 9px 14px;
+        padding: 10px 14px;
         cursor: pointer;
         user-select: none;
         display: flex;
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 10px;
         background: transparent;
+        transition: background 0.15s ease;
     }
     .node-accordion-header:hover {
         background: var(--secondary);
@@ -36,7 +79,7 @@
         border-bottom: 1px solid var(--border);
     }
     .node-chevron {
-        transition: transform 0.15s ease;
+        transition: transform 0.18s ease;
         color: var(--muted-foreground);
         font-size: 11px;
         width: 14px;
@@ -47,249 +90,308 @@
         color: #5c8ee6;
     }
     .node-icon-box {
-        width: 24px;
-        height: 24px;
-        border-radius: 3px;
-        background: var(--secondary);
-        border: 1px solid var(--border);
+        width: 26px;
+        height: 26px;
+        border-radius: 5px;
+        background: rgba(92, 142, 230, 0.12);
+        border: 1px solid rgba(92, 142, 230, 0.28);
         color: #5c8ee6;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 11.5px;
+        font-size: 12px;
     }
     .node-title-text {
-        font-size: 13px;
-        font-weight: 600;
+        font-size: 13.5px;
+        font-weight: 700;
+        letter-spacing: 0.35px;
         color: var(--foreground);
+        text-transform: uppercase;
     }
     .node-accordion-body {
         display: none;
         background: var(--card);
     }
+    .compact-device-table {
+        margin-bottom: 0;
+        table-layout: auto;
+    }
+    .compact-device-table thead th {
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.35px;
+        color: var(--muted-foreground);
+        padding: 7px 12px !important;
+        border-top: none !important;
+        background: rgba(148, 163, 184, 0.04);
+        white-space: nowrap;
+    }
+    .compact-device-table tbody td {
+        padding: 8px 12px !important;
+        vertical-align: middle !important;
+        font-size: 13px;
+    }
+    .vendor-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11.5px;
+        font-weight: 500;
+        background: rgba(148, 163, 184, 0.1);
+        border: 1px solid var(--border);
+        color: var(--foreground);
+    }
+    .action-divider {
+        width: 1px;
+        height: 16px;
+        background: var(--border);
+        display: inline-block;
+        vertical-align: middle;
+        margin: 0 4px;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-    <div class='row'>
-        <div class='col-lg-12'>
-            <div class="card card-primary card-outline">
-                <div class="card-header">
-                    <h3 class="card-title">Nodos</h3>
-                    <span class="text-muted small">
-                        <i class="fas fa-sitemap text-primary mr-1"></i>
-                        Dispositivos organizados y enfocados por Nodo (toca cualquier Nodo para desplegar sus dispositivos)
-                    </span>
-                </div>
-                <div class="card-body">
-                    {% include 'router_manager/router_nav_tabs.html' %}
+<div class="focused-inventory-shell">
+    <div class="card card-primary card-outline">
+        <div class="card-header focused-card-header">
+            <div class="focused-header-left">
+                <h3 class="card-title"><i class="fas fa-sitemap text-primary mr-2"></i>Nodos</h3>
+                <span class="text-muted small">Toca cualquier Nodo para desplegar u ocultar sus dispositivos</span>
+            </div>
+            <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
+                <span class="badge badge-secondary">{{ total_nodes_count }} Nodo{{ total_nodes_count|pluralize:"s" }}</span>
+                <span class="badge-gpon badge-gpon-info"><i class="fas fa-hdd mr-1"></i>{{ total_devices_count }} Dispositivo{{ total_devices_count|pluralize:"s" }}</span>
+                {% if total_online_count > 0 %}
+                <span class="badge-pill-soft success"><span class="status-dot online"></span>{{ total_online_count }} En Línea</span>
+                {% endif %}
+                {% if total_offline_count > 0 %}
+                <span class="badge-pill-soft danger"><span class="status-dot offline"></span>{{ total_offline_count }} Desconectado{{ total_offline_count|pluralize:"s" }}</span>
+                {% endif %}
+            </div>
+        </div>
 
-                    <!-- Barra de Control: Buscador + Expandir/Contraer + Añadir Dispositivo y Añadir Nodo -->
-                    <div class="d-flex justify-content-between align-items-center flex-wrap mt-3 mb-3" style="gap: 8px;">
-                        <div class="d-flex align-items-center flex-wrap" style="gap: 8px; flex: 1; min-width: 260px; max-width: 460px;">
-                            <div class="input-group input-group-sm">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                </div>
-                                <input type="text" id="node-quick-search" class="form-control"
-                                       placeholder="Buscar nodo o dispositivo (ej. crucero, fw, sw, rt, IP...)">
-                            </div>
+        <div class="card-body pt-3">
+            {% include 'router_manager/router_nav_tabs.html' %}
+
+            <!-- Barra de Control Compacta -->
+            <div class="inventory-toolbar">
+                <div class="d-flex align-items-center flex-wrap" style="gap: 8px; flex: 1; min-width: 240px;">
+                    <div class="input-group input-group-sm" style="max-width: 310px;">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
                         </div>
-
-                        <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
-                            <button id="create-backup" class="btn btn-warning btn-sm font-weight-bold" style="display: none;">
-                                <i class="fas fa-sync-alt mr-1"></i> Respaldar Seleccionados
-                            </button>
-
-                            {% if grouped_nodes %}
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-expand-all-nodes">
-                                    <i class="fas fa-angle-double-down mr-1"></i> Expandir Nodos
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-collapse-all-nodes">
-                                    <i class="fas fa-angle-double-up mr-1"></i> Contraer Nodos
-                                </button>
-                            </div>
-                            {% endif %}
-
-                            <a href="javascript:void(0)" class="btn btn-primary btn-sm font-weight-bold add-router-btn" id="add-router-btn">
-                                <i class="fas fa-plus mr-1"></i> Añadir Dispositivo
-                            </a>
-                            <a href="/router/manage_group/" class="btn btn-outline-primary btn-sm font-weight-bold">
-                                <i class="fas fa-sitemap mr-1"></i> Añadir Nodo
-                            </a>
-                        </div>
+                        <input type="text" id="node-quick-search" class="form-control"
+                               placeholder="Buscar nodo o dispositivo (IP, nombre...)">
                     </div>
 
-                    <!-- Vista de Dispositivos enfocada por Nodos -->
-                    <div id="nodes-accordion-view">
-                        {% if grouped_nodes %}
-                            {% for node in grouped_nodes %}
-                                <div class="node-accordion-card" data-node-name="{{ node.name|lower }}">
-                                    <div class="node-accordion-header" onclick="toggleNodeAccordion(this, event)">
-                                        <div class="d-flex align-items-center flex-wrap" style="gap: 10px;">
-                                            <input type="checkbox" class="node-master-checkbox"
-                                                   title="Seleccionar todos los dispositivos de {{ node.name }}"
-                                                   onclick="toggleNodeRoutersSelection(this, event)">
-                                            <i class="fas fa-chevron-right node-chevron"></i>
-                                            <span class="node-icon-box">
-                                                <i class="fas fa-sitemap"></i>
-                                            </span>
-                                            <div>
-                                                <span class="node-title-text">{{ node.name }}</span>
-                                                {% if node.default_group %}
-                                                    <span class="badge badge-secondary ml-1" title="Nodo por defecto">Por Defecto</span>
-                                                {% endif %}
-                                                {% if node.internal_notes %}
-                                                    <span class="text-muted small ml-2">&mdash; {{ node.internal_notes }}</span>
-                                                {% endif %}
-                                            </div>
-                                        </div>
+                    {% if grouped_nodes %}
+                    <button type="button" id="btn-select-all-nodes-list" class="btn btn-outline-secondary btn-sm font-weight-bold" {% if total_devices_count == 0 %}disabled{% endif %} title="Seleccionar o deseleccionar todos los dispositivos visibles">
+                        <i class="fas fa-check-double mr-1"></i> Seleccionar Todo
+                    </button>
+                    {% endif %}
+                </div>
 
-                                        <div class="d-flex align-items-center flex-wrap" style="gap: 8px;" onclick="event.stopPropagation();">
-                                            <span class="badge-gpon badge-gpon-info">
-                                                <i class="fas fa-hdd"></i> {{ node.total_count }} Dispositivo{{ node.total_count|pluralize:"s" }}
-                                            </span>
-                                            {% if node.online_count > 0 %}
-                                                <span class="badge-pill-soft success">
-                                                    <span class="status-dot online"></span> {{ node.online_count }} En Línea
-                                                </span>
-                                            {% endif %}
-                                            {% if node.offline_count > 0 %}
-                                                <span class="badge-pill-soft danger">
-                                                    <span class="status-dot offline"></span> {{ node.offline_count }} Desconectado{{ node.offline_count|pluralize:"s" }}
-                                                </span>
-                                            {% endif %}
-                                            {% if node.uuid != 'ungrouped' %}
-                                                <a href="/router/manage_group/?uuid={{ node.uuid }}"
-                                                   class="btn btn-xs btn-outline-primary ml-1"
-                                                   title="Editar Nodo {{ node.name }}">
-                                                    <i class="fas fa-edit"></i> Editar
-                                                </a>
-                                                <a href="/router/manage_group/?uuid={{ node.uuid }}&action=delete&confirmation=confirm"
-                                                   class="btn btn-xs btn-outline-danger"
-                                                   onclick="return confirm('¿Seguro que deseas eliminar el nodo \'{{ node.name }}\'? (Los dispositivos dentro del nodo no se borrarán)');"
-                                                   title="Eliminar Nodo">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </a>
-                                            {% endif %}
-                                        </div>
-                                    </div>
+                <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
+                    <button id="create-backup" class="btn btn-warning btn-sm font-weight-bold" style="display: none;">
+                        <i class="fas fa-sync-alt mr-1"></i> Respaldar (<span id="selected-backup-count">0</span>)
+                    </button>
 
-                                    <!-- Cuerpo desplegable con los dispositivos del Nodo -->
-                                    <div class="node-accordion-body">
-                                        {% if node.routers %}
-                                            <div class="table-responsive">
-                                                <table class="table table-hover mb-0">
-                                                    <thead>
-                                                        <tr>
-                                                            <th class="min-width text-center"></th>
-                                                            <th>Nombre del Dispositivo</th>
-                                                            <th>Fabricante</th>
-                                                            <th>Dirección IP</th>
-                                                            <th>Cliente</th>
-                                                            <th>Estado</th>
-                                                            <th>Último Respaldo</th>
-                                                            <th class="min-width">Reportes</th>
-                                                            <th class="min-width"></th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {% for router in node.routers %}
-                                                            <tr class="node-router-row"
-                                                                data-search="{{ router.name|lower }} {{ router.address|lower }} {{ router.get_router_type_display|lower }} {{ router.routerinformation.model_name|default:''|lower }} {{ node.name|lower }}"
-                                                                {% if not router.enabled %}style="text-decoration: line-through;"{% endif %}>
-                                                                <td class="min-width text-center">
-                                                                    <input type="checkbox" class="router-checkbox node-child-cb" data-uuid="{{ router.uuid }}">
-                                                                </td>
-                                                                <td class="font-weight-bold">
-                                                                    <a href="/router/details/?uuid={{ router.uuid }}">
-                                                                        <i class="fas fa-hdd text-muted mr-1"></i> {{ router.name }}
-                                                                    </a>
-                                                                </td>
-                                                                <td>{{ router.get_router_type_display }}</td>
-                                                                <td>
-                                                                    <code>{{ router.address }}</code>
-                                                                    <span class="badge badge-secondary ml-1">{{ router.connection_protocol|upper }}:{{ router.port }}</span>
-                                                                </td>
-                                                                <td>
-                                                                    {% if router.clients.exists %}
-                                                                        {% for cl in router.clients.all %}
-                                                                            <span class="badge badge-info"><i class="fas fa-building mr-1"></i>{{ cl.name }}</span>
-                                                                        {% endfor %}
-                                                                    {% else %}
-                                                                        <span class="text-muted">---</span>
-                                                                    {% endif %}
-                                                                </td>
-                                                                <td id="node-status-{{ router.uuid }}">
-                                                                    {% if router.monitoring %}
-                                                                        {% if router.routerstatus.status_online %}
-                                                                            <span class="badge-pill-soft success"><span class="status-dot online"></span>En Línea</span>
-                                                                        {% else %}
-                                                                            <span class="badge-pill-soft danger"><span class="status-dot offline"></span>Desconectado</span>
-                                                                        {% endif %}
-                                                                    {% else %}
-                                                                        ---
-                                                                    {% endif %}
-                                                                </td>
-                                                                <td>
-                                                                    {% if router.routerstatus.last_backup %}
-                                                                        {{ router.routerstatus.last_backup|date:"d/m/Y H:i:s" }}
-                                                                    {% else %}
-                                                                        ---
-                                                                    {% endif %}
-                                                                </td>
-                                                                <td class="min-width text-nowrap">
-                                                                    <div class="btn-group">
-                                                                        <a href="/router/create_instant_backup/?uuid={{ router.uuid }}" class="btn btn-xs btn-primary" title="Ejecutar respaldo ahora">
-                                                                            <i class="fas fa-sync-alt"></i> Respaldar
-                                                                        </a>
-                                                                        {% if router.latest_backup_uuid %}
-                                                                        <a href="/backup/backup_details/?uuid={{ router.latest_backup_uuid }}" class="btn btn-xs btn-outline-success" title="Ver último respaldo guardado">
-                                                                            <i class="fas fa-file-code"></i> Último
-                                                                        </a>
-                                                                        {% endif %}
-                                                                        <a href="/backup/backup_list/?router={{ router.uuid }}" class="btn btn-xs btn-outline-secondary" title="Historial completo de respaldos">
-                                                                            <i class="fas fa-history"></i> Historial
-                                                                        </a>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="min-width text-nowrap">
-                                                                    <a href="javascript:void(0)" class="manage-router-btn mr-2" data-uuid="{{ router.uuid }}"><i class="fas fa-edit" title="Editar Dispositivo"></i></a>
-                                                                    <a href="javascript:void(0)" class="text-danger" title="Eliminar Dispositivo" onclick="confirmDeleteRouter('{{ router.uuid }}', '{{ router.name }}')">
-                                                                        <i class="fas fa-trash"></i>
-                                                                    </a>
-                                                                </td>
-                                                            </tr>
-                                                        {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        {% else %}
-                                            <div class="p-3 text-center text-muted small">
-                                                Este nodo aún no tiene dispositivos asignados.
-                                            </div>
+                    {% if grouped_nodes %}
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-expand-all-nodes" title="Mostrar todos">
+                            <i class="fas fa-angle-double-down mr-1"></i> Expandir
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-collapse-all-nodes" title="Ocultar todos">
+                            <i class="fas fa-angle-double-up mr-1"></i> Contraer
+                        </button>
+                    </div>
+                    {% endif %}
+
+                    <a href="javascript:void(0)" class="btn btn-primary btn-sm font-weight-bold add-router-btn" id="add-router-btn" data-scope="node">
+                        <i class="fas fa-plus mr-1"></i> Añadir Dispositivo
+                    </a>
+                    <a href="/router/manage_group/" class="btn btn-outline-primary btn-sm font-weight-bold">
+                        <i class="fas fa-sitemap mr-1"></i> Añadir Nodo
+                    </a>
+                </div>
+            </div>
+
+            <!-- Lista Uniforme de Nodos (Oculta/Muestra dispositivos al tocar) -->
+            <div id="nodes-accordion-view">
+                {% if grouped_nodes %}
+                    {% for node in grouped_nodes %}
+                        <div class="node-accordion-card {% if node.offline_count > 0 %}has-offline{% endif %}" data-node-name="{{ node.name|lower }}">
+                            <div class="node-accordion-header" onclick="toggleNodeAccordion(this, event)">
+                                <div class="d-flex align-items-center flex-wrap" style="gap: 10px;">
+                                    <input type="checkbox" class="node-master-checkbox"
+                                           title="Seleccionar todos los dispositivos de {{ node.name|upper }}"
+                                           onclick="toggleNodeRoutersSelection(this, event)">
+                                    <i class="fas fa-chevron-right node-chevron"></i>
+                                    <span class="node-icon-box">
+                                        <i class="fas fa-sitemap"></i>
+                                    </span>
+                                    <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
+                                        <span class="node-title-text">{{ node.name|upper }}</span>
+                                        {% if node.default_group %}
+                                            <span class="badge badge-secondary" title="Nodo por defecto">Por Defecto</span>
+                                        {% endif %}
+                                        {% if node.internal_notes %}
+                                            <span class="text-muted small">&middot; {{ node.internal_notes|truncatechars:55 }}</span>
                                         {% endif %}
                                     </div>
                                 </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="text-center py-5 border rounded" style="background: var(--card);">
-                                <i class="fas fa-sitemap text-muted mb-2" style="font-size: 2rem;"></i>
-                                <h6 class="font-weight-bold mb-1">Aún no hay Nodos registrados</h6>
-                                <p class="text-muted small mb-3">Crea tu primer Nodo y añade dispositivos para organizarlos por ubicación.</p>
-                                <a href="/router/manage_group/" class="btn btn-primary btn-sm font-weight-bold">
-                                    <i class="fas fa-plus mr-1"></i> Añadir Primer Nodo
-                                </a>
+
+                                <div class="d-flex align-items-center flex-wrap header-actions-group" style="gap: 6px;">
+                                    <span class="badge-gpon badge-gpon-info">
+                                        <i class="fas fa-hdd"></i> {{ node.total_count }} Dispositivo{{ node.total_count|pluralize:"s" }}
+                                    </span>
+                                    {% if node.online_count > 0 %}
+                                        <span class="badge-pill-soft success">
+                                            <span class="status-dot online"></span> {{ node.online_count }} En Línea
+                                        </span>
+                                    {% endif %}
+                                    {% if node.offline_count > 0 %}
+                                        <span class="badge-pill-soft danger">
+                                            <span class="status-dot offline"></span> {{ node.offline_count }} Desconectado{{ node.offline_count|pluralize:"s" }}
+                                        </span>
+                                    {% endif %}
+                                    {% if node.uuid != 'ungrouped' %}
+                                        <span class="action-divider"></span>
+                                        <a href="javascript:void(0)"
+                                           class="btn btn-xs btn-outline-success font-weight-bold add-router-btn"
+                                           data-scope="node"
+                                           data-group-id="{{ node.group.id }}"
+                                           title="Añadir dispositivo directamente al nodo {{ node.name|upper }}">
+                                            <i class="fas fa-plus"></i> Dispositivo
+                                        </a>
+                                        <a href="/router/manage_group/?uuid={{ node.uuid }}"
+                                           class="btn btn-xs btn-outline-primary"
+                                           title="Editar Nodo {{ node.name|upper }}">
+                                            <i class="fas fa-edit"></i> Editar
+                                        </a>
+                                        <a href="/router/manage_group/?uuid={{ node.uuid }}&action=delete&confirmation=confirm"
+                                           class="btn btn-xs btn-outline-danger"
+                                           onclick="return confirm('¿Seguro que deseas eliminar el nodo \'{{ node.name|upper }}\'? ATENCIÓN: También se eliminarán sus {{ node.total_count }} dispositivo(s) asociados.');"
+                                           title="Eliminar Nodo y sus dispositivos">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
                             </div>
-                        {% endif %}
+
+                            <!-- Tabla compacta de dispositivos del Nodo (sin columnas vacías) -->
+                            <div class="node-accordion-body">
+                                {% if node.routers %}
+                                    <div class="table-responsive">
+                                        <table class="table table-hover compact-device-table">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 38px;" class="text-center">Sel.</th>
+                                                    <th style="width: 25%;">Dispositivo</th>
+                                                    <th style="width: 19%;">Fabricante</th>
+                                                    <th style="width: 20%;">Conexión</th>
+                                                    <th style="width: 13%;">Estado</th>
+                                                    <th style="width: 14%;">Último Respaldo</th>
+                                                    <th class="text-right">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for router in node.routers %}
+                                                    <tr class="node-router-row"
+                                                        data-search="{{ router.name|lower }} {{ router.address|lower }} {{ router.get_router_type_display|lower }} {{ router.routerinformation.model_name|default:''|lower }} {{ node.name|lower }}"
+                                                        {% if not router.enabled %}style="text-decoration: line-through;"{% endif %}>
+                                                        <td class="text-center">
+                                                            <input type="checkbox" class="router-checkbox node-child-cb" data-uuid="{{ router.uuid }}">
+                                                        </td>
+                                                        <td class="font-weight-bold">
+                                                            <a href="/router/details/?uuid={{ router.uuid }}">
+                                                                <i class="fas fa-server text-primary mr-1" style="font-size: 11.5px;"></i>{{ router.name }}
+                                                            </a>
+                                                            {% if router.routerinformation.model_name %}
+                                                                <div class="text-muted" style="font-size: 11px; font-weight: 400;">{{ router.routerinformation.model_name }}</div>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            <span class="vendor-chip">{{ router.get_router_type_display }}</span>
+                                                        </td>
+                                                        <td class="text-nowrap">
+                                                            <code>{{ router.address }}</code>
+                                                            <span class="badge badge-secondary ml-1">{{ router.connection_protocol|upper }}:{{ router.port }}</span>
+                                                        </td>
+                                                        <td id="node-status-{{ router.uuid }}" class="text-nowrap">
+                                                            {% if router.monitoring %}
+                                                                {% if router.routerstatus.status_online %}
+                                                                    <span class="badge-pill-soft success"><span class="status-dot online"></span>En Línea</span>
+                                                                {% else %}
+                                                                    <span class="badge-pill-soft danger"><span class="status-dot offline"></span>Desconectado</span>
+                                                                {% endif %}
+                                                            {% else %}
+                                                                <span class="text-muted small">Sin monitoreo</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td class="text-nowrap">
+                                                            {% if router.routerstatus.last_backup %}
+                                                                <span class="small"><i class="far fa-clock text-muted mr-1"></i>{{ router.routerstatus.last_backup|date:"d/m/Y H:i" }}</span>
+                                                            {% else %}
+                                                                <span class="text-muted small">Pendiente</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td class="text-right text-nowrap">
+                                                            <div class="btn-group mr-1">
+                                                                <a href="/router/create_instant_backup/?uuid={{ router.uuid }}" class="btn btn-xs btn-primary" title="Ejecutar respaldo ahora">
+                                                                    <i class="fas fa-sync-alt"></i> Respaldar
+                                                                </a>
+                                                                {% if router.latest_backup_uuid %}
+                                                                <a href="/backup/backup_details/?uuid={{ router.latest_backup_uuid }}" class="btn btn-xs btn-outline-success" title="Ver último respaldo">
+                                                                    <i class="fas fa-file-code"></i> Último
+                                                                </a>
+                                                                {% endif %}
+                                                                <a href="/backup/backup_list/?router={{ router.uuid }}" class="btn btn-xs btn-outline-secondary" title="Historial de respaldos">
+                                                                    <i class="fas fa-history"></i>
+                                                                </a>
+                                                            </div>
+                                                            <a href="javascript:void(0)" class="btn btn-xs btn-outline-secondary manage-router-btn" data-uuid="{{ router.uuid }}" data-scope="node" title="Editar Dispositivo">
+                                                                <i class="fas fa-edit"></i>
+                                                            </a>
+                                                            <a href="javascript:void(0)" class="btn btn-xs btn-outline-danger" title="Eliminar Dispositivo" onclick="confirmDeleteRouter('{{ router.uuid }}', '{{ router.name|escapejs }}')">
+                                                                <i class="fas fa-trash"></i>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <div class="py-3 px-4 text-muted small d-flex justify-content-between align-items-center">
+                                        <span>Este nodo aún no tiene dispositivos asignados.</span>
+                                        <a href="javascript:void(0)" class="text-primary font-weight-bold add-router-btn" data-scope="node" data-group-id="{{ node.group.id }}">
+                                            <i class="fas fa-plus mr-1"></i> Añadir dispositivo a este nodo
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5 border rounded" style="background: var(--card);">
+                        <i class="fas fa-sitemap text-muted mb-2" style="font-size: 2rem;"></i>
+                        <h6 class="font-weight-bold mb-1">Aún no hay Nodos registrados</h6>
+                        <p class="text-muted small mb-3">Crea tu primer Nodo en mayúsculas y añade sus dispositivos.</p>
+                        <a href="/router/manage_group/" class="btn btn-primary btn-sm font-weight-bold">
+                            <i class="fas fa-plus mr-1"></i> Añadir Primer Nodo
+                        </a>
                     </div>
-                </div>
+                {% endif %}
             </div>
         </div>
     </div>
+</div>
 
-    {% include 'router_manager/_router_manage_modal.html' %}
+{% include 'router_manager/_router_manage_modal.html' %}
 {% endblock %}
 
 {% block custom_page_scripts %}
@@ -299,15 +401,14 @@
     var status_offline_text = '<span class="badge-pill-soft danger"><span class="status-dot offline"></span>Desconectado</span>';
 
     function toggleNodeAccordion(headerEl, event) {
-        if (event && $(event.target).is('input, a, button, i.fa-edit, i.fa-trash-alt')) {
+        if (event && $(event.target).closest('input, a, button').length) {
             return;
         }
         var $card = $(headerEl).closest('.node-accordion-card');
         var $body = $card.find('.node-accordion-body');
         if ($card.hasClass('expanded')) {
-            $body.stop(true, true).slideUp(160, function() {
-                $card.removeClass('expanded');
-            });
+            $body.stop(true, true).slideUp(160);
+            $card.removeClass('expanded');
         } else {
             $card.addClass('expanded');
             $body.stop(true, true).slideDown(180);
@@ -318,7 +419,7 @@
         event.stopPropagation();
         var isChecked = $(checkboxEl).prop('checked');
         var $card = $(checkboxEl).closest('.node-accordion-card');
-        $card.find('.node-child-cb').prop('checked', isChecked).trigger('change');
+        $card.find('.node-router-row:visible .node-child-cb, .node-child-cb').prop('checked', isChecked).trigger('change');
     }
 
     function checkStatusChange() {
@@ -343,14 +444,71 @@
     setInterval(checkStatusChange, 30000);
 
     $(document).ready(function() {
+        function getVisibleChildCheckboxes() {
+            return $('.node-accordion-card:visible .node-router-row').filter(function() {
+                return $(this).css('display') !== 'none';
+            }).find('.node-child-cb');
+        }
+
+        function getSelectedUuids() {
+            var uuids = [];
+            $('.router-checkbox:checked').each(function() {
+                var u = $(this).data('uuid');
+                if (u && uuids.indexOf(u) === -1) uuids.push(u);
+            });
+            return uuids;
+        }
+
+        function syncSelectionUI() {
+            var selected = getSelectedUuids();
+            if (selected.length >= 1) {
+                $('#selected-backup-count').text(selected.length);
+                $('#create-backup').show();
+            } else {
+                $('#create-backup').hide();
+            }
+
+            // Sincronizar cada casilla maestra de Nodo
+            $('.node-accordion-card').each(function() {
+                var $cbs = $(this).find('.node-child-cb');
+                var $master = $(this).find('.node-master-checkbox');
+                if ($cbs.length > 0 && $cbs.filter(':checked').length === $cbs.length) {
+                    $master.prop('checked', true);
+                } else {
+                    $master.prop('checked', false);
+                }
+            });
+
+            // Sincronizar botón global "Seleccionar Todo"
+            var $vis = getVisibleChildCheckboxes();
+            var $btnAll = $('#btn-select-all-nodes-list');
+            if ($btnAll.length) {
+                var allChecked = $vis.length > 0 && $vis.filter(':checked').length === $vis.length;
+                if (allChecked) {
+                    $btnAll.removeClass('btn-outline-secondary').addClass('btn-primary')
+                        .html('<i class="fas fa-times-circle mr-1"></i> Deseleccionar Todo');
+                } else {
+                    $btnAll.removeClass('btn-primary').addClass('btn-outline-secondary')
+                        .html('<i class="fas fa-check-double mr-1"></i> Seleccionar Todo');
+                }
+            }
+        }
+
+        $('#btn-select-all-nodes-list').on('click', function() {
+            var $vis = getVisibleChildCheckboxes();
+            if (!$vis.length) return;
+            var allChecked = $vis.filter(':checked').length === $vis.length;
+            $vis.prop('checked', !allChecked);
+            syncSelectionUI();
+        });
+
+        $(document).on('change', '.router-checkbox', syncSelectionUI);
+
         $('#btn-expand-all-nodes').on('click', function() {
-            $('.node-accordion-card').addClass('expanded');
-            $('.node-accordion-body').slideDown(180);
+            $('.node-accordion-card:visible').addClass('expanded').find('.node-accordion-body').slideDown(180);
         });
         $('#btn-collapse-all-nodes').on('click', function() {
-            $('.node-accordion-body').slideUp(160, function() {
-                $(this).closest('.node-accordion-card').removeClass('expanded');
-            });
+            $('.node-accordion-card').removeClass('expanded').find('.node-accordion-body').slideUp(160);
         });
 
         $('#node-quick-search').on('input', function() {
@@ -358,6 +516,7 @@
             if (!term) {
                 $('.node-accordion-card').show();
                 $('.node-router-row').show();
+                syncSelectionUI();
                 return;
             }
             $('.node-accordion-card').each(function() {
@@ -382,28 +541,13 @@
                     $card.hide();
                 }
             });
-        });
-
-        function getSelectedUuids() {
-            var uuids = [];
-            $('.router-checkbox:checked').each(function() {
-                var u = $(this).data('uuid');
-                if (u && uuids.indexOf(u) === -1) uuids.push(u);
-            });
-            return uuids;
-        }
-
-        $(document).on('change', '.router-checkbox', function() {
-            if (getSelectedUuids().length >= 1) {
-                $('#create-backup').show();
-            } else {
-                $('#create-backup').hide();
-            }
+            syncSelectionUI();
         });
 
         $('#create-backup').on('click', function(e) {
             e.preventDefault();
             var selectedRouters = getSelectedUuids();
+            if (!selectedRouters.length) return;
             $.ajax({
                 url: '/router/create_instant_backup/multiple/',
                 method: 'POST',
@@ -415,11 +559,12 @@
                     $(document).Toasts('create', {
                         class: 'bg-success',
                         title: 'Respaldo Iniciado',
-                        body: 'Se han encolado los respaldos seleccionados.',
+                        body: 'Se han encolado ' + selectedRouters.length + ' respaldo(s).',
                         delay: 5000,
                         autohide: true
                     });
-                    $('.router-checkbox, .node-master-checkbox').prop('checked', false).trigger('change');
+                    $('.router-checkbox, .node-master-checkbox').prop('checked', false);
+                    syncSelectionUI();
                 }
             });
         });

@@ -1,6 +1,6 @@
 {% load crispy_forms_tags %}
 <div class="modal-header">
-    <h5 class="modal-title">{% if instance %}Editar Dispositivo: {{ instance.name }}{% else %}Nuevo Dispositivo{% endif %}</h5>
+    <h5 class="modal-title">{% if instance %}Editar Dispositivo: {{ instance.name }}{% elif scope == 'client' %}Nuevo Dispositivo &mdash; Cliente{% if preselect_client %}: {{ preselect_client.name }}{% endif %}{% else %}Nuevo Dispositivo &mdash; Nodo{% if preselect_group %}: {{ preselect_group.name }}{% endif %}{% endif %}</h5>
     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
         <span aria-hidden="true">&times;</span>
     </button>
@@ -146,7 +146,7 @@
     }
 </style>
 
-<form id="router-manage-form" method="post" action="/router/manage/{% if instance %}?uuid={{ instance.uuid }}{% endif %}">
+<form id="router-manage-form" method="post" action="/router/manage/{% if instance %}?uuid={{ instance.uuid }}&scope={{ scope|default:'node' }}{% else %}?scope={{ scope|default:'node' }}{% endif %}">
 <div class="modal-body">
     {% csrf_token %}
     {% crispy form %}
@@ -180,18 +180,53 @@
 
 <script>
 $(document).ready(function() {
-    // Auto-ajustar puerto al cambiar entre SSH (22), Telnet (23) y API (80)
-    $('#id_connection_protocol').on('change', function() {
-        const proto = ($(this).val() || '').toLowerCase();
+    // Puerto estándar automático según Protocolo/Fabricante, pero editable directamente sin menús extra
+    (function setupDirectSmartPort() {
         const $port = $('#id_port');
-        const currentPort = ($port.val() || '').trim();
-        const defaultPorts = ['', '22', '23', '80'];
-        if (defaultPorts.includes(currentPort)) {
-            if (proto === 'telnet') $port.val('23');
-            else if (proto === 'api') $port.val('80');
-            else if (proto === 'ssh') $port.val('22');
+        const $proto = $('#id_connection_protocol');
+        const $rtype = $('#id_router_type');
+        if (!$port.length) return;
+
+        const standardPorts = ['', '22', '23', '80', '443', '8728'];
+        let protoManuallyChanged = {% if instance %}true{% else %}false{% endif %};
+
+        function defaultPortFor(proto, rtype) {
+            if (proto === 'telnet') return '23';
+            if (proto === 'api') return rtype === 'fortinet' ? '443' : (rtype === 'mikrotik' ? '8728' : '80');
+            return '22';
         }
-    });
+
+        // Al hacer clic en Puerto, selecciona el número actual para escribir otro al instante sin borrar a mano
+        $port.on('focus click', function() {
+            this.select();
+        });
+
+        // Si el usuario escribe otro puerto directamente, detecta protocolo común sin estorbar puertos propios
+        $port.on('input', function() {
+            const val = ($(this).val() || '').trim();
+            if (!protoManuallyChanged && val) {
+                if (val === '23' || val === '2323') $proto.val('telnet');
+                else if (['80', '443', '8080', '8443', '10443', '8728', '8729'].includes(val)) $proto.val('api');
+                else if (val === '22' || val === '2222') $proto.val('ssh');
+            }
+        });
+
+        // Al cambiar Protocolo o Fabricante, pone el estándar salvo que el usuario ya haya escrito un puerto propio
+        $proto.on('change', function(e) {
+            if (e.originalEvent) protoManuallyChanged = true;
+            const cur = ($port.val() || '').trim();
+            if (standardPorts.includes(cur)) {
+                $port.val(defaultPortFor(($proto.val() || '').toLowerCase(), ($rtype.val() || '').toLowerCase()));
+            }
+        });
+
+        $rtype.on('change', function() {
+            const cur = ($port.val() || '').trim();
+            if (standardPorts.includes(cur)) {
+                $port.val(defaultPortFor(($proto.val() || '').toLowerCase(), ($rtype.val() || '').toLowerCase()));
+            }
+        });
+    })();
 
     // Enlaces rápidos debajo de Nodo y Cliente para crear uno nuevo y retomar el formulario
     function setupNodeAndClientRedirectFlow() {

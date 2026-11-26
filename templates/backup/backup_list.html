@@ -16,7 +16,10 @@
                 <div class="card-body">
                     {% include 'backup/backup_nav_tabs.html' %}
 
-                    <div class="mb-3 d-flex align-items-center">
+                    <div class="mb-3 d-flex align-items-center flex-wrap" style="gap: 8px;">
+                        <button type="button" id="select-all-backups-btn" class="btn btn-outline-secondary btn-sm font-weight-bold">
+                            <i class="fas fa-check-double mr-1"></i> Seleccionar Todo
+                        </button>
                         <button id="compare-backups-btn" class="btn btn-outline-secondary btn-sm" disabled title="Selecciona 2 casillas para comparar">
                             <i class="fas fa-columns mr-1"></i> Comparar seleccionados (Diff)
                         </button>
@@ -102,8 +105,8 @@
                                             {% endif %}
                                             <a href="/backup/download/?uuid={{ backup.uuid }}&type=text"
                                                class="btn btn-xs btn-outline-primary mr-1"
-                                               title="Descargar archivo de texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %})">
-                                                <i class="fas fa-file-code"></i> {% if backup.router.router_type == 'mikrotik' %}.rsc{% else %}.cfg{% endif %}
+                                               title="Descargar archivo de texto ({% if backup.router.router_type == 'mikrotik' %}.rsc{% elif backup.router.router_type == 'fortinet' %}.conf{% else %}.cfg{% endif %})">
+                                                <i class="fas fa-file-code"></i> {% if backup.router.router_type == 'mikrotik' %}.rsc{% elif backup.router.router_type == 'fortinet' %}.conf{% else %}.cfg{% endif %}
                                             </a>
                                             {% if backup.router.router_type == 'mikrotik' %}
                                             <a href="/backup/download/?uuid={{ backup.uuid }}&type=binary"
@@ -136,10 +139,28 @@
                     document.addEventListener('DOMContentLoaded', function() {
                         const compareBtn = document.getElementById('compare-backups-btn');
 
-                        $(document).on('change', '.backup-select', function() {
+                        const selectAllBackupsBtn = document.getElementById('select-all-backups-btn');
+                        function syncBackupSelectBtn() {
+                            const allCbs = Array.from(document.querySelectorAll('.backup-select')).filter(el => el.offsetParent !== null);
                             const selected = document.querySelectorAll('.backup-select:checked');
                             compareBtn.disabled = selected.length !== 2;
-                        });
+                            if (selectAllBackupsBtn && allCbs.length > 0) {
+                                const allChecked = allCbs.every(cb => cb.checked);
+                                selectAllBackupsBtn.innerHTML = allChecked
+                                    ? '<i class="fas fa-times-circle mr-1"></i> Deseleccionar Todo'
+                                    : '<i class="fas fa-check-double mr-1"></i> Seleccionar Todo';
+                            }
+                        }
+                        if (selectAllBackupsBtn) {
+                            selectAllBackupsBtn.addEventListener('click', function() {
+                                const allCbs = Array.from(document.querySelectorAll('.backup-select')).filter(el => el.offsetParent !== null);
+                                if (!allCbs.length) return;
+                                const allChecked = allCbs.every(cb => cb.checked);
+                                allCbs.forEach(cb => { cb.checked = !allChecked; });
+                                syncBackupSelectBtn();
+                            });
+                        }
+                        $(document).on('change', '.backup-select', syncBackupSelectBtn);
 
                         compareBtn.addEventListener('click', function() {
                             const selected = document.querySelectorAll('.backup-select:checked');

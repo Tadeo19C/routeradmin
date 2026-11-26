@@ -1,13 +1,57 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
+{% block page_custom_head %}
+<style>
+    /* Estilizado limpio para listas de selección de Dispositivos en formularios de Nodo y Cliente */
+    .routers-checklist-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+    .routers-checklist-box {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: rgba(15, 23, 42, 0.25);
+        max-height: 240px;
+        overflow-y: auto;
+        padding: 6px 10px;
+    }
+    body:not(.dark-mode) .routers-checklist-box {
+        background: #f8fafc;
+    }
+    #div_id_routers .form-check {
+        padding: 5px 8px 5px 28px;
+        margin-bottom: 2px;
+        border-radius: 4px;
+        transition: background 0.12s ease;
+    }
+    #div_id_routers .form-check:hover {
+        background: rgba(92, 142, 230, 0.1);
+    }
+    #div_id_routers .form-check-label {
+        cursor: pointer;
+        width: 100%;
+        font-size: 13px;
+        font-weight: 500;
+    }
+    #div_id_routers .form-check-input {
+        cursor: pointer;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
     <div class='row'>
         <div class='{% if form_size %}{{ form_size }}{% else %}col-lg-6{% endif %}'>
             <div class="card card-primary card-outline">
                 {% if page_title %}
                     <div class="card-header">
-                        <h3 class="card-title">{{ page_title }}</h3>
+                        <h3 class="card-title font-weight-bold">{{ page_title }}</h3>
                     </div>
                 {% endif %}
                 <div class="card-body row">
@@ -25,7 +69,7 @@
                 </div>
             </div>
         </div>
-    
+
     {% if form_description %}
         <div class='{% if form_description.size %}{{ form_description.size }}{% else %}col-lg-6{% endif %}'>
             <div class="card card-primary card-outline">
@@ -37,27 +81,119 @@
             </div>
         </div>
     {% endif %}
-    
+
     </div>
 {% endblock %}
 
 {% block custom_page_scripts %}
 <script>
     function openCommandDialog(element) {
-        var confirmation = prompt("{% if delete_confirmation_message %}{{ delete_confirmation_message }}{% else %}Por favor escriba 'delete' para continuar.{% endif %}");
+        var confirmation = prompt("{% if delete_confirmation_message %}{{ delete_confirmation_message }}{% else %}Por favor escriba 'borrar' para continuar:{% endif %}");
         if (confirmation) {
-            var url = "?uuid={{ instance.uuid }}&action=delete&confirmation=" + encodeURIComponent(confirmation);
+            var url = "?uuid={{ instance.uuid }}&action=delete&confirmation=" + encodeURIComponent(confirmation.trim().toLowerCase());
             window.location.href = url;
         }
     }
 
     $(document).ready(function() {
-        $('#id_connection_protocol').on('change', function() {
-            var protocol = ($(this).val() || '').toLowerCase();
+        // Mejorar lista de selección de Dispositivos con botón "Seleccionar Todo" y filtro rápido
+        var $routersGroup = $('#div_id_routers');
+        if ($routersGroup.length) {
+            var $colContainer = $routersGroup.find('> div').first();
+            if (!$colContainer.length) {
+                $colContainer = $routersGroup;
+            }
+            var $checks = $colContainer.find('.form-check');
+            if ($checks.length > 0) {
+                var $box = $('<div class="routers-checklist-box"></div>');
+                $checks.appendTo($box);
+
+                var $toolbar = $(`
+                    <div class="routers-checklist-toolbar">
+                        <div class="d-flex align-items-center" style="gap: 6px;">
+                            <button type="button" id="btn-toggle-all-form-routers" class="btn btn-xs btn-outline-primary font-weight-bold">
+                                <i class="fas fa-check-double mr-1"></i> Seleccionar Todo
+                            </button>
+                            <span id="form-routers-selected-badge" class="badge badge-secondary">0 seleccionados</span>
+                        </div>
+                        <input type="text" id="filter-form-routers" class="form-control form-control-sm" style="max-width: 210px; height: 26px; font-size: 12px;" placeholder="Filtrar lista...">
+                    </div>
+                `);
+                $colContainer.prepend($box);
+                $colContainer.prepend($toolbar);
+
+                function syncFormRoutersState() {
+                    var $visibleCbs = $box.find('.form-check:visible input[type="checkbox"]');
+                    var totalChecked = $box.find('input[type="checkbox"]:checked').length;
+                    var allVisibleChecked = $visibleCbs.length > 0 && $visibleCbs.filter(':checked').length === $visibleCbs.length;
+
+                    $('#form-routers-selected-badge').text(
+                        totalChecked + (totalChecked === 1 ? ' seleccionado' : ' seleccionados')
+                    );
+                    var $btn = $('#btn-toggle-all-form-routers');
+                    if (allVisibleChecked) {
+                        $btn.removeClass('btn-outline-primary').addClass('btn-primary')
+                            .html('<i class="fas fa-times-circle mr-1"></i> Deseleccionar Todo');
+                    } else {
+                        $btn.removeClass('btn-primary').addClass('btn-outline-primary')
+                            .html('<i class="fas fa-check-double mr-1"></i> Seleccionar Todo');
+                    }
+                }
+
+                $('#btn-toggle-all-form-routers').on('click', function() {
+                    var $visibleCbs = $box.find('.form-check:visible input[type="checkbox"]');
+                    var allVisibleChecked = $visibleCbs.length > 0 && $visibleCbs.filter(':checked').length === $visibleCbs.length;
+                    $visibleCbs.prop('checked', !allVisibleChecked);
+                    syncFormRoutersState();
+                });
+
+                $box.on('change', 'input[type="checkbox"]', syncFormRoutersState);
+
+                $('#filter-form-routers').on('input', function() {
+                    var q = ($(this).val() || '').toLowerCase().trim();
+                    $box.find('.form-check').each(function() {
+                        var txt = ($(this).text() || '').toLowerCase();
+                        $(this).toggle(!q || txt.indexOf(q) !== -1);
+                    });
+                    syncFormRoutersState();
+                });
+
+                syncFormRoutersState();
+            } else {
+                $colContainer.html('<div class="routers-checklist-box text-muted small py-2 px-3">Aún no hay dispositivos creados en esta sección.</div>');
+            }
+        }
+
+        // Añadir botón "Seleccionar Todo" también a cualquier <select multiple> del sistema
+        $('select[multiple]').each(function() {
+            var $sel = $(this);
+            if ($sel.find('option').length > 0 && !$sel.prev('.select-multi-toolbar').length) {
+                var $bar = $('<div class="select-multi-toolbar mb-1"><button type="button" class="btn btn-xs btn-outline-primary font-weight-bold"><i class="fas fa-check-double mr-1"></i> Seleccionar Todo</button></div>');
+                $sel.before($bar);
+                $bar.find('button').on('click', function() {
+                    var $opts = $sel.find('option');
+                    var allSel = $opts.filter(':selected').length === $opts.length;
+                    $opts.prop('selected', !allSel);
+                    $sel.trigger('change');
+                    $(this).html(!allSel ? '<i class="fas fa-times-circle mr-1"></i> Deseleccionar Todo' : '<i class="fas fa-check-double mr-1"></i> Seleccionar Todo');
+                });
+            }
+        });
+
+        var gfPortManuallySet = $('#id_port').val() && !['22', '23', '80', '443', '8728'].includes($('#id_port').val().trim());
+        $('#id_port').on('input', function() {
+            gfPortManuallySet = ($(this).val() || '').trim().length > 0;
+        });
+        $('#id_connection_protocol, #id_router_type').on('change', function() {
+            if (gfPortManuallySet) return;
+            var protocol = ($('#id_connection_protocol').val() || '').toLowerCase();
+            var rtype = ($('#id_router_type').val() || '').toLowerCase();
             if (protocol === 'ssh') {
                 $('#id_port').val('22');
             } else if (protocol === 'telnet') {
                 $('#id_port').val('23');
+            } else if (protocol === 'api') {
+                $('#id_port').val(rtype === 'fortinet' ? '443' : (rtype === 'mikrotik' ? '8728' : '80'));
             }
         });
 

@@ -8,6 +8,7 @@ from routerlib.functions import (
     execute_cisco_commands,
     execute_huawei_commands,
     execute_zte_commands,
+    execute_fortinet_commands,
     execute_mikrotik_telnet_commands,
 )
 
@@ -222,7 +223,8 @@ def get_router_information(router_information: RouterInformation):
     if router.router_type in ('mikrotik', 'mikrotik-branded'):
         try:
             from routerlib.mikrotik_api import fetch_mikrotik_telemetry
-            telemetry = fetch_mikrotik_telemetry(router.address, 8728, router.username, router.password, timeout=2.5)
+            api_port = int(router.port) if (protocol == 'api' and router.port) else 8728
+            telemetry = fetch_mikrotik_telemetry(router.address, api_port, router.username, router.password, timeout=3.0)
             if telemetry.get('success'):
                 router_information.model_name = telemetry.get('board_name', '')[:field_max_length]
                 router_information.os_version = telemetry.get('version', '')[:field_max_length]
@@ -371,6 +373,50 @@ def get_router_information(router_information: RouterInformation):
             router_information.json_data = json.dumps({
                 'show version': raw_version,
                 'show card': raw_card,
+            })
+            router_information.save()
+            return True, ''
+        except Exception as e:
+            return False, str(e)
+
+    # 4b. Equipos Fortinet FortiGate / FortiOS (SSH, Telnet o API)
+    if router.router_type == 'fortinet':
+        try:
+            outputs = execute_fortinet_commands(
+                router.address,
+                router.port,
+                router.username,
+                router.password,
+                ['get system status', 'get system performance status'],
+                protocol=protocol,
+                sshkey=router.ssh_key,
+                enable_password=router.enable_password,
+                timeout=25
+            )
+            raw_status = outputs.get('get system status', '')
+            raw_perf = outputs.get('get system performance status', '')
+
+            if not raw_status or not any(k in raw_status.lower() for k in ['fortigate', 'fortios', 'fortinet', 'serial-number', 'version']):
+                return False, 'No se pudo obtener get system status del equipo Fortinet'
+
+            parsed_info = _parse_fortinet_information(raw_status, raw_perf, field_max_length)
+            router_information.model_name = parsed_info['model_name']
+            router_information.model_version = parsed_info['model_version']
+            router_information.serial_number = parsed_info['serial_number']
+            router_information.os_version = parsed_info['os_version']
+            router_information.firmware_version = parsed_info['firmware_version']
+            router_information.architecture = parsed_info['architecture']
+            router_information.cpu = parsed_info['cpu']
+
+            router_information.success = True
+            router_information.error = False
+            router_information.retry_count = 0
+            router_information.next_retry = None
+            router_information.error_message = ''
+            router_information.last_retrieval = timezone.now()
+            router_information.json_data = json.dumps({
+                'get system status': raw_status,
+                'get system performance status': raw_perf,
             })
             router_information.save()
             return True, ''
@@ -550,6 +596,41 @@ def get_router_information(router_information: RouterInformation):
                 pass
 
     return success, error_message
+
+
+
+
+def _parse_fortinet_information(raw_status: str, raw_perf: str = '', field_max_length: int = 100) -> dict:
+    """Extrae modelo, versión FortiOS, número de serie y CPU desde 'get system status' y 'get system performance status'."""
+    info = {
+        'model_name': 'Fortinet FortiGate',
+        'model_version': '',
+        'serial_number': '',
+        'os_version': '',
+        'firmware_version': '',
+        'architecture': 'FortiASIC / x86_64',
+        'cpu': '',
+    }
+    # Ej: Version: FortiGate-100F v7.2.8,build1639,240514 (GA.M)
+    m_ver = re.search(r'Version:\s*([\w\-]+)\s+(v[\d\.]+[^\r\n]*)', raw_status, re.IGNORECASE)
+    if m_ver:
+        info['model_name'] = m_ver.group(1).strip()[:field_max_length]
+        info['os_version'] = m_ver.group(2).strip()[:field_max_length]
+        info['firmware_version'] = m_ver.group(2).strip()[:field_max_length]
+
+    m_sn = re.search(r'Serial-Number:\s*([A-Za-z0-9\-]+)', raw_status, re.IGNORECASE)
+    if m_sn:
+        info['serial_number'] = m_sn.group(1).strip()[:field_max_length]
+
+    m_bios = re.search(r'BIOS version:\s*([\w\.\-]+)', raw_status, re.IGNORECASE)
+    if m_bios:
+        info['model_version'] = f"BIOS {m_bios.group(1).strip()}"[:field_max_length]
+
+    m_cpu = re.search(r'CPU states:\s*([^\r\n]+)', raw_perf or '', re.IGNORECASE)
+    if m_cpu:
+        info['cpu'] = m_cpu.group(1).strip()[:field_max_length]
+
+    return info
 
 
 def update_router_information(router_information: RouterInformation):

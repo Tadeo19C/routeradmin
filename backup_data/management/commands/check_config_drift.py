@@ -9,6 +9,7 @@ from routerlib.functions import (
     execute_cisco_commands,
     execute_huawei_commands,
     execute_zte_commands,
+    execute_fortinet_commands,
 )
 from routerlib.config_normalizer import normalize_config
 from scp import SCPClient
@@ -72,6 +73,13 @@ class Command(BaseCommand):
                         ['show running-config'], protocol=protocol, sshkey=router.ssh_key, timeout=60
                     )
                     rsc_content_cleaned = outputs.get('show running-config', '')
+
+                elif router.router_type == 'fortinet':
+                    outputs = execute_fortinet_commands(
+                        router.address, router.port, router.username, router.password,
+                        ['show'], protocol=protocol, sshkey=router.ssh_key, timeout=90
+                    )
+                    rsc_content_cleaned = outputs.get('show', '')
 
                 elif router.router_type == 'openwrt':
                     ssh_client = connect_to_ssh(router.address, router.port, router.username, router.password, router.ssh_key)

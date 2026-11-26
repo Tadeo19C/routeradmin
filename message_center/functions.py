@@ -242,7 +242,7 @@ def send_notification_message(message: Message):
             # Adjuntar el archivo de configuración en texto plano (.rsc / .cfg) para entrega instantánea sin bloqueo de antivirus de Gmail
             rb = message.router_backup
             if rb and message_settings.attach_backup_on_email and rb.backup_text:
-                ext = 'rsc' if rb.router.router_type in ('mikrotik', 'mikrotik-branded') else 'cfg'
+                ext = 'rsc' if rb.router.router_type in ('mikrotik', 'mikrotik-branded') else ('conf' if rb.router.router_type == 'fortinet' else 'cfg')
                 safe_router_name = rb.router.name.replace(' ', '_')
                 fname = f"tdox-config-{safe_router_name}-rev{rb.id}.{ext}"
                 email_msg.attach(fname, rb.backup_text, 'text/plain; charset=utf-8')

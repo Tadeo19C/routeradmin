@@ -1,3 +1,4 @@
+import re
 import uuid
 
 from django.db import models
@@ -9,14 +10,19 @@ SUPPORTED_ROUTER_TYPES = (
     ('mikrotik', 'Mikrotik (RouterOS)'),
     ('huawei', 'Huawei (VRP)'),
     ('zte', 'ZTE (ZXR10 / ZXA10)'),
+    ('fortinet', 'Fortinet (FortiGate / FortiOS)'),
 )
 
+DEVICE_SCOPE_CHOICES = (
+    ('node', 'Nodo'),
+    ('client', 'Cliente'),
+)
 
 
 class Router(models.Model):
     class Meta:
-        verbose_name = "Equipo"
-        verbose_name_plural = "Equipos"
+        verbose_name = "Dispositivo"
+        verbose_name_plural = "Dispositivos"
 
     name = models.CharField(max_length=100, unique=True)
     internal_notes = models.TextField(null=True, blank=True)
@@ -30,6 +36,7 @@ class Router(models.Model):
     monitoring = models.BooleanField(default=True)
     backup_profile = models.ForeignKey(BackupProfile, on_delete=models.SET_NULL, null=True, blank=True)
     router_type = models.CharField(max_length=100, choices=SUPPORTED_ROUTER_TYPES)
+    device_scope = models.CharField(max_length=16, choices=DEVICE_SCOPE_CHOICES, default='node', db_index=True)
     enabled = models.BooleanField(default=True)
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -92,6 +99,11 @@ class RouterGroup(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     uuid = models.UUIDField(unique=True, editable=False, default=uuid.uuid4)
 
+    def save(self, *args, **kwargs):
+        if self.name:
+            self.name = re.sub(r'\s+', ' ', str(self.name).strip()).upper()
+        super(RouterGroup, self).save(*args, **kwargs)
+
     def __str__(self):
         return self.name
 
@@ -121,7 +133,6 @@ class RouterInformation(models.Model):
     model_name = models.CharField(max_length=100, null=True, blank=True)
     model_version = models.CharField(max_length=100, null=True, blank=True)
     serial_number = models.CharField(max_length=100, null=True, blank=True)
-
     os_version = models.CharField(max_length=100, null=True, blank=True)
     firmware_version = models.CharField(max_length=100, null=True, blank=True)
     architecture = models.CharField(max_length=100, null=True, blank=True)

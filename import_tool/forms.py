@@ -1,5 +1,6 @@
 from backup.models import BackupProfile
 from router_manager.models import SUPPORTED_ROUTER_TYPES, RouterGroup
+from router_manager.normalization import BatchNodeResolver, canonical_key, strip_accents
 from django import forms
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Row, Column, HTML
@@ -40,6 +41,11 @@ VENDOR_MAPPINGS = {
     'huawei vrp': 'huawei',
     'vrp': 'huawei',
     'zte': 'zte',
+    'fortinet': 'fortinet',
+    'fortigate': 'fortinet',
+    'fortios': 'fortinet',
+    'forti': 'fortinet',
+    'fgt': 'fortinet',
     'ubiquiti': 'ubiquiti-airos',
     'ubiquiti-airos': 'ubiquiti-airos',
     'airos': 'ubiquiti-airos',
@@ -127,7 +133,8 @@ class CsvDataForm(forms.ModelForm):
             if not h:
                 continue
             h_clean = str(h).strip().lower()
-            mapped = HEADER_SYNONYMS.get(h_clean, h_clean)
+            h_no_acc = strip_accents(h_clean)
+            mapped = HEADER_SYNONYMS.get(h_clean) or HEADER_SYNONYMS.get(h_no_acc, h_clean)
             header_map[h] = mapped
 
         mapped_headers = set(header_map.values())
@@ -138,7 +145,8 @@ class CsvDataForm(forms.ModelForm):
             )
 
         seen_ips = set()
-        seen_names = set()
+        seen_name_keys = set()
+        node_resolver = BatchNodeResolver()
         import_data = []
         import_id = 0
 
@@ -151,8 +159,8 @@ class CsvDataForm(forms.ModelForm):
             if not any(row.values()):
                 continue
 
-            # Validar IP
-            address = row.get('address', '').strip()
+            # Validar IP (insensible a mayúsculas/espacios)
+            address = row.get('address', '').strip().lower()
             if not address:
                 continue
             if not self._is_valid_ip_or_hostname(address):
@@ -163,13 +171,15 @@ class CsvDataForm(forms.ModelForm):
             seen_ips.add(address)
             row['address'] = address
 
-            # Nombre del equipo (si no viene, se autogenera)
-            name = row.get('name', '').strip()
+            # Nombre del dispositivo (limpiando espacios dobles y evitando colisiones por mayúsculas/tildes)
+            name = re.sub(r'\s+', ' ', row.get('name', '').strip())
             if not name:
                 name = f"Router_{address.replace('.', '_')}"
-            if name in seen_names:
-                name = f"{name}_{line_number}"
-            seen_names.add(name)
+            name_key = canonical_key(name)
+            if name_key in seen_name_keys:
+                name = f"{name} ({address})"
+                name_key = canonical_key(name)
+            seen_name_keys.add(name_key)
             row['name'] = name
 
             # Credenciales
@@ -223,20 +233,31 @@ class CsvDataForm(forms.ModelForm):
             row['connection_protocol'] = proto
             row['port'] = port
 
-            # Marca / Fabricante (MikroTik por defecto)
-            raw_type = (row.get('router_type') or 'mikrotik').strip().lower()
+            # Marca / Fabricante (MikroTik por defecto, con detección flexible para ej. 'FortiGate 100F', 'Cisco Catalyst', etc.)
+            raw_type = strip_accents((row.get('router_type') or 'mikrotik').strip().lower())
             normalized_type = VENDOR_MAPPINGS.get(raw_type, raw_type)
             if normalized_type not in SUPPORTED_TYPES_SET:
-                normalized_type = 'mikrotik'
+                if 'forti' in raw_type or raw_type.startswith('fgt'):
+                    normalized_type = 'fortinet'
+                elif 'cisco' in raw_type or 'catalyst' in raw_type:
+                    normalized_type = 'cisco-ios'
+                elif 'huawei' in raw_type or 'vrp' in raw_type:
+                    normalized_type = 'huawei'
+                elif 'zte' in raw_type or 'zxr' in raw_type or 'zxa' in raw_type:
+                    normalized_type = 'zte'
+                elif 'ubiquiti' in raw_type or 'ubnt' in raw_type or 'airos' in raw_type:
+                    normalized_type = 'ubiquiti-airos'
+                elif 'openwrt' in raw_type:
+                    normalized_type = 'openwrt'
+                else:
+                    normalized_type = 'mikrotik'
             row['router_type'] = normalized_type
+            if custom_port is None and proto == 'api' and normalized_type == 'fortinet':
+                row['port'] = 443
 
-            # Nodo / Zona
-            node_name = row.get('router_group', '').strip()
-            if not node_name:
-                default_node = RouterGroup.objects.filter(default_group=True).first()
-                node_name = default_node.name if default_node else 'General'
-            row['router_group'] = node_name
-            RouterGroup.objects.get_or_create(name=node_name)
+            # Nodo / Zona (resolución inteligente anti-duplicados: ignora mayúsculas, tildes, guiones, orden y prefijos 'Nodo ', 'El ', etc.)
+            raw_node_name = row.get('router_group', '').strip()
+            row['router_group'] = node_resolver.resolve_name(raw_node_name)
 
             # Perfil de respaldo y monitoreo
             row['backup_profile'] = row.get('backup_profile') or 'default'
