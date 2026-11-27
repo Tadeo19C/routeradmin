@@ -1,6 +1,6 @@
 {% load crispy_forms_tags %}
 <div class="modal-header">
-    <h5 class="modal-title">{% if instance %}Editar Dispositivo: {{ instance.name }}{% elif scope == 'client' %}Nuevo Dispositivo &mdash; Cliente{% if preselect_client %}: {{ preselect_client.name }}{% endif %}{% else %}Nuevo Dispositivo &mdash; Nodo{% if preselect_group %}: {{ preselect_group.name }}{% endif %}{% endif %}</h5>
+    <h5 class="modal-title">{% if instance %}Editar Dispositivo: {{ instance.name }}{% else %}Nuevo Dispositivo &mdash; {{ active_category.name }}{% if preselect_group %}: {{ preselect_group.name }}{% endif %}{% endif %}</h5>
     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
         <span aria-hidden="true">&times;</span>
     </button>
@@ -146,7 +146,19 @@
     }
 </style>
 
-<form id="router-manage-form" method="post" action="/router/manage/{% if instance %}?uuid={{ instance.uuid }}&scope={{ scope|default:'node' }}{% else %}?scope={{ scope|default:'node' }}{% endif %}">
+<form id="router-manage-form" method="post" action="/router/manage/{% if instance %}?uuid={{ instance.uuid }}&category={{ active_category.uuid }}{% else %}?category={{ active_category.uuid }}{% endif %}">
+<datalist id="suggested-ports-datalist">
+    <option value="22">SSH estándar</option>
+    <option value="2222">SSH alternativo</option>
+    <option value="23">Telnet estándar</option>
+    <option value="2323">Telnet alternativo</option>
+    <option value="8728">MikroTik API</option>
+    <option value="8729">MikroTik API-SSL</option>
+    <option value="80">HTTP / REST API</option>
+    <option value="443">HTTPS / FortiOS API</option>
+    <option value="8443">HTTPS alternativo</option>
+    <option value="10443">FortiGate HTTPS</option>
+</datalist>
 <div class="modal-body">
     {% csrf_token %}
     {% crispy form %}
@@ -228,16 +240,16 @@ $(document).ready(function() {
         });
     })();
 
-    // Enlaces rápidos debajo de Nodo y Cliente para crear uno nuevo y retomar el formulario
-    function setupNodeAndClientRedirectFlow() {
-        const resumeTarget = (window.location.pathname || '/router/group_list/') + '?action=resume_create';
-
+    // Enlace rápido debajo del Grupo para crear uno nuevo en la Categoría activa y retomar el formulario
+    function setupGroupRedirectFlow() {
+        const catUuid = "{{ active_category.uuid }}";
+        const resumeTarget = '/router/group_list/?category=' + encodeURIComponent(catUuid) + '&action=resume_create';
         const $groupField = $('#id_router_group');
         if ($groupField.length && $('#node-redirect-hint').length === 0) {
             $groupField.after(`
                 <div id="node-redirect-hint" class="mt-1">
                     <small class="text-muted">
-                        ¿No encuentras el nodo?
+                        ¿No encuentras el grupo?
                         <a href="#" id="link-create-node-redirect" class="text-primary font-weight-bold" style="text-decoration: underline;">Crea uno nuevo aquí</a>
                     </small>
                 </div>
@@ -246,29 +258,11 @@ $(document).ready(function() {
                 e.preventDefault();
                 const formData = $('#router-manage-form').serializeArray();
                 sessionStorage.setItem('pending_router_form', JSON.stringify(formData));
-                window.location.href = '/router/manage_group/?next=' + encodeURIComponent(resumeTarget);
-            });
-        }
-
-        const $clientField = $('#id_router_client');
-        if ($clientField.length && $('#client-redirect-hint').length === 0) {
-            $clientField.after(`
-                <div id="client-redirect-hint" class="mt-1">
-                    <small class="text-muted">
-                        ¿No encuentras el cliente?
-                        <a href="#" id="link-create-client-redirect" class="text-primary font-weight-bold" style="text-decoration: underline;">Crea uno nuevo aquí</a>
-                    </small>
-                </div>
-            `);
-            $('#link-create-client-redirect').on('click', function(e) {
-                e.preventDefault();
-                const formData = $('#router-manage-form').serializeArray();
-                sessionStorage.setItem('pending_router_form', JSON.stringify(formData));
-                window.location.href = '/router/manage_client/?next=' + encodeURIComponent(resumeTarget);
+                window.location.href = '/router/manage_group/?category=' + encodeURIComponent(catUuid) + '&next=' + encodeURIComponent(resumeTarget);
             });
         }
     }
-    setupNodeAndClientRedirectFlow();
+    setupGroupRedirectFlow();
 
     // Autofocus on Name field
     setTimeout(function() {
@@ -390,10 +384,11 @@ $(document).ready(function() {
                 // If it's a validation error, we might get the form back
                 if (xhr.status === 400 || xhr.status === 200) {
                     $('#routerManageModal .modal-content').html(xhr.responseText);
+                    $('#routerManageModal .modal-body').scrollTop(0);
                     $(document).Toasts('create', {
                         class: 'bg-warning',
                         title: 'Atención',
-                        body: 'Por favor, complete todos los campos requeridos correctamente.',
+                        body: 'Revise el mensaje de validación en la parte superior del formulario.',
                         delay: 5000,
                         autohide: true
                     });

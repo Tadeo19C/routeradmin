@@ -23,8 +23,8 @@
                                     <div class="card-header">
                                         <h3 class="card-title">{{ router.name }}</h3>
                                         <span class="float-right">
-                                            <a href="/router/manage/?uuid={{ router.uuid }}" >
-                                                <i class="fas fa-edit"></i>
+                                            <a href="javascript:void(0)" class="manage-router-btn" data-uuid="{{ router.uuid }}" title="Editar Dispositivo">
+                                                <i class="fas fa-edit"></i> Editar
                                             </a>
                                         </span>
                                     </div>
@@ -43,7 +43,7 @@
                                                 </li>
                                                 <li class="list-group-item">
                                                     <b>Dirección IP</b>
-                                                    <span class="float-right"><code>{{ router.address }}</code> <span class="badge badge-secondary ml-1">{{ router.connection_protocol|upper }}</span></span>
+                                                    <span class="float-right"><code>{{ router.address }}</code> <span class="badge badge-secondary ml-1">{{ router.connection_protocol|upper }}:{{ router.port }}</span></span>
                                                 </li>
                                                 {% if router.router_type != 'monitoring' %}
                                                     <li class="list-group-item">
@@ -92,14 +92,16 @@
                                                     </li>
                                                 {% endif %}
                                                 <li class="list-group-item">
-                                                    <b>Tipo de Equipo</b>
+                                                    <b>Fabricante / Tipo</b>
                                                     <span class="float-right">{{ router.get_router_type_display }}</span>
                                                 </li>
                                                 <li class="list-group-item">
-                                                    <b>Nodo</b>
+                                                    <b>Categoría / Grupo</b>
                                                     <span class="float-right">
                                                         {% for router_group in router.routergroup_set.all %}
-                                                            <span class="badge badge-primary">{{ router_group.name }}</span>
+                                                            <a href="/router/group_list/{% if router_group.category %}?category={{ router_group.category.uuid }}{% endif %}" class="badge badge-primary">
+                                                                {% if router_group.category %}{{ router_group.category.name }} &rsaquo; {% endif %}{{ router_group.name }}
+                                                            </a>
                                                         {% endfor %}
                                                     </span>
                                                 </li>
@@ -122,7 +124,7 @@
                                 {% if router_information %}
                                     <div class="card card-primary card-outline">
                                         <div class="card-header">
-                                            <h3 class="card-title">Información del Equipo</h3>
+                                            <h3 class="card-title">Información del Dispositivo</h3>
                                             <span class="float-right">
                                                 <a href="/router/manage/?uuid={{ router.uuid }}&action=refresh_information" class="btn btn-sm btn-outline-primary" title="Sincronizar información del Router">
                                                     <i class="fas fa-sync"></i> Actualizar Info
@@ -273,6 +275,7 @@
         </div>
     </div>
 </div>
+{% include 'router_manager/_router_manage_modal.html' %}
 {% endblock %}
 
 {% block page_modals %}

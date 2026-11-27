@@ -1,12 +1,179 @@
-<ul class="nav nav-tabs d-flex" role="tablist">
-    <li class="nav-item">
-        <a class="nav-link {% if request.path == '/router/group_list/' or request.path == '/router/manage_group/' %}active{% endif %}" href="/router/group_list/" role="tab">
-            <i class="fas fa-sitemap mr-1"></i> Nodos
+<div class="d-flex align-items-center justify-content-between flex-wrap border-bottom pb-0 mb-2" style="gap: 8px;">
+    <ul class="nav nav-tabs border-bottom-0 d-flex align-items-center flex-wrap" role="tablist" style="gap: 2px;">
+        {% for cat in categories %}
+        <li class="nav-item d-flex align-items-center">
+            <a class="nav-link {% if active_category and cat.uuid == active_category.uuid %}active font-weight-bold{% endif %} d-flex align-items-center"
+               href="/router/group_list/?category={{ cat.uuid }}"
+               role="tab"
+               style="padding: 7px 14px;">
+                <i class="fas fa-layer-group mr-1" style="font-size: 11.5px; opacity: 0.85;"></i>
+                <span>{{ cat.name }}</span>
+            </a>
+        </li>
+        {% endfor %}
+        <li class="nav-item ml-1">
+            <button type="button"
+                    id="btn-add-category-tab"
+                    class="btn btn-xs {% if can_add_category %}btn-outline-primary{% else %}btn-outline-secondary{% endif %} font-weight-bold"
+                    style="padding: 4px 10px; margin-bottom: 4px;"
+                    data-can-add="{% if can_add_category %}1{% else %}0{% endif %}"
+                    title="Crear nueva categoría (máximo {{ max_device_categories }})">
+                <i class="fas fa-plus mr-1"></i> Nueva Categoría ({{ categories|length }}/{{ max_device_categories }})
+            </button>
+        </li>
+    </ul>
+
+    {% if active_category %}
+    <div class="d-flex align-items-center" style="gap: 5px; margin-bottom: 5px;">
+        <button type="button"
+                class="btn btn-xs btn-outline-secondary btn-rename-category"
+                data-uuid="{{ active_category.uuid }}"
+                data-name="{{ active_category.name }}"
+                title="Renombrar categoría '{{ active_category.name }}'">
+            <i class="fas fa-pen mr-1"></i> Renombrar
+        </button>
+        {% if categories|length > 1 %}
+        <a href="/router/manage_category/?uuid={{ active_category.uuid }}&action=delete&confirmation=confirm"
+           class="btn btn-xs btn-outline-danger"
+           onclick="return confirm('¿Seguro que deseas eliminar la categoría \'{{ active_category.name|escapejs }}\'? ATENCIÓN: También se eliminarán todos sus grupos y dispositivos.');"
+           title="Eliminar categoría '{{ active_category.name }}'">
+            <i class="fas fa-trash-alt"></i>
         </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {% if '/router/client' in request.path or '/router/manage_client' in request.path %}active{% endif %}" href="/router/client_list/" role="tab">
-            <i class="fas fa-building mr-1"></i> Clientes
-        </a>
-    </li>
-</ul>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Crear / Renombrar Categoría -->
+<div class="modal fade" id="categoryManageModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 2060;">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document" style="max-width: 400px;">
+        <div class="modal-content">
+            <div class="modal-header py-2 px-3">
+                <h6 class="modal-title font-weight-bold" id="categoryModalTitle">Nueva Categoría</h6>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+            </div>
+            <form id="category-manage-form" method="post" action="/router/manage_category/">
+                <div class="modal-body py-3 px-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="uuid" id="category-form-uuid" value="">
+                    <div id="category-form-error" class="alert alert-danger py-2 px-2 small" style="display: none;"></div>
+                    <label class="small font-weight-bold text-primary mb-1">Nombre de la Categoría *</label>
+                    <input type="text"
+                           name="name"
+                           id="category-form-name"
+                           class="form-control form-control-sm"
+                           maxlength="60"
+                           required
+                           autocomplete="off"
+                           placeholder="Ej: Nodos, Clientes, Sucursales...">
+                    <small class="text-muted d-block mt-1">Puedes nombrarla libremente. Máximo {{ max_device_categories }} categorías.</small>
+                </div>
+                <div class="modal-footer py-2 px-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success btn-sm font-weight-bold">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Alerta Límite de 3 Categorías -->
+<div class="modal fade" id="categoryLimitAlertModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 2065;">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 440px;">
+        <div class="modal-content border-warning">
+            <div class="modal-header py-2 px-3 bg-warning text-dark">
+                <h6 class="modal-title font-weight-bold mb-0">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> Límite de Categorías Alcanzado
+                </h6>
+                <button type="button" class="close text-dark" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+            </div>
+            <div class="modal-body py-3 px-3">
+                <p class="mb-2 small" id="category-limit-modal-msg">
+                    No es posible crear más de <strong>{{ max_device_categories }} categorías</strong> en el sistema.
+                </p>
+                <div class="p-2 rounded border small" style="background: rgba(59, 130, 246, 0.08);">
+                    Para ampliar su límite o solicitar soporte, por favor contáctese al correo:<br>
+                    <a href="mailto:{{ category_limit_email }}" class="font-weight-bold text-primary">
+                        <i class="fas fa-envelope mr-1"></i>{{ category_limit_email }}
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer py-2 px-3">
+                <button type="button" class="btn btn-primary btn-sm font-weight-bold" data-dismiss="modal">Entendido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.__categoryTabsBound) {
+    window.__categoryTabsBound = true;
+    document.addEventListener('click', function(e) {
+        var addCatBtn = e.target.closest('#btn-add-category-tab');
+        if (addCatBtn) {
+            e.preventDefault();
+            if (addCatBtn.getAttribute('data-can-add') !== '1') {
+                $('#categoryLimitAlertModal').appendTo('body').modal('show');
+                return;
+            }
+            document.getElementById('categoryModalTitle').textContent = 'Nueva Categoría';
+            document.getElementById('category-form-uuid').value = '';
+            document.getElementById('category-form-name').value = '';
+            document.getElementById('category-form-error').style.display = 'none';
+            $('#categoryManageModal').appendTo('body').modal('show');
+            setTimeout(function() { document.getElementById('category-form-name').focus(); }, 250);
+            return;
+        }
+
+        var renBtn = e.target.closest('.btn-rename-category');
+        if (renBtn) {
+            e.preventDefault();
+            document.getElementById('categoryModalTitle').textContent = 'Renombrar Categoría';
+            document.getElementById('category-form-uuid').value = renBtn.getAttribute('data-uuid') || '';
+            document.getElementById('category-form-name').value = renBtn.getAttribute('data-name') || '';
+            document.getElementById('category-form-error').style.display = 'none';
+            $('#categoryManageModal').appendTo('body').modal('show');
+            setTimeout(function() {
+                var inp = document.getElementById('category-form-name');
+                inp.focus();
+                inp.select();
+            }, 250);
+        }
+    });
+
+    document.addEventListener('submit', function(e) {
+        var form = e.target.closest('#category-manage-form');
+        if (!form) return;
+        e.preventDefault();
+        var errBox = document.getElementById('category-form-error');
+        errBox.style.display = 'none';
+
+        $.ajax({
+            url: form.action + '?ajax=1',
+            method: 'POST',
+            data: $(form).serialize(),
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
+            success: function(res) {
+                if (res.redirect_url) {
+                    window.location.href = res.redirect_url;
+                } else {
+                    window.location.reload();
+                }
+            },
+            error: function(xhr) {
+                var resp = xhr.responseJSON || {};
+                if (resp.status === 'limit_reached') {
+                    $('#categoryManageModal').modal('hide');
+                    if (resp.message) {
+                        document.getElementById('category-limit-modal-msg').textContent = resp.message;
+                    }
+                    $('#categoryLimitAlertModal').appendTo('body').modal('show');
+                } else {
+                    errBox.textContent = resp.message || 'No se pudo guardar la categoría.';
+                    errBox.style.display = 'block';
+                }
+            }
+        });
+    });
+}
+</script>

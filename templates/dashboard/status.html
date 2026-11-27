@@ -24,8 +24,8 @@
                     <i class="fas fa-tachometer-alt"></i> {% if page_title %}{{ page_title }}{% else %}Panel de Control{% endif %}
                 </h3>
                 <div class="card-tools ml-auto d-flex align-items-center flex-wrap" style="gap: 6px;">
-                    <a href="/router/manage/" class="btn btn-sm btn-primary" title="Agregar un nuevo equipo">
-                        <i class="fas fa-plus"></i> Nuevo Equipo
+                    <a href="/router/group_list/?action=resume_create" class="btn btn-sm btn-primary" title="Agregar un nuevo dispositivo">
+                        <i class="fas fa-plus"></i> Nuevo Dispositivo
                     </a>
                     <a href="/backup/backup_list/" class="btn btn-sm btn-outline-secondary" title="Ver historial de respaldos">
                         <i class="fas fa-box-open"></i> Respaldos
@@ -95,7 +95,7 @@
                         <a href="{% url 'router_list' %}" class="kpi-card color-blue">
                             <div>
                                 <div class="kpi-card-title">
-                                    <i class="fas fa-server"></i> Total de Equipos
+                                    <i class="fas fa-server"></i> Total de Dispositivos
                                 </div>
                                 <div class="kpi-card-value-row">
                                     <span class="kpi-card-value" id="stats-routers-total">{{ total_router_count }}</span>
@@ -112,7 +112,7 @@
                         <a href="{% url 'router_list' %}?status=online" class="kpi-card color-green">
                             <div>
                                 <div class="kpi-card-title">
-                                    <span class="status-dot online mr-1"></span> Equipos en Línea
+                                    <span class="status-dot online mr-1"></span> Dispositivos en Línea
                                 </div>
                                 <div class="kpi-card-value-row">
                                     <span class="kpi-card-value" id="stats-routers-online">{{ router_online_count }}</span>
@@ -337,7 +337,7 @@
                 data: {
                     labels: data.dates,
                     datasets: [{
-                        label: 'Equipos en Línea',
+                        label: 'Dispositivos en Línea',
                         data: data.online_data,
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         borderColor: 'rgba(75, 192, 192, 1)',

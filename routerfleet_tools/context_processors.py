@@ -1,3 +1,4 @@
+from django.conf import settings
 from .models import WebadminSettings
 
 
@@ -17,4 +18,6 @@ def branding_context(request):
         'custom_app_title': 'Tdox-Config',
         'custom_app_subtitle': 'backup configuration',
         'system_settings': settings_obj,
+        'max_device_categories': getattr(settings, 'MAX_DEVICE_CATEGORIES', 3),
+        'category_limit_email': getattr(settings, 'CATEGORY_LIMIT_CONTACT_EMAIL', 'soporte@tdox-config.com'),
     }

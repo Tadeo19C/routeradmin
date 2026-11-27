@@ -1,4 +1,4 @@
-<!-- Router Manage Modal (Compartido en Nodos y Clientes, enfocado según la sección activa) -->
+<!-- Router Manage Modal (Enfocado en la Categoría activa) -->
 <div class="modal fade" id="routerManageModal" tabindex="-1" role="dialog" aria-labelledby="routerManageModalLabel" aria-hidden="true" style="z-index: 2050;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -22,22 +22,22 @@
         }
     }
 
-    function detectCurrentDeviceScope(explicitScope) {
-        if (explicitScope === 'client' || explicitScope === 'node') {
-            return explicitScope;
-        }
-        var path = (window.location.pathname || '').toLowerCase();
-        return path.indexOf('client') !== -1 ? 'client' : 'node';
+    function getCurrentCategoryUuid(explicitCatUuid) {
+        if (explicitCatUuid) return explicitCatUuid;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('category')) return params.get('category');
+        const mainBtn = document.getElementById('add-router-btn');
+        return mainBtn ? (mainBtn.getAttribute('data-category-uuid') || '') : '';
     }
 
-    function openRouterModal(uuid, explicitScope, preselectGroupId, preselectClientId) {
-        var scope = detectCurrentDeviceScope(explicitScope);
-        var params = ['scope=' + encodeURIComponent(scope), 'ajax=1'];
+    function openRouterModal(uuid, categoryUuid, preselectGroupId) {
+        var catUuid = getCurrentCategoryUuid(categoryUuid);
+        var params = ['ajax=1'];
+        if (catUuid) params.push('category=' + encodeURIComponent(catUuid));
         if (uuid) {
             params.unshift('uuid=' + encodeURIComponent(uuid));
-        } else {
-            if (preselectGroupId) params.push('group_id=' + encodeURIComponent(preselectGroupId));
-            if (preselectClientId) params.push('client_id=' + encodeURIComponent(preselectClientId));
+        } else if (preselectGroupId) {
+            params.push('group_id=' + encodeURIComponent(preselectGroupId));
         }
         var url = '/router/manage/?' + params.join('&');
 
@@ -53,7 +53,7 @@
                 try {
                     const formData = JSON.parse(savedData);
                     formData.forEach(field => {
-                        if (field.name === 'csrfmiddlewaretoken' || field.name === 'device_scope') return;
+                        if (field.name === 'csrfmiddlewaretoken' || field.name === 'category_uuid') return;
                         const $el = $(`[name="${field.name}"]`);
                         if ($el.length) {
                             if ($el.is(':checkbox') || $el.is(':radio')) {
@@ -73,17 +73,10 @@
                 if (preselectGroupId && $('#id_router_group').length) {
                     $('#id_router_group').val(String(preselectGroupId)).trigger('change');
                 }
-                if (preselectClientId && $('#id_router_client').length) {
-                    $('#id_router_client').val(String(preselectClientId)).trigger('change');
-                }
                 const urlParams = new URLSearchParams(window.location.search);
                 const createdGroup = urlParams.get('created_group');
-                const createdClient = urlParams.get('created_client');
                 if (createdGroup && $('#id_router_group').length) {
                     $('#id_router_group').val(createdGroup).trigger('change');
-                }
-                if (createdClient && $('#id_router_client').length) {
-                    $('#id_router_client').val(createdClient).trigger('change');
                 }
             }
         });
@@ -97,10 +90,9 @@
             if (addBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                var btnScope = addBtn.getAttribute('data-scope') || null;
+                var catUuid = addBtn.getAttribute('data-category-uuid') || '';
                 var groupId = addBtn.getAttribute('data-group-id') || null;
-                var clientId = addBtn.getAttribute('data-client-id') || null;
-                openRouterModal(null, btnScope, groupId, clientId);
+                openRouterModal(null, catUuid, groupId);
                 return;
             }
 
@@ -109,15 +101,20 @@
                 e.preventDefault();
                 e.stopPropagation();
                 var uuid = editBtn.getAttribute('data-uuid');
-                var editScope = editBtn.getAttribute('data-scope') || null;
-                openRouterModal(uuid, editScope);
+                var catUuid = editBtn.getAttribute('data-category-uuid') || '';
+                openRouterModal(uuid, catUuid, null);
             }
         }, true);
 
         window.addEventListener('load', function() {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('action') === 'resume_create') {
-                openRouterModal(null);
+                const catParam = urlParams.get('category') || '';
+                openRouterModal(null, catParam, null);
+                setTimeout(function() {
+                    const cleanUrl = window.location.pathname + (catParam ? ('?category=' + encodeURIComponent(catParam)) : '');
+                    window.history.replaceState({}, '', cleanUrl);
+                }, 800);
             }
         });
     }

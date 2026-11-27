@@ -1,13 +1,14 @@
+import uuid
 from django.db import models
 
 from backup.models import BackupProfile
 from router_manager.models import Router, SUPPORTED_ROUTER_TYPES, RouterGroup
-import uuid
 
 
 class CsvData(models.Model):
     raw_csv_data = models.TextField()
     import_data = models.JSONField(blank=True, null=True)
+    unchanged_count = models.IntegerField(default=0)
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -26,6 +27,9 @@ class ImportTask(models.Model):
     password = models.CharField(max_length=100, blank=True, null=True)
     router_group = models.ForeignKey(RouterGroup, on_delete=models.SET_NULL, blank=True, null=True)
     router_group_name = models.CharField(max_length=100, blank=True, null=True)
+    category_name = models.CharField(max_length=60, blank=True, null=True)
+    action_type = models.CharField(max_length=16, default='new')
+    changes_json = models.JSONField(blank=True, null=True)
     address = models.CharField(max_length=100)
     port = models.IntegerField(default=22)
     backup_profile = models.ForeignKey(BackupProfile, on_delete=models.SET_NULL, blank=True, null=True)

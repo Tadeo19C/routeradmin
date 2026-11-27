@@ -21,7 +21,7 @@ from message_center.views import view_message_channel_list, view_manage_message_
 from monitoring.views import view_export_router_list, view_update_router_status, view_router_config_timestamp, \
     view_router_last_status_change
 from router_manager.views import view_create_instant_backup_multiple_routers, view_router_list, view_manage_router, \
-    view_router_group_list, view_manage_router_group, view_router_client_list, view_manage_router_client, view_router_details, \
+    view_router_group_list, view_manage_router_group, view_manage_category, view_router_client_list, view_manage_router_client, view_router_details, \
     view_create_instant_backup_task, view_router_availability, view_cron_update_router_information, \
     view_manage_router_groups_multiple, view_ajax_quick_create_group, view_ajax_test_connection, view_ajax_router_telemetry
 from routerfleet_tools.views import view_cron_check_updates, view_system_branding
@@ -45,6 +45,7 @@ urlpatterns = [
     path('router/details/', view_router_details, name='router_details'),
     path('router/availability/', view_router_availability, name='router_availability'),
     path('router/group_list/', view_router_group_list, name='router_group_list'),
+    path('router/manage_category/', view_manage_category, name='manage_category'),
     path('router/manage_group/', view_manage_router_group, name='manage_router_group'),
     path('router/client_list/', view_router_client_list, name='router_client_list'),
     path('router/manage_client/', view_manage_router_client, name='manage_router_client'),

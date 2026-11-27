@@ -19,6 +19,28 @@ DEVICE_SCOPE_CHOICES = (
 )
 
 
+class DeviceCategory(models.Model):
+    class Meta:
+        verbose_name = "Categoría"
+        verbose_name_plural = "Categorías"
+        ordering = ['position', 'id']
+
+    name = models.CharField(max_length=60, unique=True)
+    position = models.PositiveSmallIntegerField(default=1)
+
+    updated = models.DateTimeField(auto_now=True)
+    created = models.DateTimeField(auto_now_add=True)
+    uuid = models.UUIDField(unique=True, editable=False, default=uuid.uuid4)
+
+    def save(self, *args, **kwargs):
+        if self.name:
+            self.name = re.sub(r'\s+', ' ', str(self.name).strip())
+        super(DeviceCategory, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class Router(models.Model):
     class Meta:
         verbose_name = "Dispositivo"
@@ -87,10 +109,12 @@ class RouterStatus(models.Model):
 
 class RouterGroup(models.Model):
     class Meta:
-        verbose_name = "Nodo"
-        verbose_name_plural = "Nodos"
+        verbose_name = "Grupo"
+        verbose_name_plural = "Grupos"
+        unique_together = [('category', 'name')]
 
-    name = models.CharField(max_length=100, unique=True)
+    category = models.ForeignKey(DeviceCategory, on_delete=models.CASCADE, related_name='groups', null=True, blank=True)
+    name = models.CharField(max_length=100)
     default_group = models.BooleanField(default=False)
     internal_notes = models.TextField(null=True, blank=True)
     routers = models.ManyToManyField(Router, blank=True)

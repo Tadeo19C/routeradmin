@@ -148,5 +148,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = '/var/lib/routerfleet/'
 ROUTERFLEET_VERSION = 7514
+MAX_DEVICE_CATEGORIES = 3
+CATEGORY_LIMIT_CONTACT_EMAIL = 'soporte@tdox-config.com'
 
 from routerfleet.production_settings import *

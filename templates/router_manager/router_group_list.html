@@ -32,7 +32,7 @@
         flex-wrap: wrap;
         gap: 8px;
         padding: 9px 12px;
-        margin: 12px 0 14px 0;
+        margin: 10px 0 14px 0;
         border: 1px solid var(--border);
         border-radius: 6px;
         background: rgba(148, 163, 184, 0.04);
@@ -158,11 +158,11 @@
     <div class="card card-primary card-outline">
         <div class="card-header focused-card-header">
             <div class="focused-header-left">
-                <h3 class="card-title"><i class="fas fa-sitemap text-primary mr-2"></i>Nodos</h3>
-                <span class="text-muted small">Toca cualquier Nodo para desplegar u ocultar sus dispositivos</span>
+                <h3 class="card-title"><i class="fas fa-layer-group text-primary mr-2"></i>{{ active_category.name }}</h3>
+                <span class="text-muted small">Toca cualquier grupo para desplegar u ocultar sus dispositivos</span>
             </div>
             <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
-                <span class="badge badge-secondary">{{ total_nodes_count }} Nodo{{ total_nodes_count|pluralize:"s" }}</span>
+                <span class="badge badge-secondary">{{ total_nodes_count }} Grupo{{ total_nodes_count|pluralize:"s" }}</span>
                 <span class="badge-gpon badge-gpon-info"><i class="fas fa-hdd mr-1"></i>{{ total_devices_count }} Dispositivo{{ total_devices_count|pluralize:"s" }}</span>
                 {% if total_online_count > 0 %}
                 <span class="badge-pill-soft success"><span class="status-dot online"></span>{{ total_online_count }} En Línea</span>
@@ -184,7 +184,7 @@
                             <span class="input-group-text"><i class="fas fa-search"></i></span>
                         </div>
                         <input type="text" id="node-quick-search" class="form-control"
-                               placeholder="Buscar nodo o dispositivo (IP, nombre...)">
+                               placeholder="Buscar grupo o dispositivo en {{ active_category.name }}...">
                     </div>
 
                     {% if grouped_nodes %}
@@ -210,16 +210,19 @@
                     </div>
                     {% endif %}
 
-                    <a href="javascript:void(0)" class="btn btn-primary btn-sm font-weight-bold add-router-btn" id="add-router-btn" data-scope="node">
+                    <a href="javascript:void(0)"
+                       class="btn btn-primary btn-sm font-weight-bold add-router-btn"
+                       id="add-router-btn"
+                       data-category-uuid="{{ active_category.uuid }}">
                         <i class="fas fa-plus mr-1"></i> Añadir Dispositivo
                     </a>
-                    <a href="/router/manage_group/" class="btn btn-outline-primary btn-sm font-weight-bold">
-                        <i class="fas fa-sitemap mr-1"></i> Añadir Nodo
+                    <a href="/router/manage_group/?category={{ active_category.uuid }}" class="btn btn-outline-primary btn-sm font-weight-bold">
+                        <i class="fas fa-folder-plus mr-1"></i> Añadir Grupo
                     </a>
                 </div>
             </div>
 
-            <!-- Lista Uniforme de Nodos (Oculta/Muestra dispositivos al tocar) -->
+            <!-- Lista Uniforme de Grupos de la Categoría Activa -->
             <div id="nodes-accordion-view">
                 {% if grouped_nodes %}
                     {% for node in grouped_nodes %}
@@ -236,7 +239,7 @@
                                     <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
                                         <span class="node-title-text">{{ node.name|upper }}</span>
                                         {% if node.default_group %}
-                                            <span class="badge badge-secondary" title="Nodo por defecto">Por Defecto</span>
+                                            <span class="badge badge-secondary" title="Grupo por defecto">Por Defecto</span>
                                         {% endif %}
                                         {% if node.internal_notes %}
                                             <span class="text-muted small">&middot; {{ node.internal_notes|truncatechars:55 }}</span>
@@ -258,39 +261,30 @@
                                             <span class="status-dot offline"></span> {{ node.offline_count }} Desconectado{{ node.offline_count|pluralize:"s" }}
                                         </span>
                                     {% endif %}
-                                    {% if node.uuid != 'ungrouped' %}
-                                        <span class="action-divider"></span>
-                                        <a href="javascript:void(0)"
-                                           class="btn btn-xs btn-outline-success font-weight-bold add-router-btn"
-                                           data-scope="node"
-                                           data-group-id="{{ node.group.id }}"
-                                           title="Añadir dispositivo directamente al nodo {{ node.name|upper }}">
-                                            <i class="fas fa-plus"></i> Dispositivo
-                                        </a>
-                                        <a href="/router/manage_group/?uuid={{ node.uuid }}"
-                                           class="btn btn-xs btn-outline-primary"
-                                           title="Editar Nodo {{ node.name|upper }}">
-                                            <i class="fas fa-edit"></i> Editar
-                                        </a>
-                                        <a href="/router/manage_group/?uuid={{ node.uuid }}&action=delete&confirmation=confirm"
-                                           class="btn btn-xs btn-outline-danger"
-                                           onclick="return confirm('¿Seguro que deseas eliminar el nodo \'{{ node.name|upper }}\'? ATENCIÓN: También se eliminarán sus {{ node.total_count }} dispositivo(s) asociados.');"
-                                           title="Eliminar Nodo y sus dispositivos">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </a>
-                                    {% else %}
-                                        <span class="action-divider"></span>
-                                        <a href="/router/manage_group/?uuid=ungrouped&action=delete&confirmation=confirm"
-                                           class="btn btn-xs btn-outline-danger"
-                                           onclick="return confirm('¿Seguro que deseas eliminar \'SIN NODO ASIGNADO\' junto con sus {{ node.total_count }} dispositivo(s)?');"
-                                           title="Eliminar SIN NODO ASIGNADO y sus dispositivos">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </a>
-                                    {% endif %}
+
+                                    <span class="action-divider"></span>
+                                    <a href="javascript:void(0)"
+                                       class="btn btn-xs btn-outline-success font-weight-bold add-router-btn"
+                                       data-category-uuid="{{ active_category.uuid }}"
+                                       data-group-id="{{ node.group.id }}"
+                                       title="Añadir dispositivo directamente a {{ node.name|upper }}">
+                                        <i class="fas fa-plus"></i> Dispositivo
+                                    </a>
+                                    <a href="/router/manage_group/?uuid={{ node.uuid }}&category={{ active_category.uuid }}"
+                                       class="btn btn-xs btn-outline-primary"
+                                       title="Editar Grupo {{ node.name|upper }}">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+                                    <a href="/router/manage_group/?uuid={{ node.uuid }}&category={{ active_category.uuid }}&action=delete&confirmation=confirm"
+                                       class="btn btn-xs btn-outline-danger"
+                                       onclick="return confirm('¿Seguro que deseas eliminar el grupo \'{{ node.name|upper }}\'? ATENCIÓN: También se eliminarán sus {{ node.total_count }} dispositivo(s) asociados.');"
+                                       title="Eliminar Grupo y sus dispositivos">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
                                 </div>
                             </div>
 
-                            <!-- Tabla compacta de dispositivos del Nodo (sin columnas vacías) -->
+                            <!-- Tabla compacta de dispositivos del Grupo -->
                             <div class="node-accordion-body">
                                 {% if node.routers %}
                                     <div class="table-responsive">
@@ -361,7 +355,7 @@
                                                                     <i class="fas fa-history"></i>
                                                                 </a>
                                                             </div>
-                                                            <a href="javascript:void(0)" class="btn btn-xs btn-outline-secondary manage-router-btn" data-uuid="{{ router.uuid }}" data-scope="node" title="Editar Dispositivo">
+                                                            <a href="javascript:void(0)" class="btn btn-xs btn-outline-secondary manage-router-btn" data-uuid="{{ router.uuid }}" data-category-uuid="{{ active_category.uuid }}" title="Editar Dispositivo">
                                                                 <i class="fas fa-edit"></i>
                                                             </a>
                                                             <a href="javascript:void(0)" class="btn btn-xs btn-outline-danger" title="Eliminar Dispositivo" onclick="confirmDeleteRouter('{{ router.uuid }}', '{{ router.name|escapejs }}')">
@@ -375,9 +369,9 @@
                                     </div>
                                 {% else %}
                                     <div class="py-3 px-4 text-muted small d-flex justify-content-between align-items-center">
-                                        <span>Este nodo aún no tiene dispositivos asignados.</span>
-                                        <a href="javascript:void(0)" class="text-primary font-weight-bold add-router-btn" data-scope="node" data-group-id="{{ node.group.id }}">
-                                            <i class="fas fa-plus mr-1"></i> Añadir dispositivo a este nodo
+                                        <span>Este grupo aún no tiene dispositivos asignados.</span>
+                                        <a href="javascript:void(0)" class="text-primary font-weight-bold add-router-btn" data-category-uuid="{{ active_category.uuid }}" data-group-id="{{ node.group.id }}">
+                                            <i class="fas fa-plus mr-1"></i> Añadir dispositivo aquí
                                         </a>
                                     </div>
                                 {% endif %}
@@ -386,11 +380,11 @@
                     {% endfor %}
                 {% else %}
                     <div class="text-center py-5 border rounded" style="background: var(--card);">
-                        <i class="fas fa-sitemap text-muted mb-2" style="font-size: 2rem;"></i>
-                        <h6 class="font-weight-bold mb-1">Aún no hay Nodos registrados</h6>
-                        <p class="text-muted small mb-3">Crea tu primer Nodo en mayúsculas y añade sus dispositivos.</p>
-                        <a href="/router/manage_group/" class="btn btn-primary btn-sm font-weight-bold">
-                            <i class="fas fa-plus mr-1"></i> Añadir Primer Nodo
+                        <i class="fas fa-layer-group text-muted mb-2" style="font-size: 2rem;"></i>
+                        <h6 class="font-weight-bold mb-1">Aún no hay grupos en {{ active_category.name }}</h6>
+                        <p class="text-muted small mb-3">Crea el primer grupo dentro de <strong>{{ active_category.name }}</strong> para organizar sus dispositivos.</p>
+                        <a href="/router/manage_group/?category={{ active_category.uuid }}" class="btn btn-primary btn-sm font-weight-bold">
+                            <i class="fas fa-plus mr-1"></i> Añadir Primer Grupo
                         </a>
                     </div>
                 {% endif %}
@@ -427,7 +421,7 @@
         event.stopPropagation();
         var isChecked = $(checkboxEl).prop('checked');
         var $card = $(checkboxEl).closest('.node-accordion-card');
-        $card.find('.node-router-row:visible .node-child-cb, .node-child-cb').prop('checked', isChecked).trigger('change');
+        $card.find('.node-child-cb').prop('checked', isChecked).trigger('change');
     }
 
     function checkStatusChange() {
@@ -476,7 +470,6 @@
                 $('#create-backup').hide();
             }
 
-            // Sincronizar cada casilla maestra de Nodo
             $('.node-accordion-card').each(function() {
                 var $cbs = $(this).find('.node-child-cb');
                 var $master = $(this).find('.node-master-checkbox');
@@ -487,10 +480,9 @@
                 }
             });
 
-            // Sincronizar botón global "Seleccionar Todo"
             var $vis = getVisibleChildCheckboxes();
             var $btnAll = $('#btn-select-all-nodes-list');
-            if ($btnAll.length) {
+            if ($btnAll.length && !$btnAll.prop('disabled')) {
                 var allChecked = $vis.length > 0 && $vis.filter(':checked').length === $vis.length;
                 if (allChecked) {
                     $btnAll.removeClass('btn-outline-secondary').addClass('btn-primary')

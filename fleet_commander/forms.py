@@ -76,7 +76,8 @@ class CommandExecuteForm(forms.Form):
         from router_manager.models import RouterGroup
         super(CommandExecuteForm, self).__init__(*args, **kwargs)
         self.command = command
-        self.fields['router_groups'].queryset = RouterGroup.objects.all().order_by('name')
+        self.fields['router_groups'].queryset = RouterGroup.objects.select_related('category').all().order_by('category__position', 'name')
+        self.fields['router_groups'].label_from_instance = lambda obj: f'{obj.category.name} › {obj.name}' if obj.category else obj.name
         
         self.helper = FormHelper()
         self.helper.form_method = 'post'
@@ -288,7 +289,8 @@ class BroadcastCommandForm(forms.Form):
     def __init__(self, *args, **kwargs):
         from router_manager.models import RouterGroup
         super(BroadcastCommandForm, self).__init__(*args, **kwargs)
-        self.fields['router_groups'].queryset = RouterGroup.objects.all().order_by('name')
+        self.fields['router_groups'].queryset = RouterGroup.objects.select_related('category').all().order_by('category__position', 'name')
+        self.fields['router_groups'].label_from_instance = lambda obj: f'{obj.category.name} › {obj.name}' if obj.category else obj.name
 
         self.helper = FormHelper()
         self.helper.form_method = 'post'

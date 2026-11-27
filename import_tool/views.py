@@ -1,31 +1,40 @@
+import ipaddress
+import socket
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 
 from backup.models import BackupProfile
-from router_manager.models import Router, SUPPORTED_ROUTER_TYPES, RouterGroup, RouterStatus
-from router_manager.normalization import resolve_or_create_node, canonical_key
+from router_manager.models import DeviceCategory, Router, SUPPORTED_ROUTER_TYPES, RouterGroup, RouterStatus
+from router_manager.normalization import (
+    ensure_default_category,
+    resolve_or_create_category,
+    resolve_or_create_node,
+    canonical_key,
+)
 from user_manager.models import UserAcl
 from .models import CsvData, ImportTask
 from .forms import CsvDataForm
 from .excel_utils import generate_excel_bytes
-from django.contrib import messages
-import ipaddress
-import socket
 
 SUPPORTED_ROUTER_TYPES = [rt[0] for rt in SUPPORTED_ROUTER_TYPES]
 
 
+def _can_use_import_tools(user):
+    if not user or not user.is_authenticated:
+        return False
+    return bool(user.is_superuser or user.is_staff or UserAcl.objects.filter(user=user, user_level__gte=30).exists())
+
+
 @login_required()
 def run_import_task(request):
-    if not (request.user.is_superuser or UserAcl.objects.filter(user=request.user, user_level__gte=30).exists()):
+    if not _can_use_import_tools(request.user):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     import_task = get_object_or_404(ImportTask, uuid=request.GET.get('uuid'))
     if import_task.import_success:
         return JsonResponse({'status': 'success', 'message': 'Completado'})
-
-    backup_profile = None
-    router_group = None
 
     name = (import_task.name or '').strip()
     address = (import_task.address or '').lower().strip()
@@ -54,15 +63,42 @@ def run_import_task(request):
     else:
         backup_profile, _ = BackupProfile.objects.get_or_create(name='default')
 
-    router_group = resolve_or_create_node(import_task.router_group_name)
-    if import_task.router_group_name != router_group.name:
-        import_task.router_group_name = router_group.name
+    try:
+        category_obj = resolve_or_create_category(import_task.category_name)
+    except ValidationError as ve:
+        err_msg = ve.messages[0] if getattr(ve, 'messages', None) else str(ve)
+        import_task.import_error = True
+        import_task.import_error_message = err_msg
+        import_task.save()
+        return JsonResponse({'status': 'error', 'error_message': err_msg})
+
+    router_group = resolve_or_create_node(import_task.router_group_name, category=category_obj)
+    import_task.category_name = category_obj.name
+    import_task.router_group_name = router_group.name
 
     protocol = (getattr(import_task, 'connection_protocol', 'ssh') or 'ssh').lower()
 
-    existing_router = Router.objects.filter(address__iexact=address).first()
-    action_label = 'Nuevo dispositivo creado'
+    # Si la tarea corresponde a una actualización detectada (incluso cambio de IP), actualizar ese dispositivo exacto
+    existing_router = import_task.router
+    if not existing_router:
+        name_ck = canonical_key(name)
+        for r_cand in Router.objects.only('id', 'name'):
+            if canonical_key(r_cand.name) == name_ck:
+                existing_router = Router.objects.filter(pk=r_cand.id).first()
+                break
+    if not existing_router:
+        existing_router = Router.objects.filter(address__iexact=address).first()
+
     if existing_router:
+        # Verificar que la nueva IP no choque con otro dispositivo distinto
+        ip_clash = Router.objects.filter(address__iexact=address).exclude(pk=existing_router.pk).first()
+        if ip_clash:
+            err_msg = f"La IP '{address}' ya está en uso por '{ip_clash.name}'."
+            import_task.import_error = True
+            import_task.import_error_message = err_msg
+            import_task.save()
+            return JsonResponse({'status': 'error', 'error_message': err_msg})
+
         if name and name != existing_router.name:
             name_ck = canonical_key(name)
             other_collision = any(
@@ -71,6 +107,8 @@ def run_import_task(request):
             )
             if not other_collision:
                 existing_router.name = name
+
+        existing_router.address = address
         existing_router.username = import_task.username or existing_router.username
         if import_task.password:
             existing_router.password = import_task.password
@@ -82,7 +120,9 @@ def run_import_task(request):
             existing_router.backup_profile = backup_profile
         existing_router.save()
         target_router = existing_router
-        action_label = 'Dispositivo actualizado'
+
+        changed_fields = [c.get('field') for c in (import_task.changes_json or []) if isinstance(c, dict) and c.get('field')]
+        action_label = f"Actualizado ({', '.join(changed_fields)})" if changed_fields else "Dispositivo actualizado"
     else:
         unique_name = name
         name_canon = canonical_key(unique_name)
@@ -99,8 +139,8 @@ def run_import_task(request):
             connection_protocol=protocol,
             backup_profile=backup_profile,
             monitoring=import_task.monitoring,
-            device_scope='node'
         )
+        action_label = 'Nuevo dispositivo creado'
 
     RouterStatus.objects.get_or_create(router=target_router)
 
@@ -132,13 +172,12 @@ def run_import_task(request):
 
 @login_required()
 def view_import_tool_list(request):
-    """Redirige directamente a la sección de Importar desde Excel para evitar pasos redundantes."""
     return redirect('/router/import_tool/csv/')
 
 
 @login_required()
 def view_import_details(request):
-    if not (request.user.is_superuser or UserAcl.objects.filter(user=request.user, user_level__gte=30).exists()):
+    if not _can_use_import_tools(request.user):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     csv_data = get_object_or_404(CsvData, uuid=request.GET.get('uuid'))
     import_task_list = list(ImportTask.objects.filter(csv_data=csv_data).order_by('import_id'))
@@ -152,40 +191,59 @@ def view_import_details(request):
         csv_data.delete()
         return redirect('/router/import_tool/csv/')
 
-    # Anotar en cada tarea de preview si la IP ya existe (se actualizará) o si es nueva (se creará)
-    existing_ips = set(a.lower().strip() for a in Router.objects.values_list('address', flat=True) if a)
-    for t in import_task_list:
-        t.will_update = (t.address.lower().strip() in existing_ips)
+    new_count = sum(1 for t in import_task_list if t.action_type != 'update')
+    update_count = sum(1 for t in import_task_list if t.action_type == 'update')
 
     data = {
         'csv_data': csv_data,
         'action': action,
         'import_task_list': import_task_list,
         'total_tasks': len(import_task_list),
+        'new_count': new_count,
+        'update_count': update_count,
+        'unchanged_count': csv_data.unchanged_count or 0,
         'completed_tasks': sum(1 for t in import_task_list if t.import_success),
-        'page_title': 'Vista Previa y Proceso de Importación',
+        'page_title': 'Vista Previa de Importación',
     }
     return render(request, 'import_tool/import_details.html', context=data)
 
 
 @login_required()
 def view_import_csv_file(request):
-    if not (request.user.is_superuser or UserAcl.objects.filter(user=request.user, user_level__gte=30).exists()):
+    if not _can_use_import_tools(request.user):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
+
+    categories = list(DeviceCategory.objects.order_by('position', 'id'))
+    if not categories:
+        categories = [ensure_default_category()]
+    total_inventory = Router.objects.count()
 
     form = CsvDataForm(request.POST or None, request.FILES or None)
     if form.is_valid():
+        import_data = form.cleaned_data['import_data']
+        unchanged_count = form.cleaned_data.get('unchanged_count', 0)
+
+        if not import_data and unchanged_count > 0:
+            messages.info(
+                request,
+                f"Sin cambios pendientes|Los {unchanged_count} dispositivo(s) del archivo Excel ya están registrados exactamente con los mismos datos."
+            )
+            return redirect('/router/import_tool/csv/')
+
         csv_data_instance = form.save(commit=False)
-        csv_data_instance.import_data = form.cleaned_data['import_data']
+        csv_data_instance.import_data = import_data
+        csv_data_instance.unchanged_count = unchanged_count
         csv_data_instance.raw_csv_data = form.cleaned_data.get('raw_csv_data', '')
         csv_data_instance.save()
 
         tasks_created = 0
-        for task in csv_data_instance.import_data:
+        for task in import_data:
+            target_r_id = task.get('target_router_id')
             _, created = ImportTask.objects.get_or_create(
                 csv_data=csv_data_instance,
                 import_id=task['import_id'],
                 defaults={
+                    'router_id': target_r_id,
                     'name': task.get('name'),
                     'username': task.get('username') or 'admin',
                     'password': task.get('password') or '',
@@ -195,17 +253,21 @@ def view_import_csv_file(request):
                     'connection_protocol': (task.get('connection_protocol') or 'ssh').lower(),
                     'backup_profile_name': task.get('backup_profile') or 'default',
                     'router_group_name': task.get('router_group') or 'GENERAL',
+                    'category_name': task.get('category_name') or categories[0].name,
+                    'action_type': task.get('action_type') or 'new',
+                    'changes_json': task.get('changes') or [],
                     'monitoring': True if str(task.get('monitoring', 'true')).lower() == 'true' else False,
                 }
             )
             if created:
                 tasks_created += 1
 
-        messages.info(request, f'Archivo Excel leído correctamente: {tasks_created} equipos listos en la vista previa para importar.')
         return redirect(f'/router/import_tool/details/?uuid={csv_data_instance.uuid}')
 
     data = {
         'form': form,
+        'categories': categories,
+        'total_inventory': total_inventory,
         'page_title': 'Herramientas',
     }
     return render(request, 'import_tool/import_csv_form.html', context=data)
@@ -213,34 +275,42 @@ def view_import_csv_file(request):
 
 @login_required()
 def view_download_csv_template(request):
-    """Descarga una plantilla nativa de Microsoft Excel (.xlsx) con las 8 columnas solicitadas."""
-    headers = ['Nombre', 'IP', 'Usuario', 'Password', 'Marca', 'Protocolo', 'Puerto', 'Nodo']
+    """Descarga una plantilla nativa Microsoft Excel (.xlsx) adaptada a las Categorías actuales del usuario."""
+    cats = list(DeviceCategory.objects.order_by('position', 'id'))
+    cat_1 = cats[0].name if cats else 'Nodos'
+    cat_2 = cats[1].name if len(cats) > 1 else cat_1
+
+    headers = ['Nombre', 'IP', 'Usuario', 'Password', 'Marca', 'Protocolo', 'Puerto', 'Grupo', 'Categoría']
     rows = [
-        ['Router Principal', '192.168.1.1', 'admin', 'clave123', 'mikrotik', 'SSH', '22', 'NODO CENTRO'],
-        ['Switch Acceso 1', '10.0.0.2', 'admin', 'clave123', 'cisco', 'SSH', '22', 'NODO CENTRO'],
-        ['Firewall Borde', '172.16.0.1', 'admin', 'clave123', 'huawei', 'Telnet', '23', 'NODO NORTE'],
-        ['FortiGate Perimetral', '172.16.0.10', 'admin', 'clave123', 'fortinet', 'SSH', '22', 'NODO NORTE'],
-        ['Router API', '192.168.10.5', 'admin', 'clave123', 'mikrotik', 'API', '80', 'GENERAL'],
+        ['Router Principal', '192.168.1.1', 'admin', 'clave123', 'mikrotik', 'SSH', '22', 'MANAGUA', cat_1],
+        ['Switch Acceso 1', '10.0.0.2', 'admin', 'clave123', 'cisco', 'SSH', '2222', 'MANAGUA', cat_1],
+        ['Firewall Borde', '172.16.0.1', 'admin', 'clave123', 'huawei', 'Telnet', '23', 'CRUCERO', cat_1],
+        ['FortiGate Enlace', '172.16.0.10', 'admin', 'clave123', 'fortinet', 'SSH', '22', 'POLICÍA NACIONAL', cat_2],
+        ['Router API Custom', '192.168.10.5', 'admin', 'clave123', 'mikrotik', 'API', '8728', 'BANCO CENTRAL', cat_2],
     ]
-    xlsx_bytes = generate_excel_bytes(headers, rows, sheet_name="Plantilla Equipos")
+    xlsx_bytes = generate_excel_bytes(headers, rows, sheet_name="Plantilla Dispositivos")
     response = HttpResponse(
         xlsx_bytes,
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = 'attachment; filename="tdox_config_plantilla_equipos.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="tdox_config_plantilla_dispositivos.xlsx"'
     return response
 
 
 @login_required()
 def view_export_routers_csv(request):
-    """Exporta todos los equipos actuales en formato nativo Microsoft Excel (.xlsx)."""
-    if not (request.user.is_superuser or UserAcl.objects.filter(user=request.user, user_level__gte=30).exists()):
+    """Exporta todos los dispositivos con su Grupo y Categoría exactos en formato Excel (.xlsx)."""
+    if not _can_use_import_tools(request.user):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
-    headers = ['Nombre', 'IP', 'Usuario', 'Password', 'Marca', 'Protocolo', 'Puerto', 'Nodo']
+    default_cat = ensure_default_category()
+    headers = ['Nombre', 'IP', 'Usuario', 'Password', 'Marca', 'Protocolo', 'Puerto', 'Grupo', 'Categoría']
     rows = []
-    for r in Router.objects.filter(device_scope='node').prefetch_related('routergroup_set').order_by('name'):
+    for r in Router.objects.all().prefetch_related('routergroup_set__category').order_by('name'):
         grp = r.routergroup_set.first()
+        cat_name = grp.category.name if (grp and grp.category) else default_cat.name
+        grp_name = grp.name if grp else 'GENERAL'
+
         proto = (getattr(r, 'connection_protocol', 'ssh') or 'ssh').upper()
         if proto == 'TELNET':
             proto_display = 'Telnet'
@@ -257,13 +327,14 @@ def view_export_routers_csv(request):
             r.router_type or 'mikrotik',
             proto_display,
             str(r.port or 22),
-            grp.name if grp else 'GENERAL',
+            grp_name,
+            cat_name,
         ])
 
-    xlsx_bytes = generate_excel_bytes(headers, rows, sheet_name="Inventario Equipos")
+    xlsx_bytes = generate_excel_bytes(headers, rows, sheet_name="Inventario Dispositivos")
     response = HttpResponse(
         xlsx_bytes,
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = 'attachment; filename="tdox_config_inventario_equipos.xlsx"'
+    response['Content-Disposition'] = 'attachment; filename="tdox_config_inventario_dispositivos.xlsx"'
     return response
