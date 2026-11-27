@@ -88,9 +88,9 @@
                 <a href="/router/import_tool/csv/" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-arrow-left mr-1"></i> Subir otro Excel
                 </a>
-                <div class="ml-auto">
+                <div class="ml-auto" id="discard-preview-wrapper" {% if completed_tasks > 0 %}style="display: none;"{% endif %}>
                     <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=delete"
-                       onclick="return confirm('¿Descartar esta vista previa?');"
+                       onclick="return confirm('¿Descartar esta vista previa sin aplicar los cambios?');"
                        class="btn btn-outline-danger btn-sm">
                         <i class="fas fa-trash-alt mr-1"></i> Descartar
                     </a>
@@ -106,6 +106,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const startBtn = document.getElementById('btn-start-import');
     const goRoutersBtn = document.getElementById('btn-go-routers');
+    const discardWrapper = document.getElementById('discard-preview-wrapper');
     const progressWrapper = document.getElementById('progress-wrapper');
     const progressBar = document.getElementById('import-progress-bar');
     const progressStatusText = document.getElementById('progress-status-text');
@@ -160,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function startLiveImport() {
+        if (discardWrapper) discardWrapper.style.display = 'none';
         if (startBtn) {
             startBtn.disabled = true;
             startBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Aplicando...';
