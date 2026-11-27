@@ -1,3 +1,4 @@
+import ipaddress
 import json
 import re
 from django import forms
@@ -107,10 +108,9 @@ class CsvDataForm(forms.ModelForm):
         if 'address' not in mapped_headers:
             raise ValidationError(
                 "El archivo debe contener la columna 'IP'. "
-                "Descargue la Plantilla Excel para ver las columnas."
+                "Descargue la Plantilla Excel para ver las columnas requeridas."
             )
 
-        # Pre-cargar inventario existente para detección inteligente de cambios (diff por campo)
         all_existing_routers = list(
             Router.objects.all().prefetch_related('routergroup_set__category')
         )
@@ -121,12 +121,11 @@ class CsvDataForm(forms.ModelForm):
             if er.address:
                 existing_by_ip[er.address.strip().lower()] = er
 
-        seen_ips = set()
-        seen_name_keys = set()
+        first_ip_line = {}
+        first_name_line = {}
         cat_grp_resolver = BatchCategoryGroupResolver()
         import_data = []
         unchanged_count = 0
-        import_id = 0
 
         for line_number, raw_row in enumerate(raw_rows, start=2):
             row = {}
@@ -137,41 +136,62 @@ class CsvDataForm(forms.ModelForm):
             if not any(row.values()):
                 continue
 
+            row_errors = []
+
+            # 1. Validar IP y duplicados de IP dentro del mismo Excel
             address = row.get('address', '').strip().lower()
             if not address:
-                continue
-            if not self._is_valid_ip_or_hostname(address):
-                raise ValidationError(f"Fila {line_number}: Dirección IP o Host inválido ('{address}').")
+                row_errors.append("Falta la Dirección IP en esta fila.")
+            elif not self._is_valid_ip_or_hostname(address):
+                row_errors.append(f"Dirección IP o Host con formato inválido ('{address}').")
+            elif address in first_ip_line:
+                row_errors.append(
+                    f"IP duplicada dentro del mismo archivo Excel ('{address}' ya aparece en la fila {first_ip_line[address]})."
+                )
+            else:
+                first_ip_line[address] = line_number
+            row['address'] = address or 'SIN-IP'
 
-            if address in seen_ips:
-                continue
-            seen_ips.add(address)
-            row['address'] = address
-
-            name = re.sub(r'\s+', ' ', row.get('name', '').strip())
-            if not name:
-                name = f"Router_{address.replace('.', '_')}"
+            # 2. Validar Nombre y duplicados de Nombre dentro del mismo Excel (sin renombrar en silencio)
+            raw_name = re.sub(r'\s+', ' ', row.get('name', '').strip())
+            raw_name_was_given = bool(raw_name)
+            name = raw_name or (f"Router_{address.replace('.', '_')}" if address else f"Fila_{line_number}")
             name_key = canonical_key(name)
-            if name_key in seen_name_keys:
-                name = f"{name} ({address})"
-                name_key = canonical_key(name)
-            seen_name_keys.add(name_key)
+
+            if name_key and name_key in first_name_line:
+                row_errors.append(
+                    f"Nombre de dispositivo duplicado dentro del mismo archivo Excel ('{name}' ya aparece en la fila {first_name_line[name_key]})."
+                )
+            elif name_key:
+                first_name_line[name_key] = line_number
             row['name'] = name
 
-            # Emparejar primero contra dispositivo existente (por Nombre o por IP) para conservar valores actuales si una celda opcional viene vacía
-            raw_name_was_given = bool(row.get('name', '').strip())
-            matched_router = existing_by_name_key.get(name_key) if raw_name_was_given else None
-            if matched_router:
-                other_ip_owner = existing_by_ip.get(address)
-                if other_ip_owner and other_ip_owner.id != matched_router.id:
-                    raise ValidationError(
-                        f"Fila {line_number}: No se puede cambiar la IP de '{name}' a '{address}' porque ya pertenece a '{other_ip_owner.name}'."
+            # 3. Verificar coincidencias y conflictos contra dispositivos ya registrados en BD
+            matched_router = None
+            name_match_db = existing_by_name_key.get(name_key) if raw_name_was_given else None
+            ip_match_db = existing_by_ip.get(address) if address else None
+
+            if name_match_db and ip_match_db:
+                if name_match_db.id == ip_match_db.id:
+                    matched_router = name_match_db
+                else:
+                    row_errors.append(
+                        f"Conflicto de duplicado: El nombre '{name}' pertenece al dispositivo ({name_match_db.address}) "
+                        f"pero la IP '{address}' ya pertenece a otro dispositivo distinto ('{ip_match_db.name}')."
                     )
-            else:
-                matched_router = existing_by_ip.get(address)
-                if matched_router and not raw_name_was_given:
+            elif name_match_db and not ip_match_db:
+                # El dispositivo existe por nombre y está cambiando a una IP libre -> Actualización válida de IP
+                matched_router = name_match_db
+            elif ip_match_db and not name_match_db:
+                if not raw_name_was_given:
+                    matched_router = ip_match_db
                     name = matched_router.name
                     row['name'] = name
+                else:
+                    # Trae un nombre distinto pero usa una IP que YA está ocupada en BD
+                    row_errors.append(
+                        f"IP duplicada: La dirección '{address}' ya está registrada en el dispositivo '{ip_match_db.name}'."
+                    )
 
             cur_g_existing = matched_router.routergroup_set.all()[0] if (matched_router and matched_router.routergroup_set.all()) else None
 
@@ -179,7 +199,7 @@ class CsvDataForm(forms.ModelForm):
             row['username'] = raw_user or (matched_router.username if matched_router else 'admin') or 'admin'
             row['password'] = row.get('password') or ''
 
-            # Marca / Fabricante
+            # 4. Marca / Fabricante
             raw_type_cell = row.get('router_type', '').strip()
             if raw_type_cell:
                 raw_type = strip_accents(raw_type_cell.lower())
@@ -198,6 +218,7 @@ class CsvDataForm(forms.ModelForm):
                     elif 'openwrt' in raw_type:
                         normalized_type = 'openwrt'
                     else:
+                        row_errors.append(f"Fabricante o marca no reconocida ('{raw_type_cell}').")
                         normalized_type = 'mikrotik'
             elif matched_router:
                 normalized_type = matched_router.router_type
@@ -205,7 +226,7 @@ class CsvDataForm(forms.ModelForm):
                 normalized_type = 'mikrotik'
             row['router_type'] = normalized_type
 
-            # Protocolo y Puerto (totalmente libre 1-65535 o conservado/automático si viene vacío)
+            # 5. Protocolo y Puerto
             raw_proto = (row.get('connection_protocol') or '').strip().lower()
             raw_port = str(row.get('port') or '').strip()
             if raw_port.endswith('.0'):
@@ -217,8 +238,11 @@ class CsvDataForm(forms.ModelForm):
                 proto = 'telnet'
             elif raw_proto in ('api', 'rest', 'http', 'https', 'mikrotik-api', 'winbox'):
                 proto = 'api'
-            else:
+            elif raw_proto == '':
                 proto = ''
+            else:
+                row_errors.append(f"Protocolo inválido ('{raw_proto}'). Use SSH, Telnet o API.")
+                proto = 'ssh'
 
             custom_port = None
             if raw_port:
@@ -227,11 +251,9 @@ class CsvDataForm(forms.ModelForm):
                     if 1 <= p_val <= 65535:
                         custom_port = p_val
                     else:
-                        raise ValidationError(f"Fila {line_number}: El puerto '{raw_port}' debe estar entre 1 y 65535.")
-                except ValidationError:
-                    raise
+                        row_errors.append(f"Puerto fuera de rango ('{raw_port}'). Debe estar entre 1 y 65535.")
                 except ValueError:
-                    raise ValidationError(f"Fila {line_number}: Puerto inválido ('{raw_port}').")
+                    row_errors.append(f"Puerto inválido ('{raw_port}'). Debe ser numérico (1 a 65535).")
 
             if not proto:
                 if custom_port is not None:
@@ -263,14 +285,17 @@ class CsvDataForm(forms.ModelForm):
             row['connection_protocol'] = proto
             row['port'] = port
 
-            # Categoría y Grupo
+            # 6. Categoría (debe existir previamente en Dispositivos) y Grupo
             raw_cat = row.get('category_name', '').strip()
             raw_grp = row.get('router_group', '').strip()
             if not raw_cat and cur_g_existing and cur_g_existing.category:
                 raw_cat = cur_g_existing.category.name
             if not raw_grp and cur_g_existing:
                 raw_grp = cur_g_existing.name
-            resolved_cat_name, resolved_grp_name = cat_grp_resolver.resolve(raw_cat, raw_grp, line_number=line_number)
+
+            resolved_cat_name, resolved_grp_name, cat_err = cat_grp_resolver.resolve_with_error(raw_cat, raw_grp)
+            if cat_err:
+                row_errors.append(cat_err)
             row['category_name'] = resolved_cat_name
             row['router_group'] = resolved_grp_name
 
@@ -285,6 +310,17 @@ class CsvDataForm(forms.ModelForm):
             else:
                 mon_bool = True
             row['monitoring'] = 'true' if mon_bool else 'false'
+
+            row['import_id'] = line_number
+
+            # Si esta fila tiene errores de validación/duplicados, incluirla en ROJO en el Preview explicando exactamente por qué
+            if row_errors:
+                row['action_type'] = 'error'
+                row['target_router_id'] = None
+                row['changes'] = []
+                row['error_message'] = ' | '.join(row_errors)
+                import_data.append(row)
+                continue
 
             if matched_router:
                 changes = []
@@ -303,9 +339,8 @@ class CsvDataForm(forms.ModelForm):
                 if int(matched_router.port or 22) != int(port):
                     changes.append({'field': 'Puerto', 'old': str(matched_router.port or 22), 'new': str(port)})
 
-                cur_g = matched_router.routergroup_set.all()[0] if matched_router.routergroup_set.all() else None
-                cur_cat_name = cur_g.category.name if (cur_g and cur_g.category) else ''
-                cur_grp_name = cur_g.name if cur_g else ''
+                cur_cat_name = cur_g_existing.category.name if (cur_g_existing and cur_g_existing.category) else ''
+                cur_grp_name = cur_g_existing.name if cur_g_existing else ''
 
                 if cur_cat_name != resolved_cat_name:
                     changes.append({'field': 'Categoría', 'old': cur_cat_name or '---', 'new': resolved_cat_name})
@@ -314,7 +349,6 @@ class CsvDataForm(forms.ModelForm):
                 if bool(matched_router.monitoring) != mon_bool:
                     changes.append({'field': 'Monitoreo', 'old': 'Sí' if matched_router.monitoring else 'No', 'new': 'Sí' if mon_bool else 'No'})
 
-                # Si todas las columnas son idénticas al equipo actual, omitir en el preview
                 if not changes:
                     unchanged_count += 1
                     continue
@@ -322,17 +356,17 @@ class CsvDataForm(forms.ModelForm):
                 row['action_type'] = 'update'
                 row['target_router_id'] = matched_router.id
                 row['changes'] = changes
+                row['error_message'] = ''
             else:
                 row['action_type'] = 'new'
                 row['target_router_id'] = None
                 row['changes'] = []
+                row['error_message'] = ''
 
-            import_id += 1
-            row['import_id'] = import_id
             import_data.append(row)
 
         if not import_data and unchanged_count == 0:
-            raise ValidationError("El archivo de Excel no contiene filas con dispositivos válidos para importar.")
+            raise ValidationError("El archivo de Excel no contiene filas con datos para analizar.")
 
         cleaned_data['import_data'] = import_data
         cleaned_data['unchanged_count'] = unchanged_count
@@ -340,6 +374,10 @@ class CsvDataForm(forms.ModelForm):
         return cleaned_data
 
     def _is_valid_ip_or_hostname(self, value):
-        ip_pattern = re.compile(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
+        try:
+            ipaddress.ip_address(value)
+            return True
+        except ValueError:
+            pass
         hostname_pattern = re.compile(r"^(?=.{1,253}$)(?:(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6}$")
-        return ip_pattern.match(value) or hostname_pattern.match(value)
+        return bool(hostname_pattern.match(value))

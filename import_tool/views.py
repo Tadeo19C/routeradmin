@@ -9,8 +9,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from backup.models import BackupProfile
 from router_manager.models import DeviceCategory, Router, SUPPORTED_ROUTER_TYPES, RouterGroup, RouterStatus
 from router_manager.normalization import (
-    ensure_default_category,
-    resolve_or_create_category,
+    get_first_category,
+    resolve_existing_category,
     resolve_or_create_node,
     canonical_key,
 )
@@ -35,6 +35,15 @@ def run_import_task(request):
     import_task = get_object_or_404(ImportTask, uuid=request.GET.get('uuid'))
     if import_task.import_success:
         return JsonResponse({'status': 'success', 'message': 'Completado'})
+    if import_task.import_error or import_task.action_type == 'error':
+        return JsonResponse({'status': 'error', 'error_message': import_task.import_error_message or 'Fila con errores de validación'})
+
+    # Bloquear ejecución si el documento completo contiene errores sin corregir
+    if ImportTask.objects.filter(csv_data=import_task.csv_data, action_type='error').exists():
+        return JsonResponse({
+            'status': 'error',
+            'error_message': 'El documento contiene filas con errores en rojo. Corrija el Excel antes de importar.'
+        })
 
     name = (import_task.name or '').strip()
     address = (import_task.address or '').lower().strip()
@@ -64,7 +73,7 @@ def run_import_task(request):
         backup_profile, _ = BackupProfile.objects.get_or_create(name='default')
 
     try:
-        category_obj = resolve_or_create_category(import_task.category_name)
+        category_obj = resolve_existing_category(import_task.category_name)
     except ValidationError as ve:
         err_msg = ve.messages[0] if getattr(ve, 'messages', None) else str(ve)
         import_task.import_error = True
@@ -78,19 +87,15 @@ def run_import_task(request):
 
     protocol = (getattr(import_task, 'connection_protocol', 'ssh') or 'ssh').lower()
 
-    # Si la tarea corresponde a una actualización detectada (incluso cambio de IP), actualizar ese dispositivo exacto
     existing_router = import_task.router
-    if not existing_router:
+    if not existing_router and import_task.action_type == 'update':
         name_ck = canonical_key(name)
         for r_cand in Router.objects.only('id', 'name'):
             if canonical_key(r_cand.name) == name_ck:
                 existing_router = Router.objects.filter(pk=r_cand.id).first()
                 break
-    if not existing_router:
-        existing_router = Router.objects.filter(address__iexact=address).first()
 
     if existing_router:
-        # Verificar que la nueva IP no choque con otro dispositivo distinto
         ip_clash = Router.objects.filter(address__iexact=address).exclude(pk=existing_router.pk).first()
         if ip_clash:
             err_msg = f"La IP '{address}' ya está en uso por '{ip_clash.name}'."
@@ -124,13 +129,26 @@ def run_import_task(request):
         changed_fields = [c.get('field') for c in (import_task.changes_json or []) if isinstance(c, dict) and c.get('field')]
         action_label = f"Actualizado ({', '.join(changed_fields)})" if changed_fields else "Dispositivo actualizado"
     else:
-        unique_name = name
-        name_canon = canonical_key(unique_name)
-        name_collision = any(canonical_key(n) == name_canon for n in Router.objects.values_list('name', flat=True))
-        if name_collision or Router.objects.filter(name__iexact=unique_name).exists():
-            unique_name = f"{name} ({address})"
+        # Validar que ni IP ni Nombre hayan colisionado antes de crear
+        ip_clash = Router.objects.filter(address__iexact=address).first()
+        if ip_clash:
+            err_msg = f"IP duplicada: '{address}' ya pertenece a '{ip_clash.name}'."
+            import_task.import_error = True
+            import_task.import_error_message = err_msg
+            import_task.save()
+            return JsonResponse({'status': 'error', 'error_message': err_msg})
+
+        name_canon = canonical_key(name)
+        name_clash = next((n for n in Router.objects.values_list('name', flat=True) if canonical_key(n) == name_canon), None)
+        if name_clash:
+            err_msg = f"Nombre duplicado: '{name}' ya existe como '{name_clash}'."
+            import_task.import_error = True
+            import_task.import_error_message = err_msg
+            import_task.save()
+            return JsonResponse({'status': 'error', 'error_message': err_msg})
+
         target_router = Router.objects.create(
-            name=unique_name,
+            name=name,
             username=import_task.username or 'admin',
             password=import_task.password or '',
             address=address,
@@ -191,14 +209,18 @@ def view_import_details(request):
         csv_data.delete()
         return redirect('/router/import_tool/csv/')
 
-    new_count = sum(1 for t in import_task_list if t.action_type != 'update')
-    update_count = sum(1 for t in import_task_list if t.action_type == 'update')
+    error_count = sum(1 for t in import_task_list if t.action_type == 'error' or t.import_error)
+    new_count = sum(1 for t in import_task_list if t.action_type == 'new' and not t.import_error)
+    update_count = sum(1 for t in import_task_list if t.action_type == 'update' and not t.import_error)
+    valid_tasks_count = new_count + update_count
 
     data = {
         'csv_data': csv_data,
         'action': action,
         'import_task_list': import_task_list,
-        'total_tasks': len(import_task_list),
+        'total_tasks': valid_tasks_count,
+        'error_count': error_count,
+        'has_blocking_errors': error_count > 0,
         'new_count': new_count,
         'update_count': update_count,
         'unchanged_count': csv_data.unchanged_count or 0,
@@ -214,8 +236,6 @@ def view_import_csv_file(request):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     categories = list(DeviceCategory.objects.order_by('position', 'id'))
-    if not categories:
-        categories = [ensure_default_category()]
     total_inventory = Router.objects.count()
 
     form = CsvDataForm(request.POST or None, request.FILES or None)
@@ -223,44 +243,37 @@ def view_import_csv_file(request):
         import_data = form.cleaned_data['import_data']
         unchanged_count = form.cleaned_data.get('unchanged_count', 0)
 
-        if not import_data and unchanged_count > 0:
-            messages.info(
-                request,
-                f"Sin cambios pendientes|Los {unchanged_count} dispositivo(s) del archivo Excel ya están registrados exactamente con los mismos datos."
-            )
-            return redirect('/router/import_tool/csv/')
-
         csv_data_instance = form.save(commit=False)
         csv_data_instance.import_data = import_data
         csv_data_instance.unchanged_count = unchanged_count
         csv_data_instance.raw_csv_data = form.cleaned_data.get('raw_csv_data', '')
         csv_data_instance.save()
 
-        tasks_created = 0
+        default_cat_name = categories[0].name if categories else ''
         for task in import_data:
-            target_r_id = task.get('target_router_id')
-            _, created = ImportTask.objects.get_or_create(
+            is_err = (task.get('action_type') == 'error')
+            ImportTask.objects.update_or_create(
                 csv_data=csv_data_instance,
                 import_id=task['import_id'],
                 defaults={
-                    'router_id': target_r_id,
-                    'name': task.get('name'),
-                    'username': task.get('username') or 'admin',
-                    'password': task.get('password') or '',
-                    'address': task.get('address'),
+                    'router_id': task.get('target_router_id'),
+                    'name': (task.get('name') or '')[:100],
+                    'username': (task.get('username') or 'admin')[:100],
+                    'password': (task.get('password') or '')[:100],
+                    'address': (task.get('address') or '')[:100],
                     'port': int(task.get('port', 22)),
                     'router_type': task.get('router_type') or 'mikrotik',
-                    'connection_protocol': (task.get('connection_protocol') or 'ssh').lower(),
-                    'backup_profile_name': task.get('backup_profile') or 'default',
-                    'router_group_name': task.get('router_group') or 'GENERAL',
-                    'category_name': task.get('category_name') or categories[0].name,
+                    'connection_protocol': (task.get('connection_protocol') or 'ssh').lower()[:10],
+                    'backup_profile_name': (task.get('backup_profile') or 'default')[:100],
+                    'router_group_name': (task.get('router_group') or 'GENERAL')[:100],
+                    'category_name': (task.get('category_name') or default_cat_name)[:60],
                     'action_type': task.get('action_type') or 'new',
                     'changes_json': task.get('changes') or [],
+                    'import_error': is_err,
+                    'import_error_message': task.get('error_message') or '',
                     'monitoring': True if str(task.get('monitoring', 'true')).lower() == 'true' else False,
                 }
             )
-            if created:
-                tasks_created += 1
 
         return redirect(f'/router/import_tool/details/?uuid={csv_data_instance.uuid}')
 
@@ -275,7 +288,6 @@ def view_import_csv_file(request):
 
 @login_required()
 def view_download_csv_template(request):
-    """Descarga una plantilla nativa Microsoft Excel (.xlsx) adaptada a las Categorías actuales del usuario."""
     cats = list(DeviceCategory.objects.order_by('position', 'id'))
     cat_1 = cats[0].name if cats else 'Nodos'
     cat_2 = cats[1].name if len(cats) > 1 else cat_1
@@ -299,16 +311,16 @@ def view_download_csv_template(request):
 
 @login_required()
 def view_export_routers_csv(request):
-    """Exporta todos los dispositivos con su Grupo y Categoría exactos en formato Excel (.xlsx)."""
     if not _can_use_import_tools(request.user):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
-    default_cat = ensure_default_category()
+    first_cat = get_first_category()
+    fallback_cat_name = first_cat.name if first_cat else ''
     headers = ['Nombre', 'IP', 'Usuario', 'Password', 'Marca', 'Protocolo', 'Puerto', 'Grupo', 'Categoría']
     rows = []
     for r in Router.objects.all().prefetch_related('routergroup_set__category').order_by('name'):
         grp = r.routergroup_set.first()
-        cat_name = grp.category.name if (grp and grp.category) else default_cat.name
+        cat_name = grp.category.name if (grp and grp.category) else fallback_cat_name
         grp_name = grp.name if grp else 'GENERAL'
 
         proto = (getattr(r, 'connection_protocol', 'ssh') or 'ssh').upper()

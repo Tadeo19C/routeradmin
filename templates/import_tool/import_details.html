@@ -35,17 +35,32 @@
     body:not(.dark-mode) .diff-chip .diff-new {
         color: #15803d;
     }
+    tr.row-import-error {
+        background: rgba(239, 68, 68, 0.12) !important;
+        border-left: 4px solid #ef4444 !important;
+    }
+    .error-reason-box {
+        color: #fca5a5;
+        font-weight: 600;
+        font-size: 12.5px;
+    }
+    body:not(.dark-mode) .error-reason-box {
+        color: #b91c1c;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="preview-compact-shell">
-    <div class="card card-primary card-outline">
+    <div class="card {% if has_blocking_errors %}card-danger{% else %}card-primary{% endif %} card-outline">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap py-2 px-3" style="gap: 8px;">
             <h3 class="card-title font-weight-bold mb-0" style="font-size: 15.5px;">
-                <i class="fas fa-file-excel text-success mr-2"></i>Vista Previa de Cambios e Importación
+                <i class="fas fa-file-excel {% if has_blocking_errors %}text-danger{% else %}text-success{% endif %} mr-2"></i>Vista Previa de Cambios e Importación
             </h3>
             <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
+                {% if error_count > 0 %}
+                <span class="badge badge-danger">{{ error_count }} Error{{ error_count|pluralize:"es" }} en Rojo</span>
+                {% endif %}
                 {% if new_count > 0 %}
                 <span class="badge badge-success">{{ new_count }} Nuevo{{ new_count|pluralize:"s" }}</span>
                 {% endif %}
@@ -53,15 +68,37 @@
                 <span class="badge badge-info">{{ update_count }} Actualización{{ update_count|pluralize:"es" }}</span>
                 {% endif %}
                 {% if unchanged_count > 0 %}
-                <span class="badge badge-secondary" title="Filas idénticas al inventario actual omitidas automáticamente">{{ unchanged_count }} Sin cambios (omitidos)</span>
+                <span class="badge badge-secondary">{{ unchanged_count }} Sin cambios (omitidos)</span>
                 {% endif %}
+                {% if not has_blocking_errors and total_tasks > 0 %}
                 <span class="badge badge-primary" id="import-counter-badge">
                     <span id="completed-count">{{ completed_tasks }}</span> / <span id="total-count">{{ total_tasks }}</span> aplicados
                 </span>
+                {% endif %}
             </div>
         </div>
 
         <div class="card-body py-3 px-3">
+            <!-- Alerta Roja cuando existen IPs duplicadas, nombres duplicados, categorías faltantes o datos inválidos -->
+            {% if has_blocking_errors %}
+            <div class="alert alert-danger py-3 px-3 mb-3" style="border-left: 5px solid #dc2626;">
+                <div class="font-weight-bold mb-1" style="font-size: 14.5px;">
+                    <i class="fas fa-times-circle mr-1"></i> No se puede subir ni aplicar este documento ({{ error_count }} error{{ error_count|pluralize:"es" }} detectado{{ error_count|pluralize:"s" }})
+                </div>
+                <div class="small mb-0">
+                    Revisa las filas marcadas en <strong>rojo</strong> en la tabla inferior para ver el motivo exacto (IPs duplicadas, nombres duplicados, categorías no creadas o datos inválidos). Corrige esos datos en tu Excel y vuelve a subirlo.
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Explicación clara cuando hay filas sin cambios omitidas -->
+            {% if unchanged_count > 0 %}
+            <div class="alert alert-secondary py-2 px-3 small mb-3">
+                <i class="fas fa-info-circle text-primary mr-1"></i>
+                <strong>Filas omitidas sin cambios ({{ unchanged_count }}):</strong> Se detectaron {{ unchanged_count }} fila{{ unchanged_count|pluralize:"s" }} que ya están registradas en el sistema exactamente con los mismos datos (misma IP, nombre, puerto, grupo y categoría), por lo que no requieren volver a subirse.
+            </div>
+            {% endif %}
+
             <div class="mb-3" id="progress-wrapper" style="{% if completed_tasks == 0 %}display: none;{% endif %}">
                 <div class="d-flex justify-content-between small mb-1">
                     <span id="progress-status-text" class="font-weight-bold text-primary">
@@ -79,7 +116,15 @@
             </div>
 
             <div class="d-flex align-items-center flex-wrap mb-3" style="gap: 8px;">
-                <button type="button" id="btn-start-import" class="btn btn-success btn-sm font-weight-bold px-3" {% if completed_tasks == total_tasks and total_tasks > 0 %}style="display: none;"{% endif %}>
+                {% if has_blocking_errors %}
+                <button type="button" class="btn btn-danger btn-sm font-weight-bold px-3" disabled title="Corrige las filas en rojo en tu Excel para poder importar">
+                    <i class="fas fa-ban mr-1"></i> Bloqueado por errores en el documento
+                </button>
+                <a href="/router/import_tool/csv/" class="btn btn-primary btn-sm font-weight-bold px-3">
+                    <i class="fas fa-upload mr-1"></i> Subir Excel Corregido
+                </a>
+                {% elif total_tasks > 0 %}
+                <button type="button" id="btn-start-import" class="btn btn-success btn-sm font-weight-bold px-3" {% if completed_tasks == total_tasks %}style="display: none;"{% endif %}>
                     <i class="fas fa-play mr-1"></i> Confirmar y Aplicar ({{ total_tasks }})
                 </button>
                 <a href="/router/group_list/" id="btn-go-routers" class="btn btn-primary btn-sm font-weight-bold px-3" style="{% if completed_tasks < total_tasks %}display: none;"{% endif %}>
@@ -88,16 +133,33 @@
                 <a href="/router/import_tool/csv/" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-arrow-left mr-1"></i> Subir otro Excel
                 </a>
-                <div class="ml-auto" id="discard-preview-wrapper" {% if completed_tasks > 0 %}style="display: none;"{% endif %}>
+                {% else %}
+                <a href="/router/group_list/" class="btn btn-primary btn-sm font-weight-bold px-3">
+                    <i class="fas fa-layer-group mr-1"></i> Ir a Dispositivos
+                </a>
+                <a href="/router/import_tool/csv/" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left mr-1"></i> Subir otro Excel
+                </a>
+                {% endif %}
+
+                {% if total_tasks > 0 or has_blocking_errors %}
+                <div class="ml-auto" id="discard-preview-wrapper" {% if completed_tasks > 0 and not has_blocking_errors %}style="display: none;"{% endif %}>
                     <a href="/router/import_tool/details/?uuid={{ csv_data.uuid }}&action=delete"
                        onclick="return confirm('¿Descartar esta vista previa sin aplicar los cambios?');"
                        class="btn btn-outline-danger btn-sm">
                         <i class="fas fa-trash-alt mr-1"></i> Descartar
                     </a>
                 </div>
+                {% endif %}
             </div>
 
-            {% include 'import_tool/import_details_tasks.html' %}
+            {% if import_task_list %}
+                {% include 'import_tool/import_details_tasks.html' %}
+            {% else %}
+                <div class="text-center py-4 border rounded text-muted small" style="background: var(--card);">
+                    No hay dispositivos nuevos ni campos modificados por aplicar en este archivo.
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -116,11 +178,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let processedCount = {{ completed_tasks|default:0 }};
 
     function updateProgressBar() {
-        if (totalTasks <= 0) return;
+        if (totalTasks <= 0 || !progressBar) return;
         const pct = Math.min(100, Math.round((processedCount / totalTasks) * 100));
         progressBar.style.width = pct + '%';
-        progressPercentText.textContent = pct + '%';
-        completedCountEl.textContent = processedCount;
+        if (progressPercentText) progressPercentText.textContent = pct + '%';
+        if (completedCountEl) completedCountEl.textContent = processedCount;
     }
 
     updateProgressBar();
@@ -148,14 +210,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 processedCount++;
                 updateProgressBar();
             } else {
-                statusCell.innerHTML = '<span class="badge-gpon badge-gpon-error"><i class="fas fa-times-circle"></i> Error</span>';
+                row.classList.add('row-import-error');
+                statusCell.innerHTML = '<span class="badge badge-danger"><i class="fas fa-times-circle mr-1"></i> Error</span>';
                 if (detailCell) {
                     detailCell.textContent = data.error_message || 'Error al procesar';
-                    detailCell.classList.add('text-danger');
+                    detailCell.classList.add('error-reason-box');
                 }
             }
         } catch (err) {
-            statusCell.innerHTML = '<span class="badge-gpon badge-gpon-error"><i class="fas fa-times-circle"></i> Error</span>';
+            row.classList.add('row-import-error');
+            statusCell.innerHTML = '<span class="badge badge-danger"><i class="fas fa-times-circle mr-1"></i> Error</span>';
             if (detailCell) detailCell.textContent = 'Error de conexión con el servidor.';
         }
     }
@@ -185,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    {% if action == 'start_import' %}
+    {% if action == 'start_import' and not has_blocking_errors %}
     startLiveImport();
     {% endif %}
 });

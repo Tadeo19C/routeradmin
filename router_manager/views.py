@@ -5,7 +5,7 @@ from urllib.parse import unquote
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Q
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
@@ -17,7 +17,7 @@ from user_manager.models import UserAcl
 from django.conf import settings
 from .forms import DeviceCategoryForm, RouterForm, RouterGroupForm, RouterClientForm
 from .models import DeviceCategory, Router, RouterGroup, RouterClient, RouterInformation, RouterStatus, BackupSchedule
-from .normalization import ensure_default_category, find_matching_node, get_category_limit_message
+from .normalization import get_first_category, find_matching_node, get_category_limit_message
 from dashboard.models import ActivityLog
 import threading
 import time
@@ -249,7 +249,7 @@ def _resolve_active_category(request):
         cat = DeviceCategory.objects.filter(uuid=cat_param).first()
         if cat:
             return cat
-    return ensure_default_category()
+    return get_first_category()
 
 
 @login_required()
@@ -260,11 +260,32 @@ def view_manage_category(request):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     is_ajax = bool(request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax'))
+    action_param = (request.GET.get('action') or request.POST.get('action') or '').strip()
+    if action_param == 'delete_all':
+        if (request.GET.get('confirmation') or request.POST.get('confirmation') or '').strip().lower() in ('delete', 'borrar', 'confirm', 'todo'):
+            all_devs = list(Router.objects.all().select_related('backup_profile'))
+            dev_count = len(all_devs)
+            cat_count = DeviceCategory.objects.count()
+            for dev in all_devs:
+                _delete_router_cleanly(dev)
+            RouterGroup.objects.all().delete()
+            DeviceCategory.objects.all().delete()
+            ActivityLog.objects.create(
+                user=request.user,
+                action="Inventario Completo Eliminado",
+                details=f"Se eliminaron todas las categorías ({cat_count}), grupos y dispositivos ({dev_count})",
+            )
+            WebadminSettings.objects.filter(name='webadmin_settings').update(router_config_last_updated=timezone.now())
+            messages.success(request, f"Se eliminaron todas las categorías ({cat_count}), grupos y dispositivos ({dev_count}) correctamente.")
+        else:
+            messages.warning(request, "Eliminación cancelada|Confirmación inválida.")
+        return redirect('/router/group_list/')
+
     raw_uuid = (request.GET.get('uuid') or request.POST.get('uuid') or '').strip()
     category_obj = get_object_or_404(DeviceCategory, uuid=raw_uuid) if raw_uuid else None
 
-    if category_obj and request.GET.get('action') == 'delete':
-        if request.GET.get('confirmation') in ('delete', 'borrar', 'confirm'):
+    if category_obj and action_param == 'delete':
+        if (request.GET.get('confirmation') or '').strip().lower() in ('delete', 'borrar', 'confirm'):
             cat_name = category_obj.name
             all_devs = list(
                 Router.objects.filter(routergroup__category=category_obj)
@@ -275,7 +296,7 @@ def view_manage_category(request):
             for dev in all_devs:
                 _delete_router_cleanly(dev)
             category_obj.delete()
-            fallback_cat = ensure_default_category()
+            fallback_cat = get_first_category()
             ActivityLog.objects.create(
                 user=request.user,
                 action="Categoría Eliminada",
@@ -283,7 +304,9 @@ def view_manage_category(request):
             )
             WebadminSettings.objects.filter(name='webadmin_settings').update(router_config_last_updated=timezone.now())
             messages.success(request, f"Categoría '{cat_name}' y sus {dev_count} dispositivo(s) fueron eliminados correctamente.")
-            return redirect(f'/router/group_list/?category={fallback_cat.uuid}')
+            if fallback_cat:
+                return redirect(f'/router/group_list/?category={fallback_cat.uuid}')
+            return redirect('/router/group_list/')
         return redirect('/router/group_list/')
 
     if request.method == 'POST':
@@ -337,7 +360,7 @@ def view_manage_router(request):
         router = get_object_or_404(Router, uuid=uuid)
         cur_grp = router.routergroup_set.select_related('category').first()
         router_cat = cur_grp.category if (cur_grp and cur_grp.category) else _resolve_active_category(request)
-        back_url = f'/router/group_list/?category={router_cat.uuid}'
+        back_url = f'/router/group_list/?category={router_cat.uuid}' if router_cat else '/router/group_list/'
         if request.GET.get('action') == 'delete':
             if request.GET.get('confirmation') in ['delete', 'borrar', 'confirm']:
                 ActivityLog.objects.create(
@@ -384,6 +407,12 @@ def view_manage_router(request):
         active_category = cur_grp.category if (cur_grp and cur_grp.category) else _resolve_active_category(request)
     else:
         active_category = _resolve_active_category(request)
+
+    if not active_category:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax'):
+            return HttpResponse('<div class="p-4 text-center"><h6 class="font-weight-bold mb-2">Primero crea una Categoría</h6><p class="small text-muted mb-3">No existen categorías creadas todavía. Crea primero una categoría para agregar grupos y dispositivos.</p><button type="button" class="btn btn-primary btn-sm" data-dismiss="modal">Entendido</button></div>')
+        messages.warning(request, 'Primero debe crear una categoría antes de agregar dispositivos.')
+        return redirect('/router/group_list/')
 
     form = RouterForm(
         request.POST or None,
@@ -444,11 +473,29 @@ def view_manage_router(request):
 @login_required()
 def view_router_group_list(request):
     categories = list(DeviceCategory.objects.order_by('position', 'id'))
-    if not categories:
-        categories = [ensure_default_category()]
-
     status_filter = request.GET.get('status')
     explicit_cat = (request.GET.get('category') or '').strip()
+    max_cats = getattr(settings, 'MAX_DEVICE_CATEGORIES', 3)
+
+    if not categories:
+        context = {
+            'categories': [],
+            'active_category': None,
+            'can_add_category': True,
+            'max_device_categories': max_cats,
+            'category_limit_email': getattr(settings, 'CATEGORY_LIMIT_CONTACT_EMAIL', 'soporte@tdox-config.com'),
+            'router_group_list': [],
+            'grouped_nodes': [],
+            'total_nodes_count': 0,
+            'total_devices_count': 0,
+            'total_online_count': 0,
+            'total_offline_count': 0,
+            'last_status_change_timestamp': 0,
+            'status_filter': status_filter,
+            'page_title': 'Dispositivos',
+        }
+        return render(request, 'router_manager/router_group_list.html', context=context)
+
     active_category = _resolve_active_category(request)
     if active_category not in categories:
         active_category = categories[0]
@@ -572,6 +619,10 @@ def view_manage_router_group(request):
     else:
         router_group = None
         active_category = _resolve_active_category(request)
+
+    if not active_category:
+        messages.warning(request, 'Primero debe crear una categoría antes de agregar grupos.')
+        return redirect('/router/group_list/')
 
     next_url = request.POST.get('next') or request.GET.get('next') or ''
     form = RouterGroupForm(request.POST or None, instance=router_group, category=active_category, next_url=next_url)
@@ -699,6 +750,51 @@ def view_create_instant_backup_task(request):
         messages.success(request, 'Tarea de respaldo creada correctamente')
 
     return redirect(router_details_url)
+
+
+@login_required
+@require_POST
+def view_delete_multiple_items(request):
+    if not _user_has_acl(request.user, 30):
+        return JsonResponse({'status': 'error', 'message': 'Permiso denegado.'}, status=403)
+
+    group_uuids = request.POST.getlist('groups[]')
+    router_uuids = request.POST.getlist('routers[]')
+
+    if not group_uuids and not router_uuids:
+        return JsonResponse({'status': 'error', 'message': 'No se seleccionaron elementos.'}, status=400)
+
+    deleted_groups = 0
+    deleted_routers = 0
+
+    for g_uuid in group_uuids:
+        grp = RouterGroup.objects.filter(uuid=g_uuid).first()
+        if grp:
+            for dev in list(grp.routers.select_related('backup_profile').all()):
+                _delete_router_cleanly(dev)
+                deleted_routers += 1
+            grp.delete()
+            deleted_groups += 1
+
+    for r_uuid in router_uuids:
+        dev = Router.objects.filter(uuid=r_uuid).select_related('backup_profile').first()
+        if dev:
+            _delete_router_cleanly(dev)
+            deleted_routers += 1
+
+    ActivityLog.objects.create(
+        user=request.user,
+        action="Eliminación Masiva",
+        details=f"Se eliminaron {deleted_groups} grupo(s) y {deleted_routers} dispositivo(s) seleccionados",
+    )
+    WebadminSettings.objects.filter(name='webadmin_settings').update(router_config_last_updated=timezone.now())
+
+    return JsonResponse({
+        'status': 'success',
+        'deleted_groups': deleted_groups,
+        'deleted_routers': deleted_routers,
+        'message': f"Eliminados correctamente: {deleted_groups} grupo(s) y {deleted_routers} dispositivo(s).",
+    })
 
 
 @login_required
@@ -889,14 +985,16 @@ def view_ajax_router_telemetry(request):
 @login_required()
 def view_router_client_list(request):
     cats = list(DeviceCategory.objects.order_by('position', 'id'))
-    target = next((c for c in cats if c.name.lower().startswith('client')), cats[1] if len(cats) > 1 else (cats[0] if cats else ensure_default_category()))
-    return redirect(f'/router/group_list/?category={target.uuid}')
+    target = next((c for c in cats if c.name.lower().startswith('client')), cats[1] if len(cats) > 1 else (cats[0] if cats else None))
+    return redirect(f'/router/group_list/?category={target.uuid}' if target else '/router/group_list/')
 
 
 @login_required()
 def view_manage_router_client(request):
     cats = list(DeviceCategory.objects.order_by('position', 'id'))
-    target = next((c for c in cats if c.name.lower().startswith('client')), cats[1] if len(cats) > 1 else (cats[0] if cats else ensure_default_category()))
+    target = next((c for c in cats if c.name.lower().startswith('client')), cats[1] if len(cats) > 1 else (cats[0] if cats else None))
+    if not target:
+        return redirect('/router/group_list/')
     next_param = request.GET.get('next')
     url = f'/router/manage_group/?category={target.uuid}'
     if next_param:

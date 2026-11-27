@@ -14,6 +14,25 @@
         gap: 8px;
         padding: 12px 18px !important;
     }
+    .flow-guide-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 11px 15px;
+        border-radius: 7px;
+        margin-bottom: 14px;
+        font-size: 13px;
+    }
+    .flow-guide-banner.has-cats {
+        background: rgba(59, 130, 246, 0.08);
+        border: 1px solid rgba(59, 130, 246, 0.32);
+    }
+    .flow-guide-banner.no-cats {
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.45);
+    }
     .tools-panel {
         border: 1px solid var(--border);
         border-radius: 8px;
@@ -89,6 +108,26 @@
         </div>
 
         <div class="card-body py-3 px-3">
+            <!-- Indicación de flujo previa a subir el Excel -->
+            {% if categories %}
+            <div class="flow-guide-banner has-cats">
+                <div>
+                    <i class="fas fa-info-circle text-primary mr-1"></i>
+                    <strong>Flujo de importación:</strong> Antes de subir tu documento Excel, asegúrate de haber creado tus <strong>Categorías</strong> en la sección <a href="/router/group_list/" class="font-weight-bold text-primary" style="text-decoration: underline;">Dispositivos</a>. La columna <code>Categoría</code> del Excel debe coincidir con tus categorías creadas (<strong>{% for cat in categories %}{{ cat.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</strong>).
+                </div>
+            </div>
+            {% else %}
+            <div class="flow-guide-banner no-cats">
+                <div>
+                    <i class="fas fa-exclamation-triangle text-warning mr-1"></i>
+                    <strong>Paso previo obligatorio:</strong> Aún no tienes ninguna <strong>Categoría</strong> creada. Primero debes ir a la sección <strong>Dispositivos</strong> y crear tus categorías antes de subir el documento Excel.
+                </div>
+                <a href="/router/group_list/" class="btn btn-warning btn-xs font-weight-bold text-dark px-2 py-1 text-nowrap">
+                    <i class="fas fa-layer-group mr-1"></i> Ir a crear Categoría
+                </a>
+            </div>
+            {% endif %}
+
             {% if form.errors %}
             <div class="alert alert-danger py-2 px-3 small mb-3">
                 {% for field, errs in form.errors.items %}
@@ -120,11 +159,12 @@
                                            name="csv_file"
                                            id="id_csv_file"
                                            required
+                                           {% if not categories %}disabled{% endif %}
                                            accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
                                            class="custom-file-input"
                                            style="height: 33px; cursor: pointer;">
                                     <label class="custom-file-label form-control-sm" for="id_csv_file" data-browse="Elegir" style="line-height: 1.45; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                        Seleccionar documento...
+                                        {% if categories %}Seleccionar documento...{% else %}Crea primero una categoría...{% endif %}
                                     </label>
                                 </div>
                             </div>
@@ -134,7 +174,7 @@
                             <span class="text-muted" style="font-size: 11.5px;">
                                 <i class="fas fa-eye mr-1"></i>Verás vista previa antes de aplicar
                             </span>
-                            <button type="submit" class="btn btn-success btn-sm font-weight-bold px-3">
+                            <button type="submit" class="btn btn-success btn-sm font-weight-bold px-3" {% if not categories %}disabled title="Primero crea tus categorías en Dispositivos"{% endif %}>
                                 <i class="fas fa-upload mr-1"></i> Subir e Importar
                             </button>
                         </div>

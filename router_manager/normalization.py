@@ -51,12 +51,10 @@ def get_category_limit_message(attempted_name: str = '') -> str:
     )
 
 
-def ensure_default_category():
+def get_first_category():
+    """Devuelve la primera categoría existente o None si el usuario eliminó todas."""
     from .models import DeviceCategory
-    first = DeviceCategory.objects.order_by('position', 'id').first()
-    if first:
-        return first
-    return DeviceCategory.objects.create(name='Nodos', position=1)
+    return DeviceCategory.objects.order_by('position', 'id').first()
 
 
 def match_category_from_candidates(raw_name: str, candidates: List):
@@ -84,23 +82,29 @@ def find_matching_category(raw_name: str, queryset=None):
     return match_category_from_candidates(raw_name, cats)
 
 
-def resolve_or_create_category(raw_name: str):
+def resolve_existing_category(raw_name: str):
+    """
+    Resuelve únicamente contra las Categorías ya creadas por el usuario en Dispositivos.
+    """
     from .models import DeviceCategory
+    cats = list(DeviceCategory.objects.order_by('position', 'id'))
+    if not cats:
+        raise ValidationError("No existen categorías creadas. Primero cree su categoría en la sección Dispositivos.")
+
     clean_display = re.sub(r'[\u200b-\u200d\ufeff]', '', str(raw_name or ''))
     clean_display = re.sub(r'\s+', ' ', clean_display).strip()
     if not clean_display:
-        return ensure_default_category()
+        return cats[0]
 
-    existing = find_matching_category(clean_display)
-    if existing:
-        return existing
+    matched = match_category_from_candidates(clean_display, cats)
+    if matched:
+        return matched
 
-    max_cats = getattr(settings, 'MAX_DEVICE_CATEGORIES', 3)
-    if DeviceCategory.objects.count() >= max_cats:
-        raise ValidationError(get_category_limit_message(clean_display))
-
-    next_pos = (DeviceCategory.objects.count() or 0) + 1
-    return DeviceCategory.objects.create(name=clean_display, position=next_pos)
+    avail = ', '.join(c.name for c in cats)
+    raise ValidationError(
+        f"La categoría '{clean_display}' no existe en el sistema (disponibles: {avail}). "
+        f"Créela primero en la sección Dispositivos."
+    )
 
 
 _NODE_PREFIXES = (
@@ -189,12 +193,6 @@ def find_matching_node(raw_name: str, category=None, queryset=None):
     return match_node_from_candidates(raw_name, groups)
 
 
-class _VirtualCategory:
-    def __init__(self, name: str):
-        self.name = name
-        self.id = None
-
-
 class _VirtualNode:
     def __init__(self, name: str):
         self.name = name.upper()
@@ -204,49 +202,56 @@ class _VirtualNode:
 
 class BatchCategoryGroupResolver:
     """
-    Resuelve pares (Categoría, Grupo) durante la lectura de Excel sin crear huérfanos
-    en la vista previa, respetando estrictamente el máximo de 3 categorías.
+    Resuelve pares (Categoría, Grupo) contra las Categorías ya creadas por el usuario
+    en Dispositivos. Si una Categoría del Excel no existe aún, devuelve el motivo de error
+    para mostrarlo en rojo en el Preview.
     """
     def __init__(self):
         from .models import DeviceCategory, RouterGroup
         self.max_cats = getattr(settings, 'MAX_DEVICE_CATEGORIES', 3)
-        db_cats = list(DeviceCategory.objects.order_by('position', 'id'))
-        if not db_cats:
-            db_cats = [ensure_default_category()]
-        self.default_category_name = db_cats[0].name
-        self.cat_candidates = list(db_cats)
-
+        self.db_cats = list(DeviceCategory.objects.order_by('position', 'id'))
         self.groups_by_cat_key: Dict[str, List] = {}
-        for c in db_cats:
+        for c in self.db_cats:
             ck = category_match_key(c.name)
             self.groups_by_cat_key[ck] = list(RouterGroup.objects.filter(category=c))
 
-    def resolve(self, raw_category: str, raw_group: str, line_number: int = 0) -> Tuple[str, str]:
+    def resolve_with_error(self, raw_category: str, raw_group: str) -> Tuple[str, str, Optional[str]]:
         clean_cat = re.sub(r'[\u200b-\u200d\ufeff]', '', str(raw_category or ''))
         clean_cat = re.sub(r'\s+', ' ', clean_cat).strip()
-        if not clean_cat:
-            clean_cat = self.default_category_name
-
-        matched_cat = match_category_from_candidates(clean_cat, self.cat_candidates)
-        if matched_cat:
-            resolved_cat_name = matched_cat.name
-        else:
-            if len(self.cat_candidates) >= self.max_cats:
-                existing_names = ', '.join(c.name for c in self.cat_candidates)
-                prefix = f"Fila {line_number}: " if line_number else ""
-                raise ValidationError(
-                    f"{prefix}{get_category_limit_message(clean_cat)} "
-                    f"(Categorías actuales: {existing_names})."
-                )
-            vcat = _VirtualCategory(clean_cat)
-            self.cat_candidates.append(vcat)
-            resolved_cat_name = clean_cat
-
-        ck = category_match_key(resolved_cat_name)
-        grp_candidates = self.groups_by_cat_key.setdefault(ck, [])
 
         clean_grp = re.sub(r'[\u200b-\u200d\ufeff]', '', str(raw_group or ''))
         clean_grp = re.sub(r'\s+', ' ', clean_grp).strip().upper()
+
+        if not self.db_cats:
+            return (
+                clean_cat or 'SIN CATEGORÍA',
+                clean_grp or 'GENERAL',
+                "No existen categorías creadas en el sistema. Primero cree sus categorías en la sección Dispositivos."
+            )
+
+        if not clean_cat:
+            matched_cat = self.db_cats[0]
+        else:
+            matched_cat = match_category_from_candidates(clean_cat, self.db_cats)
+
+        if not matched_cat:
+            avail = ', '.join(c.name for c in self.db_cats)
+            if len(self.db_cats) >= self.max_cats:
+                err = (
+                    f"La categoría '{clean_cat}' no existe y ya tiene el máximo de {self.max_cats} categorías ({avail}). "
+                    f"{get_category_limit_message()}"
+                )
+            else:
+                err = (
+                    f"La categoría '{clean_cat}' no existe (categorías creadas: {avail}). "
+                    f"Primero debe crear la categoría en la sección Dispositivos."
+                )
+            return clean_cat, clean_grp or 'GENERAL', err
+
+        resolved_cat_name = matched_cat.name
+        ck = category_match_key(resolved_cat_name)
+        grp_candidates = self.groups_by_cat_key.setdefault(ck, [])
+
         if not clean_grp:
             default_g = next((g for g in grp_candidates if getattr(g, 'default_group', False)), None)
             clean_grp = default_g.name.upper() if default_g else 'GENERAL'
@@ -259,21 +264,16 @@ class BatchCategoryGroupResolver:
             grp_candidates.append(vgrp)
             resolved_grp_name = clean_grp
 
-        return resolved_cat_name, resolved_grp_name
-
-
-class BatchNodeResolver(BatchCategoryGroupResolver):
-    """Compatibilidad hacia atrás con llamadas simples de 1 argumento."""
-    def resolve_name(self, raw_name: str) -> str:
-        _, grp_name = self.resolve('', raw_name)
-        return grp_name
+        return resolved_cat_name, resolved_grp_name, None
 
 
 def resolve_or_create_node(raw_name: str, category=None):
     from .models import RouterGroup
 
     if category is None:
-        category = ensure_default_category()
+        category = get_first_category()
+    if category is None:
+        raise ValidationError("Debe crear primero una categoría en Dispositivos.")
 
     clean_display = re.sub(r'[\u200b-\u200d\ufeff]', '', str(raw_name or ''))
     clean_display = re.sub(r'\s+', ' ', clean_display).strip().upper()

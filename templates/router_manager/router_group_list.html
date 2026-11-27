@@ -150,6 +150,55 @@
         vertical-align: middle;
         margin: 0 4px;
     }
+    .groups-pagination-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: rgba(148, 163, 184, 0.04);
+        font-size: 12.5px;
+    }
+    .groups-page-btn {
+        min-width: 30px;
+        height: 28px;
+        padding: 0 8px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--foreground);
+        cursor: pointer;
+        transition: all 0.14s ease;
+    }
+    .groups-page-btn:hover:not(:disabled) {
+        border-color: #5c8ee6;
+        color: #5c8ee6;
+    }
+    .groups-page-btn.active {
+        background: #3b82f6;
+        border-color: #3b82f6;
+        color: #fff;
+    }
+    .groups-page-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+    .cross-page-select-banner {
+        display: none;
+        padding: 7px 12px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        font-size: 12.5px;
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.35);
+        text-align: center;
+    }
 </style>
 {% endblock %}
 
@@ -158,9 +207,15 @@
     <div class="card card-primary card-outline">
         <div class="card-header focused-card-header">
             <div class="focused-header-left">
-                <h3 class="card-title"><i class="fas fa-layer-group text-primary mr-2"></i>{{ active_category.name }}</h3>
+                <h3 class="card-title">
+                    <i class="fas fa-layer-group text-primary mr-2"></i>
+                    {% if active_category %}{{ active_category.name }}{% else %}Dispositivos{% endif %}
+                </h3>
+                {% if active_category %}
                 <span class="text-muted small">Toca cualquier grupo para desplegar u ocultar sus dispositivos</span>
+                {% endif %}
             </div>
+            {% if active_category %}
             <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
                 <span class="badge badge-secondary">{{ total_nodes_count }} Grupo{{ total_nodes_count|pluralize:"s" }}</span>
                 <span class="badge-gpon badge-gpon-info"><i class="fas fa-hdd mr-1"></i>{{ total_devices_count }} Dispositivo{{ total_devices_count|pluralize:"s" }}</span>
@@ -171,11 +226,13 @@
                 <span class="badge-pill-soft danger"><span class="status-dot offline"></span>{{ total_offline_count }} Desconectado{{ total_offline_count|pluralize:"s" }}</span>
                 {% endif %}
             </div>
+            {% endif %}
         </div>
 
         <div class="card-body pt-3">
             {% include 'router_manager/router_nav_tabs.html' %}
 
+            {% if active_category %}
             <!-- Barra de Control Compacta -->
             <div class="inventory-toolbar">
                 <div class="d-flex align-items-center flex-wrap" style="gap: 8px; flex: 1; min-width: 240px;">
@@ -188,7 +245,7 @@
                     </div>
 
                     {% if grouped_nodes %}
-                    <button type="button" id="btn-select-all-nodes-list" class="btn btn-outline-secondary btn-sm font-weight-bold" {% if total_devices_count == 0 %}disabled{% endif %} title="Seleccionar o deseleccionar todos los dispositivos visibles">
+                    <button type="button" id="btn-select-all-nodes-list" class="btn btn-outline-secondary btn-sm font-weight-bold" title="Seleccionar o deseleccionar todo en la lista">
                         <i class="fas fa-check-double mr-1"></i> Seleccionar Todo
                     </button>
                     {% endif %}
@@ -197,6 +254,9 @@
                 <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
                     <button id="create-backup" class="btn btn-warning btn-sm font-weight-bold" style="display: none;">
                         <i class="fas fa-sync-alt mr-1"></i> Respaldar (<span id="selected-backup-count">0</span>)
+                    </button>
+                    <button type="button" id="delete-selected-btn" class="btn btn-danger btn-sm font-weight-bold" style="display: none;">
+                        <i class="fas fa-trash-alt mr-1"></i> Eliminar Seleccionados (<span id="selected-delete-count">0</span>)
                     </button>
 
                     {% if grouped_nodes %}
@@ -222,15 +282,20 @@
                 </div>
             </div>
 
+            <!-- Aviso para seleccionar todas las páginas cuando hay paginación activa -->
+            <div id="cross-page-select-banner" class="cross-page-select-banner"></div>
+
             <!-- Lista Uniforme de Grupos de la Categoría Activa -->
             <div id="nodes-accordion-view">
                 {% if grouped_nodes %}
                     {% for node in grouped_nodes %}
-                        <div class="node-accordion-card {% if node.offline_count > 0 %}has-offline{% endif %}" data-node-name="{{ node.name|lower }}">
+                        <div class="node-accordion-card {% if node.offline_count > 0 %}has-offline{% endif %}" data-node-name="{{ node.name|lower }}" data-match-filter="1">
                             <div class="node-accordion-header" onclick="toggleNodeAccordion(this, event)">
                                 <div class="d-flex align-items-center flex-wrap" style="gap: 10px;">
                                     <input type="checkbox" class="node-master-checkbox"
-                                           title="Seleccionar todos los dispositivos de {{ node.name|upper }}"
+                                           data-group-uuid="{{ node.uuid }}"
+                                           data-explicit-group="0"
+                                           title="Seleccionar grupo {{ node.name|upper }} y sus dispositivos"
                                            onclick="toggleNodeRoutersSelection(this, event)">
                                     <i class="fas fa-chevron-right node-chevron"></i>
                                     <span class="node-icon-box">
@@ -378,9 +443,29 @@
                             </div>
                         </div>
                     {% endfor %}
+
+                    <div id="no-search-matches-box" class="text-center py-4 border rounded text-muted small" style="display: none; background: var(--card);">
+                        <i class="fas fa-search mb-1"></i> No se encontraron grupos ni dispositivos que coincidan con la búsqueda.
+                    </div>
+
+                    <!-- Barra de Paginación de Grupos -->
+                    <div id="groups-pagination-bar" class="groups-pagination-bar">
+                        <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                            <span id="groups-pagination-info" class="text-muted"></span>
+                            <div class="d-inline-flex align-items-center ml-1" style="gap: 5px;">
+                                <span class="text-muted small">Mostrar:</span>
+                                <select id="groups-page-size-select" class="form-control form-control-sm" style="width: 66px; height: 27px; padding: 2px 6px; font-size: 12px;">
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="groups-pagination-controls" class="d-flex align-items-center flex-wrap" style="gap: 4px;"></div>
+                    </div>
                 {% else %}
                     <div class="text-center py-5 border rounded" style="background: var(--card);">
-                        <i class="fas fa-layer-group text-muted mb-2" style="font-size: 2rem;"></i>
+                        <i class="fas fa-folder-open text-muted mb-2" style="font-size: 2rem;"></i>
                         <h6 class="font-weight-bold mb-1">Aún no hay grupos en {{ active_category.name }}</h6>
                         <p class="text-muted small mb-3">Crea el primer grupo dentro de <strong>{{ active_category.name }}</strong> para organizar sus dispositivos.</p>
                         <a href="/router/manage_group/?category={{ active_category.uuid }}" class="btn btn-primary btn-sm font-weight-bold">
@@ -389,6 +474,19 @@
                     </div>
                 {% endif %}
             </div>
+            {% else %}
+            <!-- Estado limpio cuando el usuario eliminó todas las Categorías -->
+            <div class="text-center py-5 mt-3 border rounded" style="background: var(--card);">
+                <i class="fas fa-layer-group text-primary mb-3" style="font-size: 2.4rem;"></i>
+                <h5 class="font-weight-bold mb-2">No hay ninguna Categoría creada</h5>
+                <p class="text-muted small mb-3 mx-auto" style="max-width: 480px;">
+                    El inventario está completamente vacío. Crea tu primera categoría (por ejemplo: <strong>Nodos</strong>, <strong>Clientes</strong> o <strong>Sucursales</strong>) para comenzar a añadir grupos o importar desde Excel.
+                </p>
+                <button type="button" class="btn btn-primary btn-sm font-weight-bold px-3 btn-open-create-category" data-can-add="1">
+                    <i class="fas fa-plus mr-1"></i> Crear Primera Categoría
+                </button>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -420,8 +518,13 @@
     function toggleNodeRoutersSelection(checkboxEl, event) {
         event.stopPropagation();
         var isChecked = $(checkboxEl).prop('checked');
+        $(checkboxEl).attr('data-explicit-group', isChecked ? '1' : '0');
         var $card = $(checkboxEl).closest('.node-accordion-card');
-        $card.find('.node-child-cb').prop('checked', isChecked).trigger('change');
+        var $children = $card.find('.node-child-cb');
+        if ($children.length) {
+            $children.prop('checked', isChecked);
+        }
+        $(document).trigger('selectionUpdated');
     }
 
     function checkStatusChange() {
@@ -446,11 +549,102 @@
     setInterval(checkStatusChange, 30000);
 
     $(document).ready(function() {
-        function getVisibleChildCheckboxes() {
-            return $('.node-accordion-card:visible .node-router-row').filter(function() {
-                return $(this).css('display') !== 'none';
-            }).find('.node-child-cb');
+        var currentPage = 1;
+        var pageSize = parseInt(localStorage.getItem('tdox_groups_page_size') || '10', 10) || 10;
+        if ([10, 20, 50].indexOf(pageSize) === -1) pageSize = 10;
+        $('#groups-page-size-select').val(String(pageSize));
+
+        function getMatchingCards() {
+            return $('.node-accordion-card[data-match-filter="1"]');
         }
+
+        function getCurrentPageCards() {
+            return $('.node-accordion-card[data-on-page="1"]');
+        }
+
+        function buildPageNumbers(current, total) {
+            if (total <= 7) {
+                var arr = [];
+                for (var i = 1; i <= total; i++) arr.push(i);
+                return arr;
+            }
+            var pages = [1];
+            if (current > 3) pages.push('...');
+            var start = Math.max(2, current - 1);
+            var end = Math.min(total - 1, current + 1);
+            for (var p = start; p <= end; p++) pages.push(p);
+            if (current < total - 2) pages.push('...');
+            pages.push(total);
+            return pages;
+        }
+
+        function renderGroupsPagination() {
+            var $allCards = $('.node-accordion-card');
+            if (!$allCards.length) return;
+
+            var $matching = getMatchingCards();
+            var total = $matching.length;
+
+            if (total === 0) {
+                $allCards.hide().attr('data-on-page', '0');
+                $('#no-search-matches-box').show();
+                $('#groups-pagination-bar').hide();
+                syncSelectionUI();
+                return;
+            }
+
+            $('#no-search-matches-box').hide();
+            $('#groups-pagination-bar').css('display', 'flex');
+
+            var totalPages = Math.max(1, Math.ceil(total / pageSize));
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            var startIdx = (currentPage - 1) * pageSize;
+            var endIdx = Math.min(startIdx + pageSize, total);
+
+            $allCards.hide().attr('data-on-page', '0');
+            $matching.slice(startIdx, endIdx).show().attr('data-on-page', '1');
+
+            $('#groups-pagination-info').html(
+                'Mostrando <strong>' + (startIdx + 1) + '&ndash;' + endIdx + '</strong> de <strong>' + total + '</strong> grupo' + (total === 1 ? '' : 's')
+            );
+
+            var $ctrl = $('#groups-pagination-controls');
+            $ctrl.empty();
+            if (totalPages > 1) {
+                var $prev = $('<button type="button" class="groups-page-btn">&laquo; Ant.</button>');
+                $prev.prop('disabled', currentPage <= 1);
+                $prev.on('click', function() { currentPage--; renderGroupsPagination(); });
+                $ctrl.append($prev);
+
+                var pageList = buildPageNumbers(currentPage, totalPages);
+                pageList.forEach(function(item) {
+                    if (item === '...') {
+                        $ctrl.append('<span class="px-1 text-muted">...</span>');
+                    } else {
+                        var $b = $('<button type="button" class="groups-page-btn">' + item + '</button>');
+                        if (item === currentPage) $b.addClass('active');
+                        $b.on('click', function() { currentPage = item; renderGroupsPagination(); });
+                        $ctrl.append($b);
+                    }
+                });
+
+                var $next = $('<button type="button" class="groups-page-btn">Sig. &raquo;</button>');
+                $next.prop('disabled', currentPage >= totalPages);
+                $next.on('click', function() { currentPage++; renderGroupsPagination(); });
+                $ctrl.append($next);
+            }
+
+            syncSelectionUI();
+        }
+
+        $('#groups-page-size-select').on('change', function() {
+            pageSize = parseInt($(this).val(), 10) || 10;
+            localStorage.setItem('tdox_groups_page_size', String(pageSize));
+            currentPage = 1;
+            renderGroupsPagination();
+        });
 
         function getSelectedUuids() {
             var uuids = [];
@@ -461,62 +655,170 @@
             return uuids;
         }
 
+        function getSelectedDeletePayload() {
+            var groupUuids = [];
+            var standaloneRouterUuids = [];
+            $('.node-accordion-card').each(function() {
+                var $card = $(this);
+                var $master = $card.find('.node-master-checkbox');
+                var gUuid = $master.data('group-uuid');
+                if ($master.prop('checked') && $master.attr('data-explicit-group') === '1' && gUuid) {
+                    groupUuids.push(gUuid);
+                } else {
+                    $card.find('.node-child-cb:checked').each(function() {
+                        var rUuid = $(this).data('uuid');
+                        if (rUuid && standaloneRouterUuids.indexOf(rUuid) === -1) {
+                            standaloneRouterUuids.push(rUuid);
+                        }
+                    });
+                }
+            });
+            return {
+                groups: groupUuids,
+                routers: standaloneRouterUuids,
+                totalItems: groupUuids.length + standaloneRouterUuids.length
+            };
+        }
+
         function syncSelectionUI() {
-            var selected = getSelectedUuids();
-            if (selected.length >= 1) {
-                $('#selected-backup-count').text(selected.length);
+            var selectedRouters = getSelectedUuids();
+            if (selectedRouters.length >= 1) {
+                $('#selected-backup-count').text(selectedRouters.length);
                 $('#create-backup').show();
             } else {
                 $('#create-backup').hide();
             }
 
-            $('.node-accordion-card').each(function() {
-                var $cbs = $(this).find('.node-child-cb');
-                var $master = $(this).find('.node-master-checkbox');
-                if ($cbs.length > 0 && $cbs.filter(':checked').length === $cbs.length) {
-                    $master.prop('checked', true);
-                } else {
-                    $master.prop('checked', false);
-                }
-            });
+            var delPayload = getSelectedDeletePayload();
+            if (delPayload.totalItems >= 1) {
+                $('#selected-delete-count').text(delPayload.totalItems);
+                $('#delete-selected-btn').show();
+            } else {
+                $('#delete-selected-btn').hide();
+            }
 
-            var $vis = getVisibleChildCheckboxes();
+            var $pageCards = getCurrentPageCards();
+            var $pageMasters = $pageCards.find('.node-master-checkbox');
+            var $allMatchingMasters = getMatchingCards().find('.node-master-checkbox');
             var $btnAll = $('#btn-select-all-nodes-list');
-            if ($btnAll.length && !$btnAll.prop('disabled')) {
-                var allChecked = $vis.length > 0 && $vis.filter(':checked').length === $vis.length;
-                if (allChecked) {
+
+            var pageAllChecked = $pageMasters.length > 0 && $pageMasters.filter(':checked').length === $pageMasters.length;
+            var everyPageChecked = $allMatchingMasters.length > 0 && $allMatchingMasters.filter(':checked').length === $allMatchingMasters.length;
+
+            if ($btnAll.length) {
+                if (pageAllChecked) {
                     $btnAll.removeClass('btn-outline-secondary').addClass('btn-primary')
-                        .html('<i class="fas fa-times-circle mr-1"></i> Deseleccionar Todo');
+                        .html('<i class="fas fa-times-circle mr-1"></i> Deseleccionar Página');
                 } else {
                     $btnAll.removeClass('btn-primary').addClass('btn-outline-secondary')
                         .html('<i class="fas fa-check-double mr-1"></i> Seleccionar Todo');
                 }
             }
+
+            var $banner = $('#cross-page-select-banner');
+            if ($allMatchingMasters.length > $pageMasters.length && pageAllChecked) {
+                if (!everyPageChecked) {
+                    $banner.html(
+                        'Se seleccionaron los <strong>' + $pageMasters.length + '</strong> grupos de esta página. ' +
+                        '<a href="#" id="link-select-all-pages" class="font-weight-bold text-primary ml-1" style="text-decoration: underline;">' +
+                        'Seleccionar los ' + $allMatchingMasters.length + ' grupos de todas las páginas</a>'
+                    ).show();
+                } else {
+                    $banner.html(
+                        'Están seleccionados los <strong>' + $allMatchingMasters.length + '</strong> grupos de todas las páginas. ' +
+                        '<a href="#" id="link-clear-all-pages" class="font-weight-bold text-danger ml-1" style="text-decoration: underline;">Deseleccionar todos</a>'
+                    ).show();
+                }
+            } else {
+                $banner.hide();
+            }
         }
 
-        $('#btn-select-all-nodes-list').on('click', function() {
-            var $vis = getVisibleChildCheckboxes();
-            if (!$vis.length) return;
-            var allChecked = $vis.filter(':checked').length === $vis.length;
-            $vis.prop('checked', !allChecked);
+        $(document).on('click', '#link-select-all-pages', function(e) {
+            e.preventDefault();
+            var $matching = getMatchingCards();
+            $matching.find('.node-master-checkbox').prop('checked', true).attr('data-explicit-group', '1');
+            $matching.find('.node-child-cb').prop('checked', true);
             syncSelectionUI();
         });
 
-        $(document).on('change', '.router-checkbox', syncSelectionUI);
+        $(document).on('click', '#link-clear-all-pages', function(e) {
+            e.preventDefault();
+            $('.node-master-checkbox').prop('checked', false).attr('data-explicit-group', '0');
+            $('.node-child-cb').prop('checked', false);
+            syncSelectionUI();
+        });
+
+        $('#btn-select-all-nodes-list').on('click', function() {
+            var $pageCards = getCurrentPageCards();
+            var $pageMasters = $pageCards.find('.node-master-checkbox');
+            if (!$pageMasters.length) return;
+            var allChecked = $pageMasters.filter(':checked').length === $pageMasters.length;
+            var nextState = !allChecked;
+            if (!nextState) {
+                // Si estaban seleccionadas todas las páginas, limpiar todo
+                $('.node-master-checkbox').prop('checked', false).attr('data-explicit-group', '0');
+                $('.node-child-cb').prop('checked', false);
+            } else {
+                $pageMasters.prop('checked', true).attr('data-explicit-group', '1');
+                $pageCards.find('.node-child-cb').prop('checked', true);
+            }
+            syncSelectionUI();
+        });
+
+        $(document).on('change', '.router-checkbox', function() {
+            if (!$(this).prop('checked')) {
+                var $m = $(this).closest('.node-accordion-card').find('.node-master-checkbox');
+                $m.prop('checked', false).attr('data-explicit-group', '0');
+            }
+            syncSelectionUI();
+        });
+        $(document).on('selectionUpdated', syncSelectionUI);
+
+        $('#delete-selected-btn').on('click', function(e) {
+            e.preventDefault();
+            var payload = getSelectedDeletePayload();
+            if (payload.totalItems < 1) return;
+
+            var desc = [];
+            if (payload.groups.length > 0) desc.push(payload.groups.length + ' grupo(s) con sus dispositivos');
+            if (payload.routers.length > 0) desc.push(payload.routers.length + ' dispositivo(s)');
+
+            if (!confirm('¿Seguro que deseas eliminar ' + desc.join(' y ') + '?')) {
+                return;
+            }
+            $.ajax({
+                url: '/router/delete_multiple/',
+                method: 'POST',
+                data: {
+                    'groups': payload.groups,
+                    'routers': payload.routers,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function() {
+                    window.location.reload();
+                },
+                error: function(xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudieron eliminar los elementos seleccionados.';
+                    alert(msg);
+                }
+            });
+        });
 
         $('#btn-expand-all-nodes').on('click', function() {
-            $('.node-accordion-card:visible').addClass('expanded').find('.node-accordion-body').slideDown(180);
+            getCurrentPageCards().addClass('expanded').find('.node-accordion-body').slideDown(180);
         });
         $('#btn-collapse-all-nodes').on('click', function() {
-            $('.node-accordion-card').removeClass('expanded').find('.node-accordion-body').slideUp(160);
+            getCurrentPageCards().removeClass('expanded').find('.node-accordion-body').slideUp(160);
         });
 
         $('#node-quick-search').on('input', function() {
             var term = ($(this).val() || '').toLowerCase().trim();
+            currentPage = 1;
             if (!term) {
-                $('.node-accordion-card').show();
+                $('.node-accordion-card').attr('data-match-filter', '1');
                 $('.node-router-row').show();
-                syncSelectionUI();
+                renderGroupsPagination();
                 return;
             }
             $('.node-accordion-card').each(function() {
@@ -535,13 +837,13 @@
                 });
 
                 if (anyRowMatch || nodeName.indexOf(term) !== -1) {
-                    $card.show().addClass('expanded');
-                    $card.find('.node-accordion-body').slideDown(150);
+                    $card.attr('data-match-filter', '1').addClass('expanded');
+                    $card.find('.node-accordion-body').show();
                 } else {
-                    $card.hide();
+                    $card.attr('data-match-filter', '0');
                 }
             });
-            syncSelectionUI();
+            renderGroupsPagination();
         });
 
         $('#create-backup').on('click', function(e) {
@@ -563,11 +865,13 @@
                         delay: 5000,
                         autohide: true
                     });
-                    $('.router-checkbox, .node-master-checkbox').prop('checked', false);
+                    $('.router-checkbox, .node-master-checkbox').prop('checked', false).attr('data-explicit-group', '0');
                     syncSelectionUI();
                 }
             });
         });
+
+        renderGroupsPagination();
     });
 </script>
 {% endblock %}

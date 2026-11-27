@@ -8,7 +8,7 @@ from crispy_forms.layout import Layout, Submit, Row, Column, HTML
 from crispy_forms.bootstrap import InlineRadios
 from .models import DeviceCategory, Router, RouterGroup, RouterClient
 from .normalization import (
-    ensure_default_category,
+    get_first_category,
     find_matching_category,
     find_matching_node,
     find_matching_client,
@@ -120,17 +120,19 @@ class RouterForm(forms.ModelForm):
             self.category = category
         elif self.instance and self.instance.pk:
             cur_grp = self.instance.routergroup_set.select_related('category').first()
-            self.category = cur_grp.category if (cur_grp and cur_grp.category) else ensure_default_category()
+            self.category = cur_grp.category if (cur_grp and cur_grp.category) else get_first_category()
         else:
-            self.category = ensure_default_category()
+            self.category = get_first_category()
 
-        self.initial['category_uuid'] = str(self.category.uuid)
-        self.fields['category_uuid'].initial = str(self.category.uuid)
+        cat_uuid_str = str(self.category.uuid) if self.category else ''
+        cat_label_str = self.category.name if self.category else 'Categoría'
+        self.initial['category_uuid'] = cat_uuid_str
+        self.fields['category_uuid'].initial = cat_uuid_str
 
-        cat_groups_qs = RouterGroup.objects.filter(category=self.category).order_by('name')
+        cat_groups_qs = RouterGroup.objects.filter(category=self.category).order_by('name') if self.category else RouterGroup.objects.none()
         self.fields['router_group'].queryset = cat_groups_qs
-        self.fields['router_group'].label = f"Grupo ({self.category.name})"
-        self.fields['router_group'].empty_label = f"-- Seleccione un Grupo en {self.category.name} --"
+        self.fields['router_group'].label = f"Grupo ({cat_label_str})"
+        self.fields['router_group'].empty_label = f"-- Seleccione un Grupo en {cat_label_str} --" 
         self.fields['router_group'].required = True
 
         self.helper = FormHelper()
@@ -174,7 +176,7 @@ class RouterForm(forms.ModelForm):
             default_prof = BackupProfile.objects.filter(name='default').first() or BackupProfile.objects.first()
             if default_prof:
                 self.fields['backup_profile'].initial = default_prof
-            if preselect_group and preselect_group.category_id == self.category.id:
+            if preselect_group and self.category and preselect_group.category_id == self.category.id:
                 self.fields['router_group'].initial = preselect_group
             else:
                 default_grp = cat_groups_qs.filter(default_group=True).first()
@@ -395,7 +397,7 @@ class RouterGroupForm(forms.ModelForm):
         elif self.instance and self.instance.pk and self.instance.category:
             self.category = self.instance.category
         else:
-            self.category = ensure_default_category()
+            self.category = get_first_category()
 
         # Solo dispositivos pertenecientes a esta misma Categoría
         self.fields['routers'].queryset = Router.objects.filter(
@@ -408,10 +410,10 @@ class RouterGroupForm(forms.ModelForm):
         self.helper.label_class = 'col-sm-3 col-form-label font-weight-bold text-sm-right'
         self.helper.field_class = 'col-sm-9'
 
-        default_back = f'/router/group_list/?category={self.category.uuid}'
+        default_back = f'/router/group_list/?category={self.category.uuid}' if self.category else '/router/group_list/'
         back_href = html.escape(next_url or default_back)
         next_hidden = f'<input type="hidden" name="next" value="{html.escape(next_url)}">' if next_url else ''
-        cat_hidden = f'<input type="hidden" name="category" value="{self.category.uuid}">'
+        cat_hidden = f'<input type="hidden" name="category" value="{self.category.uuid}">' if self.category else ''
         if self.instance.pk:
             delete_html = "<a href='javascript:void(0)' class='btn btn-outline-danger btn-sm ml-1' data-command='delete' onclick='openCommandDialog(this)'>Borrar</a>"
         else:

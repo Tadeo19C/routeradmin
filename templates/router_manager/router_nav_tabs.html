@@ -23,8 +23,9 @@
         </li>
     </ul>
 
-    {% if active_category %}
-    <div class="d-flex align-items-center" style="gap: 5px; margin-bottom: 5px;">
+    {% if categories %}
+    <div class="d-flex align-items-center flex-wrap" style="gap: 5px; margin-bottom: 5px;">
+        {% if active_category %}
         <button type="button"
                 class="btn btn-xs btn-outline-secondary btn-rename-category"
                 data-uuid="{{ active_category.uuid }}"
@@ -32,7 +33,6 @@
                 title="Renombrar categoría '{{ active_category.name }}'">
             <i class="fas fa-pen mr-1"></i> Renombrar
         </button>
-        {% if categories|length > 1 %}
         <a href="/router/manage_category/?uuid={{ active_category.uuid }}&action=delete&confirmation=confirm"
            class="btn btn-xs btn-outline-danger"
            onclick="return confirm('¿Seguro que deseas eliminar la categoría \'{{ active_category.name|escapejs }}\'? ATENCIÓN: También se eliminarán todos sus grupos y dispositivos.');"
@@ -46,7 +46,7 @@
 
 <!-- Modal Crear / Renombrar Categoría -->
 <div class="modal fade" id="categoryManageModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 2060;">
-    <div class="modal-dialog modal-sm modal-dialog-centered" role="document" style="max-width: 400px;">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 440px;">
         <div class="modal-content">
             <div class="modal-header py-2 px-3">
                 <h6 class="modal-title font-weight-bold" id="categoryModalTitle">Nueva Categoría</h6>
@@ -77,29 +77,34 @@
     </div>
 </div>
 
-<!-- Modal Alerta Límite de 3 Categorías -->
+<!-- Modal Alerta Límite de 3 Categorías (Tamaño Ampliado y Destacado) -->
 <div class="modal fade" id="categoryLimitAlertModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 2065;">
-    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 440px;">
-        <div class="modal-content border-warning">
-            <div class="modal-header py-2 px-3 bg-warning text-dark">
-                <h6 class="modal-title font-weight-bold mb-0">
-                    <i class="fas fa-exclamation-triangle mr-1"></i> Límite de Categorías Alcanzado
-                </h6>
-                <button type="button" class="close text-dark" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document" style="max-width: 600px;">
+        <div class="modal-content" style="border: 2px solid #f59e0b; border-radius: 10px;">
+            <div class="modal-header py-3 px-4 bg-warning text-dark">
+                <h5 class="modal-title font-weight-bold mb-0" style="font-size: 18px;">
+                    <i class="fas fa-exclamation-triangle mr-2"></i> Límite de Categorías Alcanzado
+                </h5>
+                <button type="button" class="close text-dark" data-dismiss="modal" aria-label="Close" style="font-size: 24px;"><span>&times;</span></button>
             </div>
-            <div class="modal-body py-3 px-3">
-                <p class="mb-2 small" id="category-limit-modal-msg">
-                    No es posible crear más de <strong>{{ max_device_categories }} categorías</strong> en el sistema.
+            <div class="modal-body py-4 px-4 text-center">
+                <div class="mb-3">
+                    <i class="fas fa-ban text-warning" style="font-size: 2.8rem;"></i>
+                </div>
+                <p class="mb-3" id="category-limit-modal-msg" style="font-size: 16px; line-height: 1.55;">
+                    No es posible crear más de <strong>{{ max_device_categories }} categorías</strong> en su configuración actual.
                 </p>
-                <div class="p-2 rounded border small" style="background: rgba(59, 130, 246, 0.08);">
-                    Para ampliar su límite o solicitar soporte, por favor contáctese al correo:<br>
-                    <a href="mailto:{{ category_limit_email }}" class="font-weight-bold text-primary">
-                        <i class="fas fa-envelope mr-1"></i>{{ category_limit_email }}
+                <div class="p-3 rounded border" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.35) !important;">
+                    <div class="mb-1 text-muted" style="font-size: 14px;">
+                        Para ampliar el límite de categorías o recibir asistencia, contáctese al correo:
+                    </div>
+                    <a href="mailto:{{ category_limit_email }}" class="font-weight-bold text-primary d-inline-block mt-1" style="font-size: 18px; letter-spacing: 0.3px;">
+                        <i class="fas fa-envelope mr-2"></i>{{ category_limit_email }}
                     </a>
                 </div>
             </div>
-            <div class="modal-footer py-2 px-3">
-                <button type="button" class="btn btn-primary btn-sm font-weight-bold" data-dismiss="modal">Entendido</button>
+            <div class="modal-footer py-3 px-4">
+                <button type="button" class="btn btn-primary font-weight-bold px-4" data-dismiss="modal">Entendido</button>
             </div>
         </div>
     </div>
@@ -109,10 +114,10 @@
 if (!window.__categoryTabsBound) {
     window.__categoryTabsBound = true;
     document.addEventListener('click', function(e) {
-        var addCatBtn = e.target.closest('#btn-add-category-tab');
+        var addCatBtn = e.target.closest('#btn-add-category-tab, .btn-open-create-category');
         if (addCatBtn) {
             e.preventDefault();
-            if (addCatBtn.getAttribute('data-can-add') !== '1') {
+            if (addCatBtn.getAttribute('data-can-add') === '0') {
                 $('#categoryLimitAlertModal').appendTo('body').modal('show');
                 return;
             }

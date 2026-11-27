@@ -20,7 +20,7 @@ from message_center.views import view_message_channel_list, view_manage_message_
     view_message_history, view_email_backups_config
 from monitoring.views import view_export_router_list, view_update_router_status, view_router_config_timestamp, \
     view_router_last_status_change
-from router_manager.views import view_create_instant_backup_multiple_routers, view_router_list, view_manage_router, \
+from router_manager.views import view_create_instant_backup_multiple_routers, view_delete_multiple_items, view_router_list, view_manage_router, \
     view_router_group_list, view_manage_router_group, view_manage_category, view_router_client_list, view_manage_router_client, view_router_details, \
     view_create_instant_backup_task, view_router_availability, view_cron_update_router_information, \
     view_manage_router_groups_multiple, view_ajax_quick_create_group, view_ajax_test_connection, view_ajax_router_telemetry
@@ -52,6 +52,7 @@ urlpatterns = [
     path('router/ajax_quick_create_group/', view_ajax_quick_create_group, name='ajax_quick_create_group'),
     path('router/create_instant_backup/', view_create_instant_backup_task, name='create_instant_backup_task'),
     path('router/create_instant_backup/multiple/', view_create_instant_backup_multiple_routers, name='create_instant_backup_multiple'),
+    path('router/delete_multiple/', view_delete_multiple_items, name='delete_multiple_items'),
     path('router/manage_groups/multiple/', view_manage_router_groups_multiple, name='manage_router_groups_multiple'),
     path('router/ajax_test_connection/', view_ajax_test_connection, name='ajax_test_connection'),
     path('router/ajax_telemetry/', view_ajax_router_telemetry, name='ajax_router_telemetry'),
