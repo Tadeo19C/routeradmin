@@ -1,84 +1,312 @@
 {% extends 'base.html' %}
 
+{% block page_custom_head %}
+<style>
+    .sched-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 9px;
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        background: rgba(34, 197, 94, 0.12);
+        border: 1px solid rgba(34, 197, 94, 0.32);
+        color: #22c55e;
+        white-space: nowrap;
+    }
+    body:not(.dark-mode) .sched-chip {
+        color: #15803d;
+        background: rgba(34, 197, 94, 0.1);
+    }
+    .sched-chip .ret-tag {
+        font-size: 10.5px;
+        font-weight: 700;
+        opacity: 0.85;
+        padding-left: 5px;
+        border-left: 1px solid rgba(34, 197, 94, 0.35);
+    }
+    .sched-off {
+        color: var(--muted-foreground);
+        font-size: 12px;
+        opacity: 0.65;
+    }
+    .auto-profiles-box {
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        padding: 12px 14px;
+        margin-top: 14px;
+        background: rgba(148, 163, 184, 0.03);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-    <div class='row'>
-        <div class='col-lg-12'>
-            <div class="card card-primary card-outline">
-                {% if page_title %}
-                    <div class="card-header">
-                        <h3 class="card-title">{{ page_title }}</h3>
-                    </div>
-                {% endif %}
-                <div class="card-body">
-                    {% include 'backup/backup_nav_tabs.html' %}
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <table class="table table-hover datatables-no-export">
-                                <thead>
-                                    <tr>
-                                        <th>Nombre</th>
-                                        <th>Equipos</th>
-                                        <th>Diario</th>
-                                        <th>Semanal</th>
-                                        <th>Mensual</th>
-                                        <th></th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                
-                                <tbody>
-                                {% for backup_profile in backup_profile_list %}
-                                    <tr>
-                                        <td>{{ backup_profile.name }}</td>
-
-                                        <td>
-                                            {{ backup_profile.router_set.count }}
-                                        </td>
-
-                                        <td>
-                                            {% if backup_profile.daily_backup %}
-                                                <i class="far fa-check-circle text-success"></i>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if backup_profile.weekly_backup %}
-                                                <i class="far fa-check-circle text-success"></i>
-                                            {% endif %}
-                                        </td>
-
-                                        <td>
-                                            {% if backup_profile.monthly_backup %}
-                                                <i class="far fa-check-circle text-success"></i>
-                                            {% endif %}
-                                        </td>
-                                    
-                                        <td>
-                                            {% if backup_profile.profile_error_information %}
-                                            <i class="fas fa-exclamation-triangle text-warning"></i> {{ backup_profile.profile_error_information }}
-                                            
-                                            {% endif %}
-                                        </td>
-
-                                        <td class="min-width">
-                                            <a href="/backup/manage_profile/?uuid={{ backup_profile.uuid }}"><i class="fas fa-edit"></i></a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-
-                    </div>
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <a href="/backup/manage_profile/" class="btn btn-primary">Agregar Perfil de Respaldo</a>
-                        </div>
-
-                    </div>
-
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card card-primary card-outline">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap" style="gap: 8px;">
+                <div>
+                    <h3 class="card-title font-weight-bold mb-0">{{ page_title }}</h3>
+                    <span class="text-muted small ml-md-2">
+                        <i class="fas fa-clock text-primary mr-1"></i>
+                        Define políticas reutilizables de frecuencia y retención para tus dispositivos
+                    </span>
                 </div>
+            </div>
+
+            <div class="card-body">
+                {% include 'backup/backup_nav_tabs.html' %}
+
+                <div class="d-flex justify-content-between align-items-center flex-wrap mb-3" style="gap: 8px;">
+                    <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                        {% if can_manage_profiles %}
+                        <a href="/backup/manage_profile/" class="btn btn-primary btn-sm font-weight-bold px-3">
+                            <i class="fas fa-plus mr-1"></i> Nuevo Perfil de Respaldo
+                        </a>
+                        {% endif %}
+                        <span class="badge badge-secondary py-1 px-2">
+                            {{ backup_profile_list|length }} perfil{{ backup_profile_list|length|pluralize:"es" }} general{{ backup_profile_list|length|pluralize:"es" }}
+                        </span>
+                    </div>
+
+                    {% if auto_profile_list %}
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-toggle-auto-profiles">
+                        <i class="fas fa-robot mr-1"></i> Ver horarios individuales por equipo ({{ auto_profile_list|length }})
+                    </button>
+                    {% endif %}
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0" id="manual-profiles-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre del Perfil</th>
+                                <th class="text-center" style="width: 110px;">Dispositivos</th>
+                                <th>Por Hora</th>
+                                <th>Diario</th>
+                                <th>Semanal</th>
+                                <th>Protección / Estado</th>
+                                <th class="text-right min-width">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for bp in backup_profile_list %}
+                            <tr>
+                                <td class="align-middle font-weight-bold">
+                                    <a href="/backup/manage_profile/?uuid={{ bp.uuid }}" class="text-primary">
+                                        {{ bp.name }}
+                                    </a>
+                                    {% if bp.name == 'default' %}
+                                        <span class="badge badge-info ml-1" style="font-size: 10px;">Predeterminado</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="align-middle text-center">
+                                    <span class="badge {% if bp.device_count > 0 %}badge-primary{% else %}badge-secondary{% endif %} px-2 py-1">
+                                        {{ bp.device_count }}
+                                    </span>
+                                </td>
+
+                                <td class="align-middle">
+                                    {% if bp.hourly_backup %}
+                                        <span class="sched-chip">
+                                            <i class="fas fa-stopwatch"></i> {{ bp.hourly_summary }}
+                                            <span class="ret-tag" title="Retención horaria">{{ bp.hourly_retention }}d</span>
+                                        </span>
+                                    {% else %}
+                                        <span class="sched-off">&mdash;</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="align-middle">
+                                    {% if bp.daily_backup %}
+                                        <span class="sched-chip">
+                                            <i class="fas fa-calendar-day"></i> {{ bp.daily_summary }}
+                                            <span class="ret-tag" title="Retención diaria">{{ bp.daily_retention }}d</span>
+                                        </span>
+                                    {% else %}
+                                        <span class="sched-off">&mdash;</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="align-middle">
+                                    {% if bp.weekly_backup %}
+                                        <span class="sched-chip">
+                                            <i class="fas fa-calendar-week"></i> {{ bp.weekly_summary }}
+                                            <span class="ret-tag" title="Retención semanal">{{ bp.weekly_retention }}d</span>
+                                        </span>
+                                    {% else %}
+                                        <span class="sched-off">&mdash;</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="align-middle">
+                                    {% if bp.profile_error_information %}
+                                        <span class="badge badge-warning text-wrap text-left" title="{{ bp.profile_error_information }}">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i> {{ bp.profile_error_information }}
+                                        </span>
+                                    {% elif bp.retain_backups_on_error %}
+                                        <span class="small text-muted" title="No purga respaldos antiguos mientras el equipo esté en fallo">
+                                            <i class="fas fa-shield-alt text-success mr-1"></i> Protegido en fallo
+                                        </span>
+                                    {% else %}
+                                        <span class="small text-muted">Estándar</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="align-middle text-right text-nowrap min-width">
+                                    <a href="/backup/manage_profile/?uuid={{ bp.uuid }}"
+                                       class="btn btn-xs btn-outline-primary font-weight-bold"
+                                       title="Editar perfil">
+                                        <i class="fas fa-pen mr-1"></i> Editar
+                                    </a>
+                                    {% if can_manage_profiles and bp.name != 'default' %}
+                                        {% if bp.device_count > 0 %}
+                                            <button type="button"
+                                                    class="btn btn-xs btn-outline-secondary ml-1"
+                                                    disabled
+                                                    title="En uso por {{ bp.device_count }} dispositivo(s)">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        {% else %}
+                                            <button type="button"
+                                                    class="btn btn-xs btn-outline-danger ml-1 btn-delete-profile"
+                                                    data-uuid="{{ bp.uuid }}"
+                                                    data-name="{{ bp.name }}"
+                                                    title="Eliminar perfil">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if auto_profile_list %}
+                <div id="auto-profiles-container" class="auto-profiles-box" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="small font-weight-bold text-muted">
+                            <i class="fas fa-robot text-primary mr-1"></i>
+                            Horarios personalizados creados automáticamente desde la ficha individual de cada dispositivo
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Horario Individual</th>
+                                    <th class="text-center" style="width: 90px;">Equipo</th>
+                                    <th>Por Hora</th>
+                                    <th>Diario</th>
+                                    <th>Semanal</th>
+                                    <th class="text-right min-width">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for ap in auto_profile_list %}
+                                <tr>
+                                    <td class="align-middle small font-weight-bold">{{ ap.name }}</td>
+                                    <td class="align-middle text-center">
+                                        <span class="badge badge-secondary">{{ ap.device_count }}</span>
+                                    </td>
+                                    <td class="align-middle">
+                                        {% if ap.hourly_backup %}
+                                            <span class="sched-chip"><i class="fas fa-stopwatch"></i> {{ ap.hourly_summary }}</span>
+                                        {% else %}
+                                            <span class="sched-off">&mdash;</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle">
+                                        {% if ap.daily_backup %}
+                                            <span class="sched-chip"><i class="fas fa-calendar-day"></i> {{ ap.daily_summary }}</span>
+                                        {% else %}
+                                            <span class="sched-off">&mdash;</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle">
+                                        {% if ap.weekly_backup %}
+                                            <span class="sched-chip"><i class="fas fa-calendar-week"></i> {{ ap.weekly_summary }}</span>
+                                        {% else %}
+                                            <span class="sched-off">&mdash;</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle text-right min-width">
+                                        <a href="/backup/manage_profile/?uuid={{ ap.uuid }}" class="btn btn-xs btn-outline-primary">
+                                            <i class="fas fa-pen mr-1"></i> Editar
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
+</div>
+{% endblock %}
+
+{% block page_modals %}
+<div class="modal fade" id="deleteProfileModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 440px;">
+        <div class="modal-content">
+            <form method="post" action="/backup/manage_profile/">
+                {% csrf_token %}
+                <input type="hidden" name="uuid" id="delete-profile-uuid" value="">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="confirmation" value="delete">
+                <div class="modal-header py-2 px-3">
+                    <h6 class="modal-title font-weight-bold text-danger mb-0">
+                        <i class="fas fa-trash-alt mr-1"></i> Eliminar Perfil de Respaldo
+                    </h6>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body py-3 px-3 small">
+                    ¿Confirmas que deseas eliminar el perfil <strong id="delete-profile-name"></strong>? Esta acción no se puede deshacer.
+                </div>
+                <div class="modal-footer py-2 px-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger btn-sm font-weight-bold px-3">
+                        <i class="fas fa-trash-alt mr-1"></i> Sí, Eliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_page_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleAutoBtn = document.getElementById('btn-toggle-auto-profiles');
+    const autoContainer = document.getElementById('auto-profiles-container');
+    if (toggleAutoBtn && autoContainer) {
+        toggleAutoBtn.addEventListener('click', function () {
+            const hidden = autoContainer.style.display === 'none';
+            autoContainer.style.display = hidden ? 'block' : 'none';
+            toggleAutoBtn.classList.toggle('btn-primary', hidden);
+            toggleAutoBtn.classList.toggle('btn-outline-secondary', !hidden);
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        const delBtn = e.target.closest('.btn-delete-profile');
+        if (!delBtn) return;
+        const uuid = delBtn.getAttribute('data-uuid');
+        const name = delBtn.getAttribute('data-name');
+        document.getElementById('delete-profile-uuid').value = uuid;
+        document.getElementById('delete-profile-name').textContent = name;
+        window.jQuery('#deleteProfileModal').modal('show');
+    });
+});
+</script>
 {% endblock %}

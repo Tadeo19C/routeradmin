@@ -1,65 +1,739 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
+
+{% block page_custom_head %}
+<style>
+    .profile-editor-shell {
+        max-width: 840px;
+        margin: 0 auto;
+    }
+    .profile-block {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 15px 17px;
+        background: rgba(148, 163, 184, 0.03);
+        margin-bottom: 14px;
+    }
+    .profile-block-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+    }
+    .profile-block-title {
+        font-size: 13.5px;
+        font-weight: 700;
+        margin: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+    .field-label-sm {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: #60a5fa;
+        margin-bottom: 4px;
+    }
+    body:not(.dark-mode) .field-label-sm {
+        color: #1d4ed8;
+    }
+
+    /* Tarjeta check para proteger historial ante fallos */
+    .protect-toggle-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 9px 12px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--card);
+        cursor: pointer;
+        user-select: none;
+        transition: border-color 0.16s ease, background 0.16s ease;
+        margin: 0;
+        height: 100%;
+    }
+    .protect-toggle-card.is-checked {
+        border-color: rgba(34, 197, 94, 0.5);
+        background: rgba(34, 197, 94, 0.07);
+    }
+    .protect-toggle-card input[type="checkbox"] {
+        margin-top: 3px;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: #22c55e;
+        flex-shrink: 0;
+    }
+
+    /* Tarjetas selectoras de frecuencia (Por Hora / Diario / Semanal) */
+    .freq-selector-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+    }
+    @media (max-width: 640px) {
+        .freq-selector-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .freq-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 13px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--card);
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.16s ease;
+        margin: 0;
+    }
+    .freq-card:hover {
+        border-color: rgba(92, 142, 230, 0.55);
+    }
+    .freq-card.is-active {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.11);
+        box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25);
+    }
+    .freq-card input[type="checkbox"] {
+        width: 17px;
+        height: 17px;
+        cursor: pointer;
+        accent-color: #3b82f6;
+        flex-shrink: 0;
+    }
+    .freq-card-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        background: rgba(59, 130, 246, 0.12);
+        color: #60a5fa;
+        flex-shrink: 0;
+    }
+    body:not(.dark-mode) .freq-card-icon {
+        color: #2563eb;
+    }
+    .freq-card.is-active .freq-card-icon {
+        background: #3b82f6;
+        color: #ffffff;
+    }
+
+    /* Sub-secciones dinámicas de cada frecuencia */
+    .schedule-subpanel {
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-left: 3px solid #3b82f6;
+        border-radius: 7px;
+        padding: 13px 15px;
+        background: var(--card);
+        margin-top: 12px;
+    }
+
+    /* Pastillas de días de la semana (Lun..Dom) */
+    .weekdays-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 7px;
+    }
+    @media (max-width: 576px) {
+        .weekdays-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+    .weekday-pill {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 7px 6px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: rgba(148, 163, 184, 0.05);
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+        margin: 0;
+        transition: all 0.15s ease;
+    }
+    .weekday-pill:hover {
+        border-color: rgba(59, 130, 246, 0.5);
+    }
+    .weekday-pill.is-checked {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.16);
+        color: #60a5fa;
+    }
+    body:not(.dark-mode) .weekday-pill.is-checked {
+        color: #1d4ed8;
+        background: rgba(59, 130, 246, 0.12);
+    }
+    .weekday-pill input[type="checkbox"] {
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+        accent-color: #3b82f6;
+        margin: 0;
+    }
+
+    .unit-suffix {
+        font-size: 11.5px;
+        padding: 0 9px;
+        background: rgba(148, 163, 184, 0.1);
+        border-color: var(--border);
+        color: var(--muted-foreground);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-    <div class='row'>
-        <div class='{% if form_size %}{{ form_size }}{% else %}col-lg-6{% endif %}'>
-            <div class="card card-primary card-outline">
-                {% if page_title %}
-                    <div class="card-header">
-                        <h3 class="card-title">{{ page_title }}</h3>
-                    </div>
+<div class="profile-editor-shell">
+    <div class="card card-primary card-outline">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap py-2 px-3" style="gap: 8px;">
+            <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                <h3 class="card-title font-weight-bold mb-0" style="font-size: 15.5px;">
+                    <i class="fas fa-sliders-h text-primary mr-2"></i>{{ page_title }}
+                </h3>
+                {% if instance %}
+                    <span class="badge badge-secondary">{{ assigned_router_count }} dispositivo{{ assigned_router_count|pluralize:"s" }} asignado{{ assigned_router_count|pluralize:"s" }}</span>
                 {% endif %}
-                <div class="card-body row">
-                    <div class="col-lg-12">
-                        {% csrf_token %}
-                        {% crispy form %}
+            </div>
+            <a href="/backup/profile_list/" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left mr-1"></i> Volver a Perfiles
+            </a>
+        </div>
+
+        <form method="post" id="backup-profile-form" novalidate>
+            {% csrf_token %}
+            {{ form.monthly_backup }}
+            {{ form.monthly_retention }}
+            {{ form.monthly_day }}
+            {{ form.monthly_hour }}
+            {{ form.parameter_sensitive }}
+            {{ form.parameter_terse }}
+
+            <div class="card-body py-3 px-3">
+                {% if form.non_field_errors or form.errors %}
+                <div class="alert alert-danger py-2 px-3 mb-3 small" style="border-left: 4px solid #dc2626;">
+                    <div class="font-weight-bold mb-1">
+                        <i class="fas fa-exclamation-circle mr-1"></i> Por favor corrige los siguientes detalles antes de guardar:
+                    </div>
+                    <ul class="mb-0 pl-3">
+                        {% for err in form.non_field_errors %}
+                            <li>{{ err }}</li>
+                        {% endfor %}
+                        {% for field in form %}
+                            {% for err in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ err }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- 1. Identificación y Protección -->
+                <div class="profile-block">
+                    <div class="form-row align-items-stretch">
+                        <div class="col-md-6 mb-2 mb-md-0">
+                            <label for="{{ form.name.id_for_label }}" class="field-label-sm">
+                                Nombre del Perfil <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if instance and instance.name == 'default' %}
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-lock mr-1"></i> El perfil predeterminado conserva el nombre <code>default</code>.
+                                </small>
+                            {% else %}
+                                <small class="text-muted d-block mt-1">
+                                    Identificador claro para asignar esta política a uno o varios grupos/equipos.
+                                </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <span class="field-label-sm">Protección ante Fallos</span>
+                            <label class="protect-toggle-card" id="card-retain-error" for="{{ form.retain_backups_on_error.id_for_label }}">
+                                {{ form.retain_backups_on_error }}
+                                <div>
+                                    <div class="font-weight-bold" style="font-size: 12.5px; line-height: 1.25;">
+                                        Retener respaldos cuando hay error
+                                    </div>
+                                    <div class="text-muted" style="font-size: 11.5px; line-height: 1.3; margin-top: 2px;">
+                                        Evita borrar respaldos antiguos por antigüedad mientras el equipo falle al respaldar.
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Selección y Configuración de Frecuencias -->
+                <div class="profile-block">
+                    <div class="profile-block-header">
+                        <h4 class="profile-block-title">
+                            <i class="fas fa-calendar-check text-primary"></i> Frecuencias de Respaldo Programado
+                        </h4>
+                        <span class="badge badge-primary" id="active-freq-counter">1 activa</span>
+                    </div>
+
+                    <div class="freq-selector-grid">
+                        <label class="freq-card" id="card-freq-hourly" for="{{ form.hourly_backup.id_for_label }}">
+                            {{ form.hourly_backup }}
+                            <span class="freq-card-icon"><i class="fas fa-stopwatch"></i></span>
+                            <div>
+                                <div class="font-weight-bold" style="font-size: 13px; line-height: 1.2;">Por Hora</div>
+                                <div class="text-muted" style="font-size: 11px;">Cada 1 a 12 horas</div>
+                            </div>
+                        </label>
+
+                        <label class="freq-card" id="card-freq-daily" for="{{ form.daily_backup.id_for_label }}">
+                            {{ form.daily_backup }}
+                            <span class="freq-card-icon"><i class="fas fa-calendar-day"></i></span>
+                            <div>
+                                <div class="font-weight-bold" style="font-size: 13px; line-height: 1.2;">Diario</div>
+                                <div class="text-muted" style="font-size: 11px;">Hora fija + días activos</div>
+                            </div>
+                        </label>
+
+                        <label class="freq-card" id="card-freq-weekly" for="{{ form.weekly_backup.id_for_label }}">
+                            {{ form.weekly_backup }}
+                            <span class="freq-card-icon"><i class="fas fa-calendar-week"></i></span>
+                            <div>
+                                <div class="font-weight-bold" style="font-size: 13px; line-height: 1.2;">Semanal</div>
+                                <div class="text-muted" style="font-size: 11px;">Día fijo de la semana</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Alerta en tiempo real cuando los 3 checks se desmarcan -->
+                    <div id="no-frequency-warning" class="alert alert-danger py-2 px-3 mt-3 mb-0 small" style="display: none; border-left: 4px solid #dc2626;">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        <strong>Sin frecuencia activa:</strong> Marca al menos una opción (<strong>Por Hora</strong>, <strong>Diario</strong> o <strong>Semanal</strong>) para guardar el perfil.
+                    </div>
+
+                    <!-- Sub-panel: POR HORA (Solo visible si id_hourly_backup está marcado) -->
+                    <div id="section-hourly" class="schedule-subpanel" style="display: none;">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge badge-primary px-2 py-1">
+                                <i class="fas fa-stopwatch mr-1"></i> HORARIO (POR HORA)
+                            </span>
+                            <span class="small text-muted">Respaldo cíclico continuo</span>
+                        </div>
+                        <div class="form-row">
+                            <div class="col-md-6 mb-2 mb-md-0">
+                                <label for="{{ form.hourly_interval.id_for_label }}" class="field-label-sm">
+                                    Intervalo de Ejecución <span class="text-danger">*</span>
+                                </label>
+                                {{ form.hourly_interval }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.hourly_retention.id_for_label }}" class="field-label-sm">
+                                    Retención Horaria <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group input-group-sm">
+                                    {{ form.hourly_retention }}
+                                    <div class="input-group-append">
+                                        <span class="input-group-text unit-suffix">días</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sub-panel: DIARIO (Solo visible si id_daily_backup está marcado) -->
+                    <div id="section-daily" class="schedule-subpanel" style="display: none;">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge badge-primary px-2 py-1">
+                                <i class="fas fa-calendar-day mr-1"></i> DIARIO
+                            </span>
+                            <span class="small text-muted">Se ejecuta a la hora indicada en los días marcados</span>
+                        </div>
+
+                        <div class="form-row mb-3">
+                            <div class="col-md-6 mb-2 mb-md-0">
+                                <label for="{{ form.daily_hour.id_for_label }}" class="field-label-sm">
+                                    Hora Diaria <span class="text-danger">*</span>
+                                </label>
+                                {{ form.daily_hour }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.daily_retention.id_for_label }}" class="field-label-sm">
+                                    Retención Diaria <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group input-group-sm">
+                                    {{ form.daily_retention }}
+                                    <div class="input-group-append">
+                                        <span class="input-group-text unit-suffix">días</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between flex-wrap mb-2" style="gap: 6px;">
+                            <div class="d-flex align-items-center" style="gap: 6px;">
+                                <span class="field-label-sm mb-0">Días de Ejecución <span class="text-danger">*</span></span>
+                                <span class="badge badge-secondary" id="weekday-count-badge" style="font-size: 10.5px;">7/7 días</span>
+                            </div>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Selección rápida de días">
+                                <button type="button" class="btn btn-xs btn-outline-secondary px-2 py-1" data-day-preset="all">Todos</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary px-2 py-1" data-day-preset="weekdays">Lun – Vie</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary px-2 py-1" data-day-preset="weekend">Sáb – Dom</button>
+                            </div>
+                        </div>
+
+                        <div class="weekdays-grid">
+                            <label class="weekday-pill" data-day-role="weekday" for="{{ form.daily_day_monday.id_for_label }}">
+                                {{ form.daily_day_monday }} <span>Lun</span>
+                            </label>
+                            <label class="weekday-pill" data-day-role="weekday" for="{{ form.daily_day_tuesday.id_for_label }}">
+                                {{ form.daily_day_tuesday }} <span>Mar</span>
+                            </label>
+                            <label class="weekday-pill" data-day-role="weekday" for="{{ form.daily_day_wednesday.id_for_label }}">
+                                {{ form.daily_day_wednesday }} <span>Mié</span>
+                            </label>
+                            <label class="weekday-pill" data-day-role="weekday" for="{{ form.daily_day_thursday.id_for_label }}">
+                                {{ form.daily_day_thursday }} <span>Jue</span>
+                            </label>
+                            <label class="weekday-pill" data-day-role="weekday" for="{{ form.daily_day_friday.id_for_label }}">
+                                {{ form.daily_day_friday }} <span>Vie</span>
+                            </label>
+                            <label class="weekday-pill" data-day-role="weekend" for="{{ form.daily_day_saturday.id_for_label }}">
+                                {{ form.daily_day_saturday }} <span>Sáb</span>
+                            </label>
+                            <label class="weekday-pill" data-day-role="weekend" for="{{ form.daily_day_sunday.id_for_label }}">
+                                {{ form.daily_day_sunday }} <span>Dom</span>
+                            </label>
+                        </div>
+
+                        <div id="no-weekday-warning" class="alert alert-danger py-2 px-3 mt-2 mb-0 small" style="display: none; border-left: 4px solid #dc2626;">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            Selecciona al menos un día de la semana para el respaldo diario.
+                        </div>
+                    </div>
+
+                    <!-- Sub-panel: SEMANAL (Solo visible si id_weekly_backup está marcado) -->
+                    <div id="section-weekly" class="schedule-subpanel" style="display: none;">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge badge-primary px-2 py-1">
+                                <i class="fas fa-calendar-week mr-1"></i> SEMANAL
+                            </span>
+                            <span class="small text-muted">Respaldo consolidado una vez por semana</span>
+                        </div>
+                        <div class="form-row">
+                            <div class="col-md-4 mb-2 mb-md-0">
+                                <label for="{{ form.weekly_day.id_for_label }}" class="field-label-sm">
+                                    Día de la Semana <span class="text-danger">*</span>
+                                </label>
+                                {{ form.weekly_day }}
+                            </div>
+                            <div class="col-md-4 mb-2 mb-md-0">
+                                <label for="{{ form.weekly_hour.id_for_label }}" class="field-label-sm">
+                                    Hora Semanal <span class="text-danger">*</span>
+                                </label>
+                                {{ form.weekly_hour }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.weekly_retention.id_for_label }}" class="field-label-sm">
+                                    Retención Semanal <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group input-group-sm">
+                                    {{ form.weekly_retention }}
+                                    <div class="input-group-append">
+                                        <span class="input-group-text unit-suffix">días</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Parámetros de Sistema y Reintentos -->
+                <div class="profile-block mb-2">
+                    <div class="profile-block-header">
+                        <h4 class="profile-block-title">
+                            <i class="fas fa-cogs text-muted"></i> Parámetros de Ejecución y Reintentos
+                        </h4>
+                        <span class="small text-muted">Tiempos de tolerancia ante cortes y respaldos manuales</span>
+                    </div>
+
+                    <div class="form-row mb-2">
+                        <div class="col-md-4 mb-2 mb-md-0">
+                            <label for="{{ form.max_retry.id_for_label }}" class="field-label-sm">
+                                Máximos Intentos <span class="text-danger">*</span>
+                            </label>
+                            {{ form.max_retry }}
+                        </div>
+                        <div class="col-md-4 mb-2 mb-md-0">
+                            <label for="{{ form.retry_interval.id_for_label }}" class="field-label-sm">
+                                Intervalo de Reintento <span class="text-danger">*</span>
+                            </label>
+                            {{ form.retry_interval }}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.instant_retention.id_for_label }}" class="field-label-sm">
+                                Retención Instantánea <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group input-group-sm">
+                                {{ form.instant_retention }}
+                                <div class="input-group-append">
+                                    <span class="input-group-text unit-suffix">días</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="col-md-6 mb-2 mb-md-0">
+                            <label for="{{ form.backup_interval.id_for_label }}" class="field-label-sm">
+                                Intervalo de Respaldo <span class="text-danger">*</span>
+                            </label>
+                            {{ form.backup_interval }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.retrieve_interval.id_for_label }}" class="field-label-sm">
+                                Intervalo de Recuperación <span class="text-danger">*</span>
+                            </label>
+                            {{ form.retrieve_interval }}
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <div class="card-footer d-flex justify-content-between align-items-center flex-wrap py-2 px-3" style="gap: 8px;">
+                <div>
+                    {% if instance and instance.name != 'default' %}
+                        {% if assigned_router_count > 0 %}
+                            <button type="button" class="btn btn-outline-secondary btn-sm" disabled title="No se puede eliminar porque está asignado a {{ assigned_router_count }} dispositivo(s)">
+                                <i class="fas fa-trash-alt mr-1"></i> En uso ({{ assigned_router_count }})
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-outline-danger btn-sm" data-toggle="modal" data-target="#confirmDeleteCurrentProfileModal">
+                                <i class="fas fa-trash-alt mr-1"></i> Eliminar Perfil
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <div class="d-flex align-items-center" style="gap: 8px;">
+                    <a href="/backup/profile_list/" class="btn btn-outline-secondary btn-sm px-3">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-success btn-sm font-weight-bold px-4">
+                        <i class="fas fa-save mr-1"></i> Guardar Perfil
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_modals %}
+{% if instance and instance.name != 'default' and assigned_router_count == 0 %}
+<div class="modal fade" id="confirmDeleteCurrentProfileModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 430px;">
+        <div class="modal-content">
+            <form method="post" action="/backup/manage_profile/">
+                {% csrf_token %}
+                <input type="hidden" name="uuid" value="{{ instance.uuid }}">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="confirmation" value="delete">
+                <div class="modal-header py-2 px-3">
+                    <h6 class="modal-title font-weight-bold text-danger mb-0">
+                        <i class="fas fa-trash-alt mr-1"></i> Eliminar Perfil
+                    </h6>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body py-3 px-3 small">
+                    ¿Deseas eliminar permanentemente el perfil <strong>{{ instance.name }}</strong>?
+                </div>
+                <div class="modal-footer py-2 px-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger btn-sm font-weight-bold px-3">
+                        <i class="fas fa-trash-alt mr-1"></i> Sí, Eliminar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
-    
+</div>
+{% endif %}
 {% endblock %}
 
 {% block custom_page_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const profileForm = document.getElementById('backup-profile-form');
+    const retainErrorInput = document.getElementById('id_retain_backups_on_error');
+    const retainErrorCard = document.getElementById('card-retain-error');
 
-    <script>
-        function openCommandDialog(element) {
-            var command = element.getAttribute('data-command');
-            var confirmation = prompt("{% if delete_confirmation_message %}{{ delete_confirmation_message }}{% else %}Please type 'delete' to proceed.{% endif %}");
-            if (confirmation) {
-                var url = "?uuid={{ instance.uuid }}&action=delete&confirmation=" + encodeURIComponent(confirmation);
-                window.location.href = url;
-            }
+    const freqMappings = [
+        { checkboxId: 'id_hourly_backup', cardId: 'card-freq-hourly', sectionId: 'section-hourly' },
+        { checkboxId: 'id_daily_backup',  cardId: 'card-freq-daily',  sectionId: 'section-daily'  },
+        { checkboxId: 'id_weekly_backup', cardId: 'card-freq-weekly', sectionId: 'section-weekly' }
+    ];
+
+    const activeFreqCounter = document.getElementById('active-freq-counter');
+    const noFrequencyWarning = document.getElementById('no-frequency-warning');
+    const weekdayPills = Array.from(document.querySelectorAll('.weekday-pill'));
+    const weekdayCountBadge = document.getElementById('weekday-count-badge');
+    const noWeekdayWarning = document.getElementById('no-weekday-warning');
+
+    function showToast(toastClass, title, body) {
+        if (window.jQuery && typeof window.jQuery(document).Toasts === 'function') {
+            window.jQuery(document).Toasts('create', {
+                class: toastClass,
+                icon: 'fas fa-exclamation-triangle',
+                title: title,
+                body: body,
+                delay: 5500,
+                autohide: true
+            });
         }
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            function toggleSectionVisibility(checkboxId, sectionId) {
-                var checkbox = document.getElementById(checkboxId);
-                var section = document.getElementById(sectionId);
+    }
 
-                if (checkbox && section) {
-                    section.style.display = checkbox.checked ? '' : 'none';
-                }
+    function syncRetainCard() {
+        if (retainErrorInput && retainErrorCard) {
+            retainErrorCard.classList.toggle('is-checked', retainErrorInput.checked);
+        }
+    }
+
+    function syncWeekdaysState() {
+        let checkedDays = 0;
+        weekdayPills.forEach(function (pill) {
+            const cb = pill.querySelector('input[type="checkbox"]');
+            if (!cb) return;
+            pill.classList.toggle('is-checked', cb.checked);
+            if (cb.checked) checkedDays++;
+        });
+
+        if (weekdayCountBadge) {
+            weekdayCountBadge.textContent = checkedDays + '/7 días';
+            weekdayCountBadge.className = 'badge ' + (checkedDays === 0 ? 'badge-danger' : 'badge-secondary');
+        }
+
+        const dailyCb = document.getElementById('id_daily_backup');
+        const dailyActive = dailyCb && dailyCb.checked;
+        if (noWeekdayWarning) {
+            noWeekdayWarning.style.display = (dailyActive && checkedDays === 0) ? 'block' : 'none';
+        }
+        return checkedDays;
+    }
+
+    function syncFrequencySections() {
+        let activeCount = 0;
+        freqMappings.forEach(function (item) {
+            const cb = document.getElementById(item.checkboxId);
+            const card = document.getElementById(item.cardId);
+            const section = document.getElementById(item.sectionId);
+            if (!cb) return;
+
+            const isChecked = cb.checked;
+            if (isChecked) activeCount++;
+            if (card) card.classList.toggle('is-active', isChecked);
+            if (section) {
+                section.style.display = isChecked ? 'block' : 'none';
+                // Evitar bloqueo HTML5 en controles ocultos
+                section.querySelectorAll('input, select').forEach(function (ctrl) {
+                    if (ctrl.type !== 'checkbox') {
+                        ctrl.required = isChecked;
+                    }
+                });
             }
+        });
 
-            var controls = [
-                {checkboxId: 'id_daily_backup', sectionId: 'daily_settings'},
-                {checkboxId: 'id_weekly_backup', sectionId: 'weekly_settings'},
-                {checkboxId: 'id_monthly_backup', sectionId: 'monthly_settings'}
-            ];
+        if (activeFreqCounter) {
+            activeFreqCounter.textContent = activeCount + (activeCount === 1 ? ' activa' : ' activas');
+            activeFreqCounter.className = 'badge ' + (activeCount === 0 ? 'badge-danger' : 'badge-primary');
+        }
+        if (noFrequencyWarning) {
+            noFrequencyWarning.style.display = (activeCount === 0) ? 'block' : 'none';
+        }
+        syncWeekdaysState();
+        return activeCount;
+    }
 
-            controls.forEach(function (control) {
-                var checkbox = document.getElementById(control.checkboxId);
-                if (checkbox) {
-                    checkbox.addEventListener('change', function () {
-                        toggleSectionVisibility(control.checkboxId, control.sectionId);
-                    });
-                    toggleSectionVisibility(control.checkboxId, control.sectionId);
+    if (retainErrorInput) {
+        retainErrorInput.addEventListener('change', syncRetainCard);
+        syncRetainCard();
+    }
+
+    freqMappings.forEach(function (item) {
+        const cb = document.getElementById(item.checkboxId);
+        if (cb) {
+            cb.addEventListener('change', syncFrequencySections);
+        }
+    });
+
+    weekdayPills.forEach(function (pill) {
+        const cb = pill.querySelector('input[type="checkbox"]');
+        if (cb) {
+            cb.addEventListener('change', syncWeekdaysState);
+        }
+    });
+
+    // Botones rápidos de selección de días (Todos / Lun-Vie / Sáb-Dom)
+    document.querySelectorAll('[data-day-preset]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const preset = btn.getAttribute('data-day-preset');
+            weekdayPills.forEach(function (pill) {
+                const role = pill.getAttribute('data-day-role');
+                const cb = pill.querySelector('input[type="checkbox"]');
+                if (!cb) return;
+                if (preset === 'all') {
+                    cb.checked = true;
+                } else if (preset === 'weekdays') {
+                    cb.checked = (role === 'weekday');
+                } else if (preset === 'weekend') {
+                    cb.checked = (role === 'weekend');
                 }
             });
+            syncWeekdaysState();
         });
-    </script>
+    });
+
+    // Validación instantánea en cliente antes de enviar
+    if (profileForm) {
+        profileForm.addEventListener('submit', function (e) {
+            const nameInput = document.getElementById('id_name');
+            if (nameInput && !nameInput.readOnly && !(nameInput.value || '').trim()) {
+                e.preventDefault();
+                nameInput.focus();
+                showToast('bg-warning', 'Nombre requerido', 'Ingresa un nombre para identificar este perfil de respaldo.');
+                return;
+            }
+
+            const activeCount = syncFrequencySections();
+            if (activeCount === 0) {
+                e.preventDefault();
+                if (noFrequencyWarning) noFrequencyWarning.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                showToast('bg-danger', 'Frecuencia requerida', 'Debes activar al menos una frecuencia (Por Hora, Diario o Semanal).');
+                return;
+            }
+
+            const dailyCb = document.getElementById('id_daily_backup');
+            const checkedDays = syncWeekdaysState();
+            if (dailyCb && dailyCb.checked && checkedDays === 0) {
+                e.preventDefault();
+                if (noWeekdayWarning) noWeekdayWarning.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                showToast('bg-danger', 'Días requeridos', 'Selecciona al menos un día de la semana (Lun–Dom) para el respaldo diario.');
+                return;
+            }
+        });
+    }
+
+    syncFrequencySections();
+});
+</script>
 {% endblock %}

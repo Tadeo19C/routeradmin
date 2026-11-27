@@ -6,7 +6,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {% if request.path == '/backup/profile_list/' %}active{% endif %}" href="/backup/profile_list/" role="tab">
+        <a class="nav-link {% if request.path == '/backup/profile_list/' or request.path == '/backup/manage_profile/' %}active{% endif %}" href="/backup/profile_list/" role="tab">
             <i class="fas fa-sliders-h mr-1"></i> Perfiles y Horarios
         </a>
     </li>

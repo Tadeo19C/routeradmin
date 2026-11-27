@@ -17,56 +17,150 @@ from user_manager.models import UserAcl
 from django.utils import timezone
 
 
+WEEKDAY_LABELS_ES = {
+    'monday': 'Lunes',
+    'tuesday': 'Martes',
+    'wednesday': 'Miércoles',
+    'thursday': 'Jueves',
+    'friday': 'Viernes',
+    'saturday': 'Sábado',
+    'sunday': 'Domingo',
+}
+
+
+def _can_manage_backup_profiles(user):
+    if not user or not user.is_authenticated:
+        return False
+    return bool(user.is_superuser or user.is_staff or UserAcl.objects.filter(user=user, user_level__gte=30).exists())
+
+
+def _enrich_profile_display(profile):
+    # Resumen Horario
+    if profile.hourly_backup:
+        profile.hourly_summary = f"Cada {profile.hourly_interval}h"
+    else:
+        profile.hourly_summary = ''
+
+    # Resumen Diario
+    if profile.daily_backup:
+        d_hr = int(profile.daily_hour or 0)
+        d_min = int(getattr(profile, 'daily_minute', 0) or 0)
+        time_str = f"{d_hr:02d}:{d_min:02d}"
+        days_flags = [
+            ('Lun', bool(profile.daily_day_monday)),
+            ('Mar', bool(profile.daily_day_tuesday)),
+            ('Mié', bool(profile.daily_day_wednesday)),
+            ('Jue', bool(profile.daily_day_thursday)),
+            ('Vie', bool(profile.daily_day_friday)),
+            ('Sáb', bool(profile.daily_day_saturday)),
+            ('Dom', bool(profile.daily_day_sunday)),
+        ]
+        active_names = [lbl for lbl, active in days_flags if active]
+        if len(active_names) == 7:
+            days_str = 'Lun–Dom'
+        elif active_names == ['Lun', 'Mar', 'Mié', 'Jue', 'Vie']:
+            days_str = 'Lun–Vie'
+        elif active_names == ['Sáb', 'Dom']:
+            days_str = 'Sáb–Dom'
+        elif active_names:
+            days_str = ', '.join(active_names)
+        else:
+            days_str = 'Sin días'
+        profile.daily_summary = f"{time_str} ({days_str})"
+    else:
+        profile.daily_summary = ''
+
+    # Resumen Semanal
+    if profile.weekly_backup:
+        w_hr = int(profile.weekly_hour or 0)
+        w_min = int(getattr(profile, 'weekly_minute', 0) or 0)
+        w_day_label = WEEKDAY_LABELS_ES.get(profile.weekly_day, profile.weekly_day)
+        profile.weekly_summary = f"{w_day_label} {w_hr:02d}:{w_min:02d}"
+    else:
+        profile.weekly_summary = ''
+
+    return profile
+
+
 @login_required()
 def view_backup_profile_list(request):
-    default_backup_profile, _ = BackupProfile.objects.get_or_create(name='default')
+    from django.db.models import Count
+    BackupProfile.objects.get_or_create(name='default')
     BackupProfile.objects.filter(name__startswith='Perfil Automático -', router__isnull=True).delete()
+
+    all_profiles = list(
+        BackupProfile.objects.annotate(device_count=Count('router')).order_by('name')
+    )
+    manual_profiles = []
+    auto_profiles = []
+    for p in all_profiles:
+        _enrich_profile_display(p)
+        if p.name.startswith('Perfil Automático -'):
+            auto_profiles.append(p)
+        else:
+            manual_profiles.append(p)
+
+    # Colocar 'default' primero en la lista de perfiles generales
+    manual_profiles.sort(key=lambda item: (0 if item.name == 'default' else 1, item.name.lower()))
+
     context = {
-        'backup_profile_list': BackupProfile.objects.all().order_by('name'),
-        'page_title': 'Backup Profiles'
+        'backup_profile_list': manual_profiles,
+        'auto_profile_list': auto_profiles,
+        'can_manage_profiles': _can_manage_backup_profiles(request.user),
+        'page_title': 'Perfiles y Horarios de Respaldo',
     }
     return render(request, 'backup/backup_profile_list.html', context)
 
 
 @login_required()
 def view_manage_backup_profile(request):
-    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=40).exists():
-        return render(request, 'access_denied.html', {'page_title': 'Access Denied'})
-    if request.GET.get('uuid'):
-        backup_profile = get_object_or_404(BackupProfile, uuid=request.GET.get('uuid'))
-        if request.GET.get('action') == 'delete':
-            if request.GET.get('confirmation') == 'delete':
-                if backup_profile.name == 'default':
-                    messages.warning(request, 'Backup profile not deleted|Default profile cannot be deleted')
-                    return redirect('backup_profile_list')
-                else:
-                    if Router.objects.filter(backup_profile=backup_profile).exists():
-                        messages.warning(request, 'Backup profile in use|Backup profile is in use and cannot be deleted')
-                        return redirect('backup_profile_list')
-                    else:
-                        backup_profile.delete()
-                        messages.success(request, 'Backup profile deleted successfully')
+    if not _can_manage_backup_profiles(request.user):
+        return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
+
+    profile_uuid = request.GET.get('uuid') or request.POST.get('uuid')
+    backup_profile = get_object_or_404(BackupProfile, uuid=profile_uuid) if profile_uuid else None
+
+    req_action = request.POST.get('action') or request.GET.get('action')
+    if backup_profile and req_action == 'delete':
+        req_confirm = request.POST.get('confirmation') or request.GET.get('confirmation')
+        if request.method == 'POST' or req_confirm in ('delete', 'eliminar'):
+            if backup_profile.name == 'default':
+                messages.warning(request, 'Acción no permitida|El perfil predeterminado (default) no se puede eliminar.')
                 return redirect('backup_profile_list')
-            else:
-                messages.warning(request, 'Backup profile not deleted|Invalid confirmation')
+            used_count = Router.objects.filter(backup_profile=backup_profile).count()
+            if used_count > 0:
+                messages.warning(
+                    request,
+                    f"Perfil en uso|No se puede eliminar '{backup_profile.name}' porque está asignado a {used_count} dispositivo(s)."
+                )
                 return redirect('backup_profile_list')
-    else:
-        backup_profile = None
+            deleted_name = backup_profile.name
+            backup_profile.delete()
+            messages.success(request, f"Perfil eliminado|El perfil '{deleted_name}' se eliminó correctamente.")
+            return redirect('backup_profile_list')
+        else:
+            messages.warning(request, 'Confirmación inválida|No se eliminó el perfil de respaldo.')
+            return redirect('backup_profile_list')
 
     form = BackupProfileForm(request.POST or None, instance=backup_profile)
-    if form.is_valid():
+    if request.method == 'POST' and form.is_valid():
         form.instance.profile_error_information = ''
-        form.save()
-        BackupSchedule.objects.filter(router__backup_profile=form.instance).delete()
+        saved_profile = form.save()
+        BackupSchedule.objects.filter(router__backup_profile=saved_profile).delete()
         from backup_data.services import service_generate_backup_schedule
         service_generate_backup_schedule()
-        messages.success(request, 'Backup Profile saved successfully')
+        messages.success(
+            request,
+            f"Perfil guardado|El perfil '{saved_profile.name}' se guardó y programó correctamente."
+        )
         return redirect('backup_profile_list')
 
+    assigned_router_count = Router.objects.filter(backup_profile=backup_profile).count() if backup_profile else 0
     context = {
         'form': form,
-        'page_title': 'Manage Backup Profile',
-        'instance': backup_profile
+        'page_title': f"Editar Perfil: {backup_profile.name}" if backup_profile else 'Nuevo Perfil de Respaldo',
+        'instance': backup_profile,
+        'assigned_router_count': assigned_router_count,
     }
     return render(request, 'backup/backup_profile_form.html', context=context)
 
@@ -327,12 +421,21 @@ def view_get_backup_profile_details(request):
         'daily_backup': profile.daily_backup,
         'weekly_backup': profile.weekly_backup,
         'hourly_interval': profile.hourly_interval,
+        'hourly_retention': profile.hourly_retention,
         'daily_hour': profile.daily_hour,
         'daily_minute': getattr(profile, 'daily_minute', 0) or 0,
+        'daily_retention': profile.daily_retention,
+        'daily_day_monday': profile.daily_day_monday,
+        'daily_day_tuesday': profile.daily_day_tuesday,
+        'daily_day_wednesday': profile.daily_day_wednesday,
+        'daily_day_thursday': profile.daily_day_thursday,
+        'daily_day_friday': profile.daily_day_friday,
+        'daily_day_saturday': profile.daily_day_saturday,
+        'daily_day_sunday': profile.daily_day_sunday,
         'weekly_day': profile.weekly_day,
         'weekly_hour': profile.weekly_hour,
         'weekly_minute': getattr(profile, 'weekly_minute', 0) or 0,
-        # Add other fields if needed for the UI
+        'weekly_retention': profile.weekly_retention,
     }
     return JsonResponse(data)
 

@@ -47,6 +47,26 @@
     body:not(.dark-mode) .error-reason-box {
         color: #b91c1c;
     }
+    .import-done-banner {
+        border-radius: 7px;
+        padding: 12px 15px;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .import-done-banner.is-success {
+        background: rgba(34, 197, 94, 0.12);
+        border: 1px solid rgba(34, 197, 94, 0.4);
+        border-left: 4px solid #22c55e;
+    }
+    .import-done-banner.is-warning {
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.45);
+        border-left: 4px solid #f59e0b;
+    }
 </style>
 {% endblock %}
 
@@ -90,6 +110,17 @@
                 </div>
             </div>
             {% endif %}
+
+            <!-- Banner de confirmación persistente al finalizar la importación -->
+            <div id="import-completion-banner" class="import-done-banner is-success" style="display: none;">
+                <div>
+                    <div class="font-weight-bold" id="import-completion-title" style="font-size: 14px;"></div>
+                    <div class="small text-muted mt-1" id="import-completion-body"></div>
+                </div>
+                <a href="/router/group_list/" class="btn btn-success btn-sm font-weight-bold px-3">
+                    <i class="fas fa-network-wired mr-1"></i> Ver en Dispositivos
+                </a>
+            </div>
 
             <!-- Explicación clara cuando hay filas sin cambios omitidas -->
             {% if unchanged_count > 0 %}
@@ -163,7 +194,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block custom_page_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const startBtn = document.getElementById('btn-start-import');
@@ -174,8 +207,27 @@ document.addEventListener('DOMContentLoaded', function () {
     const progressStatusText = document.getElementById('progress-status-text');
     const progressPercentText = document.getElementById('progress-percent-text');
     const completedCountEl = document.getElementById('completed-count');
+    const completionBanner = document.getElementById('import-completion-banner');
+    const completionTitle = document.getElementById('import-completion-title');
+    const completionBody = document.getElementById('import-completion-body');
+
     const totalTasks = {{ total_tasks|default:0 }};
+    const unchangedCount = {{ unchanged_count|default:0 }};
+    const hasBlockingErrors = {{ has_blocking_errors|yesno:"true,false" }};
     let processedCount = {{ completed_tasks|default:0 }};
+
+    function showSystemToast(toastClass, iconClass, title, body, delayMs) {
+        if (window.jQuery && typeof window.jQuery(document).Toasts === 'function') {
+            window.jQuery(document).Toasts('create', {
+                class: toastClass,
+                icon: iconClass,
+                title: title,
+                body: body,
+                delay: delayMs || 6500,
+                autohide: true
+            });
+        }
+    }
 
     function updateProgressBar() {
         if (totalTasks <= 0 || !progressBar) return;
@@ -187,8 +239,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     updateProgressBar();
 
+    {% if total_tasks == 0 and unchanged_count > 0 and not has_blocking_errors %}
+    showSystemToast(
+        'bg-info',
+        'fas fa-check-double',
+        'Inventario al día',
+        'El documento fue verificado: los {{ unchanged_count }} dispositivo(s) ya están registrados sin cambios pendientes.',
+        5500
+    );
+    {% endif %}
+
     async function processTaskRow(row) {
         const uuid = row.getAttribute('data-uuid');
+        const actionType = row.getAttribute('data-action-type') || 'new';
         const statusCell = document.getElementById(`status-${uuid}`);
         const detailCell = document.getElementById(`errormessage-${uuid}`);
         const nameCell = document.getElementById(`name-${uuid}`);
@@ -209,6 +272,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 row.setAttribute('data-pending', '0');
                 processedCount++;
                 updateProgressBar();
+                return { ok: true, actionType: actionType };
             } else {
                 row.classList.add('row-import-error');
                 statusCell.innerHTML = '<span class="badge badge-danger"><i class="fas fa-times-circle mr-1"></i> Error</span>';
@@ -216,11 +280,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     detailCell.textContent = data.error_message || 'Error al procesar';
                     detailCell.classList.add('error-reason-box');
                 }
+                return { ok: false, actionType: actionType };
             }
         } catch (err) {
             row.classList.add('row-import-error');
             statusCell.innerHTML = '<span class="badge badge-danger"><i class="fas fa-times-circle mr-1"></i> Error</span>';
             if (detailCell) detailCell.textContent = 'Error de conexión con el servidor.';
+            return { ok: false, actionType: actionType };
         }
     }
 
@@ -234,11 +300,63 @@ document.addEventListener('DOMContentLoaded', function () {
         progressStatusText.innerHTML = '<i class="fas fa-cog fa-spin mr-1"></i> Procesando cambios en el inventario...';
 
         const rows = document.querySelectorAll('tr.import-task-row[data-pending="1"]');
+        let sessionCreated = 0;
+        let sessionUpdated = 0;
+        let sessionFailed = 0;
+
         for (const row of rows) {
-            await processTaskRow(row);
+            const result = await processTaskRow(row);
+            if (result.ok) {
+                if (result.actionType === 'update') sessionUpdated++;
+                else sessionCreated++;
+            } else {
+                sessionFailed++;
+            }
         }
 
-        progressStatusText.innerHTML = '<i class="fas fa-check-circle text-success mr-1"></i> ¡Proceso completado!';
+        const sessionSuccess = sessionCreated + sessionUpdated;
+        const breakdownParts = [];
+        if (sessionCreated > 0) breakdownParts.push(`${sessionCreated} nuevo${sessionCreated === 1 ? '' : 's'}`);
+        if (sessionUpdated > 0) breakdownParts.push(`${sessionUpdated} actualizado${sessionUpdated === 1 ? '' : 's'}`);
+        if (unchangedCount > 0) breakdownParts.push(`${unchangedCount} sin cambios`);
+        const breakdownText = breakdownParts.length ? ` (${breakdownParts.join(', ')})` : '';
+
+        if (sessionFailed === 0 && sessionSuccess > 0) {
+            progressStatusText.innerHTML = '<i class="fas fa-check-circle text-success mr-1"></i> ¡Importación completada exitosamente!';
+            const summaryMsg = `Se importaron y aplicaron correctamente ${sessionSuccess} dispositivo${sessionSuccess === 1 ? '' : 's'} al inventario${breakdownText}.`;
+            showSystemToast('bg-success', 'fas fa-check-circle', '¡Importación Exitosa!', summaryMsg, 6500);
+
+            if (completionBanner && completionTitle && completionBody) {
+                completionBanner.className = 'import-done-banner is-success';
+                completionTitle.innerHTML = '<i class="fas fa-check-circle text-success mr-1"></i> ¡Importación completada con éxito!';
+                completionBody.textContent = summaryMsg;
+                completionBanner.style.display = 'flex';
+            }
+        } else if (sessionFailed > 0) {
+            if (progressBar) {
+                progressBar.classList.remove('bg-success');
+                progressBar.classList.add(sessionSuccess > 0 ? 'bg-warning' : 'bg-danger');
+            }
+            progressStatusText.innerHTML = `<i class="fas fa-exclamation-triangle text-warning mr-1"></i> Importación finalizada con ${sessionFailed} error${sessionFailed === 1 ? '' : 'es'}.`;
+            const warnMsg = sessionSuccess > 0
+                ? `Se aplicaron ${sessionSuccess} cambio(s), pero ${sessionFailed} fila(s) presentaron error. Revisa las filas marcadas en rojo.`
+                : `No se pudieron aplicar las ${sessionFailed} fila(s). Revisa el motivo en rojo en la tabla.`;
+            showSystemToast(
+                sessionSuccess > 0 ? 'bg-warning' : 'bg-danger',
+                'fas fa-exclamation-triangle',
+                sessionSuccess > 0 ? 'Importación con observaciones' : 'Error en la importación',
+                warnMsg,
+                8500
+            );
+
+            if (completionBanner && completionTitle && completionBody) {
+                completionBanner.className = 'import-done-banner is-warning';
+                completionTitle.innerHTML = '<i class="fas fa-exclamation-triangle text-warning mr-1"></i> Importación finalizada con observaciones';
+                completionBody.textContent = warnMsg;
+                completionBanner.style.display = 'flex';
+            }
+        }
+
         if (startBtn) startBtn.style.display = 'none';
         if (goRoutersBtn) goRoutersBtn.style.display = 'inline-block';
     }

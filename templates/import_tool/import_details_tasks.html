@@ -13,6 +13,7 @@
         {% for task in import_task_list %}
             <tr class="import-task-row {% if task.action_type == 'error' or task.import_error %}row-import-error{% endif %}"
                 data-uuid="{{ task.uuid }}"
+                data-action-type="{{ task.action_type }}"
                 data-pending="{% if not task.import_success and not task.import_error and task.action_type != 'error' %}1{% else %}0{% endif %}">
                 <td class="align-middle text-nowrap">
                     <span class="badge {% if task.action_type == 'error' or task.import_error %}badge-danger{% else %}badge-secondary{% endif %}">

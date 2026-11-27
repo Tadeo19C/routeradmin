@@ -24,25 +24,30 @@ from routerlib.backup_functions import perform_backup, append_task_console_outpu
 
 
 def next_weekday(now: datetime, weekday: int, hour: int, minute: int = 0) -> datetime:
-    now_local = timezone.localtime(timezone.now())
+    now_local = timezone.localtime(now)
     days_ahead = weekday - now_local.weekday()
     if days_ahead < 0 or (days_ahead == 0 and (now_local.hour > hour or (now_local.hour == hour and now_local.minute >= minute))):
         days_ahead += 7
-    next_backup = now_local + timedelta(days=days_ahead)
-    return next_backup.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    target_date = now_local.date() + timedelta(days=days_ahead)
+    naive_target = datetime(target_date.year, target_date.month, target_date.day, hour, minute, 0, 0)
+    return timezone.make_aware(naive_target, timezone.get_current_timezone())
 
 
 def find_next_active_day(start_date: datetime, active_days: list, backup_hour: int, backup_minute: int = 0) -> Optional[datetime]:
-    now_local = timezone.localtime()
-    for i in range(7):
-        potential_date = timezone.localtime(start_date + timedelta(days=i))
-        weekday = potential_date.weekday()
+    now_local = timezone.localtime(start_date)
+    current_tz = timezone.get_current_timezone()
+    # range(8) cubre hoy (si la hora aún no pasó) hasta el mismo día de la próxima semana (si hoy ya pasó)
+    for i in range(8):
+        target_date = now_local.date() + timedelta(days=i)
+        weekday = target_date.weekday()
         if active_days[weekday]:
-            next_active_date = potential_date.replace(hour=backup_hour, minute=backup_minute, second=0, microsecond=0)
+            naive_candidate = datetime(
+                target_date.year, target_date.month, target_date.day,
+                backup_hour, backup_minute, 0, 0
+            )
+            next_active_date = timezone.make_aware(naive_candidate, current_tz)
             if next_active_date > now_local:
                 return next_active_date
-            if i == 0 and (now_local.hour > backup_hour or (now_local.hour == backup_hour and now_local.minute >= backup_minute)):
-                continue
     return None
 
 
@@ -156,15 +161,17 @@ def service_generate_backup_schedule() -> Dict[str, Any]:
         backup_schedule_list = BackupSchedule.objects.filter(router__backup_profile=backup_profile)
         next_daily_backup, next_weekly_backup, next_monthly_backup = calculate_next_backup(backup_profile)
 
+        profile_err = ''
         if backup_profile.daily_backup and not next_daily_backup:
-            backup_profile.profile_error_information = 'Error calculating next daily backup. Check profile settings'
-            backup_profile.save()
-        if backup_profile.weekly_backup and not next_weekly_backup:
-            backup_profile.profile_error_information = 'Error calculating next weekly backup. Check profile settings'
-            backup_profile.save()
-        if backup_profile.monthly_backup and not next_monthly_backup:
-            backup_profile.profile_error_information = 'Error calculating next monthly backup. Check profile settings'
-            backup_profile.save()
+            profile_err = 'No se pudo calcular el próximo respaldo diario. Verifique los días seleccionados.'
+        elif backup_profile.weekly_backup and not next_weekly_backup:
+            profile_err = 'No se pudo calcular el próximo respaldo semanal. Verifique la configuración.'
+        elif backup_profile.monthly_backup and not next_monthly_backup:
+            profile_err = 'No se pudo calcular el próximo respaldo mensual.'
+
+        if (backup_profile.profile_error_information or '') != profile_err:
+            backup_profile.profile_error_information = profile_err
+            backup_profile.save(update_fields=['profile_error_information'])
 
         if backup_profile.daily_backup:
             daily_schedule_list = backup_schedule_list.filter(next_daily_backup__isnull=True)
@@ -352,6 +359,7 @@ def service_housekeeping() -> Dict[str, Any]:
         backup_list.filter(schedule_type='monthly', created__lt=timezone.now() - timedelta(days=backup_profile.monthly_retention)).delete()
         backup_list.filter(schedule_type='weekly', created__lt=timezone.now() - timedelta(days=backup_profile.weekly_retention)).delete()
         backup_list.filter(schedule_type='daily', created__lt=timezone.now() - timedelta(days=backup_profile.daily_retention)).delete()
+        backup_list.filter(schedule_type='hourly', created__lt=timezone.now() - timedelta(days=backup_profile.hourly_retention)).delete()
 
     expired_messages = Message.objects.filter(created__lt=timezone.now() - timedelta(days=30))
     data['messages_removed'] = expired_messages.count()
