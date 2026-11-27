@@ -9,7 +9,7 @@ from django.contrib.sessions.models import Session
 
 @login_required
 def view_user_list(request):
-    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
+    if not (request.user.is_superuser or UserAcl.objects.filter(user=request.user, user_level__gte=50).exists()):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     page_title = 'Gestión de Usuarios'
     user_acl_list = UserAcl.objects.all().order_by('user__username')
@@ -19,7 +19,7 @@ def view_user_list(request):
 
 @login_required
 def view_manage_user(request):
-    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
+    if not (request.user.is_superuser or UserAcl.objects.filter(user=request.user, user_level__gte=50).exists()):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     user_acl = None
     user = None

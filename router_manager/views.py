@@ -220,6 +220,14 @@ def view_router_details(request):
     return render(request, 'router_manager/router_details.html', context=context)
 
 
+def _user_has_acl(user, min_level=30):
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser or user.is_staff:
+        return True
+    return UserAcl.objects.filter(user=user, user_level__gte=min_level).exists()
+
+
 def _delete_router_cleanly(router):
     if router.backup_profile and router.backup_profile.name.startswith("Perfil Automático -"):
         profile_to_delete = router.backup_profile
@@ -232,7 +240,7 @@ def _delete_router_cleanly(router):
 
 @login_required()
 def view_manage_router(request):
-    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=30).exists():
+    if not _user_has_acl(request.user, 30):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     webadmin_settings, _ = WebadminSettings.objects.get_or_create(name='webadmin_settings')
 
@@ -451,10 +459,27 @@ def view_router_group_list(request):
 
 @login_required()
 def view_manage_router_group(request):
-    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=40).exists():
+    if not _user_has_acl(request.user, 30):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
-    if request.GET.get('uuid'):
-        router_group = get_object_or_404(RouterGroup, uuid=request.GET.get('uuid'))
+    raw_uuid = (request.GET.get('uuid') or '').strip()
+    if raw_uuid == 'ungrouped':
+        if request.GET.get('action') == 'delete' and request.GET.get('confirmation') in ('delete', 'borrar', 'confirm'):
+            orphan_devices = list(
+                Router.objects.filter(device_scope='node', routergroup__isnull=True).select_related('backup_profile')
+            )
+            deleted_count = len(orphan_devices)
+            for dev in orphan_devices:
+                _delete_router_cleanly(dev)
+            ActivityLog.objects.create(
+                user=request.user,
+                action="Sin Nodo Asignado Eliminado",
+                details=f"Se eliminaron {deleted_count} dispositivo(s) de 'SIN NODO ASIGNADO'",
+            )
+            WebadminSettings.objects.filter(name='webadmin_settings').update(router_config_last_updated=timezone.now())
+            messages.success(request, f"Se eliminó 'SIN NODO ASIGNADO' junto con sus {deleted_count} dispositivo(s).")
+        return redirect('router_group_list')
+    elif raw_uuid:
+        router_group = get_object_or_404(RouterGroup, uuid=raw_uuid)
         if request.GET.get('action') == 'delete':
             if request.GET.get('confirmation') in ('delete', 'borrar', 'confirm'):
                 grp_name = router_group.name
@@ -508,7 +533,7 @@ from django.views.decorators.http import require_POST
 @login_required()
 @require_POST
 def view_ajax_quick_create_group(request):
-    if not UserAcl.objects.filter(user=request.user, user_level__gte=40).exists():
+    if not _user_has_acl(request.user, 30):
         return JsonResponse({'status': 'error', 'message': 'Acceso Denegado'}, status=403)
 
     name = re.sub(r'\s+', ' ', request.POST.get('name', '').strip()).upper()
@@ -585,7 +610,7 @@ def create_instant_backup(router):
 
 @login_required()
 def view_create_instant_backup_task(request):
-    if not UserAcl.objects.filter(user=request.user, user_level__gte=20).exists():
+    if not _user_has_acl(request.user, 20):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     router = get_object_or_404(Router, uuid=request.GET.get('uuid'))
@@ -603,7 +628,7 @@ def view_create_instant_backup_task(request):
 @login_required
 def view_create_instant_backup_multiple_routers(request):
     if request.method == 'POST':
-        if not UserAcl.objects.filter(user=request.user, user_level__gte=20).exists():
+        if not _user_has_acl(request.user, 20):
             return JsonResponse({'error': 'Permiso denegado.'}, status=403)
 
         uuids = request.POST.getlist('routers[]')
@@ -623,7 +648,7 @@ def view_create_instant_backup_multiple_routers(request):
 
 @login_required
 def view_manage_router_groups_multiple(request):
-    if not UserAcl.objects.filter(user=request.user, user_level__gte=20).exists():
+    if not _user_has_acl(request.user, 20):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     if request.method == 'POST':
@@ -787,7 +812,7 @@ def view_ajax_router_telemetry(request):
 
 @login_required()
 def view_router_client_list(request):
-    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=20).exists():
+    if not _user_has_acl(request.user, 10):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     all_clients = list(
@@ -881,11 +906,27 @@ def view_router_client_list(request):
 
 @login_required()
 def view_manage_router_client(request):
-    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=40).exists():
+    if not _user_has_acl(request.user, 30):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
-    uuid_val = request.GET.get('uuid')
-    if uuid_val:
+    uuid_val = (request.GET.get('uuid') or '').strip()
+    if uuid_val == 'unassigned_client':
+        if request.GET.get('action') == 'delete' and request.GET.get('confirmation') in ('delete', 'borrar', 'confirm'):
+            orphan_client_devs = list(
+                Router.objects.filter(device_scope='client', clients__isnull=True).select_related('backup_profile')
+            )
+            deleted_count = len(orphan_client_devs)
+            for dev in orphan_client_devs:
+                _delete_router_cleanly(dev)
+            ActivityLog.objects.create(
+                user=request.user,
+                action="Sin Cliente Asignado Eliminado",
+                details=f"Se eliminaron {deleted_count} dispositivo(s) de 'Sin Cliente Asignado'",
+            )
+            WebadminSettings.objects.filter(name='webadmin_settings').update(router_config_last_updated=timezone.now())
+            messages.success(request, f"Se eliminó 'Sin Cliente Asignado' junto con sus {deleted_count} dispositivo(s).")
+        return redirect('router_client_list')
+    elif uuid_val:
         router_client = get_object_or_404(RouterClient, uuid=uuid_val)
         if request.GET.get('action') == 'delete':
             if request.GET.get('confirmation') in ('delete', 'borrar', 'confirm'):

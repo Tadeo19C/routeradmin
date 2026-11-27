@@ -278,6 +278,14 @@
                                            title="Eliminar Nodo y sus dispositivos">
                                             <i class="fas fa-trash-alt"></i>
                                         </a>
+                                    {% else %}
+                                        <span class="action-divider"></span>
+                                        <a href="/router/manage_group/?uuid=ungrouped&action=delete&confirmation=confirm"
+                                           class="btn btn-xs btn-outline-danger"
+                                           onclick="return confirm('¿Seguro que deseas eliminar \'SIN NODO ASIGNADO\' junto con sus {{ node.total_count }} dispositivo(s)?');"
+                                           title="Eliminar SIN NODO ASIGNADO y sus dispositivos">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
                                     {% endif %}
                                 </div>
                             </div>

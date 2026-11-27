@@ -18,7 +18,7 @@ SUPPORTED_ROUTER_TYPES = [rt[0] for rt in SUPPORTED_ROUTER_TYPES]
 
 @login_required()
 def run_import_task(request):
-    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
+    if not (request.user.is_superuser or UserAcl.objects.filter(user=request.user, user_level__gte=30).exists()):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     import_task = get_object_or_404(ImportTask, uuid=request.GET.get('uuid'))
     if import_task.import_success:
@@ -138,7 +138,7 @@ def view_import_tool_list(request):
 
 @login_required()
 def view_import_details(request):
-    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
+    if not (request.user.is_superuser or UserAcl.objects.filter(user=request.user, user_level__gte=30).exists()):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
     csv_data = get_object_or_404(CsvData, uuid=request.GET.get('uuid'))
     import_task_list = list(ImportTask.objects.filter(csv_data=csv_data).order_by('import_id'))
@@ -170,7 +170,7 @@ def view_import_details(request):
 
 @login_required()
 def view_import_csv_file(request):
-    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=50).exists():
+    if not (request.user.is_superuser or UserAcl.objects.filter(user=request.user, user_level__gte=30).exists()):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     form = CsvDataForm(request.POST or None, request.FILES or None)
@@ -234,7 +234,7 @@ def view_download_csv_template(request):
 @login_required()
 def view_export_routers_csv(request):
     """Exporta todos los equipos actuales en formato nativo Microsoft Excel (.xlsx)."""
-    if not UserAcl.objects.filter(user=request.user).filter(user_level__gte=30).exists():
+    if not (request.user.is_superuser or UserAcl.objects.filter(user=request.user, user_level__gte=30).exists()):
         return render(request, 'access_denied.html', {'page_title': 'Acceso Denegado'})
 
     headers = ['Nombre', 'IP', 'Usuario', 'Password', 'Marca', 'Protocolo', 'Puerto', 'Nodo']

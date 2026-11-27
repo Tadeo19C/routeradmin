@@ -269,6 +269,14 @@
                                title="Eliminar Cliente y sus dispositivos">
                                 <i class="fas fa-trash-alt"></i>
                             </a>
+                            {% else %}
+                            <span class="action-divider"></span>
+                            <a href="/router/manage_client/?uuid=unassigned_client&action=delete&confirmation=confirm"
+                               class="btn btn-xs btn-outline-danger"
+                               onclick="return confirm('¿Seguro que deseas eliminar \'Sin Cliente Asignado\' junto con sus {{ client.total_count }} dispositivo(s)?');"
+                               title="Eliminar Sin Cliente Asignado y sus dispositivos">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
                             {% endif %}
                         </div>
                     </div>
